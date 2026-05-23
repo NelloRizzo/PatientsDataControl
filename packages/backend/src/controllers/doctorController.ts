@@ -3,6 +3,7 @@ import type { AuthRequest } from '../middleware/auth.js';
 import { User } from '../models/User.js';
 import { Measurement } from '../models/Measurement.js';
 import { PatientDoctor } from '../models/PatientDoctor.js';
+import { AlertLog } from '../models/AlertLog.js';
 import { AppError } from '../middleware/errorHandler.js';
 import * as measurementService from '../services/measurementService.js';
 import { resolvePatientIds } from '../services/filterUtils.js';
@@ -399,6 +400,64 @@ export async function patientStats(
   } catch (error) {
     next(error);
   }
+}
+
+export async function getPatientAlerts(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { patientId } = req.params;
+    await verifyAssociation(req.userId!, patientId);
+
+    const { page = '1', limit = '20', measurementType, status, from, to } = req.query as Record<string, string>;
+
+    const filter: any = { patientId, doctorId: req.userId };
+    if (measurementType) filter.measurementType = measurementType;
+    if (status) filter.status = status;
+    if (from || to) {
+      filter.sentAt = {};
+      if (from) filter.sentAt.$gte = new Date(from);
+      if (to) filter.sentAt.$lte = new Date(to);
+    }
+
+    const pageInt = Math.max(1, parseInt(page));
+    const limitInt = Math.min(100, Math.max(1, parseInt(limit) || 20));
+
+    const [docs, total] = await Promise.all([
+      AlertLog.find(filter)
+        .sort({ sentAt: -1 })
+        .skip((pageInt - 1) * limitInt)
+        .limit(limitInt)
+        .lean(),
+      AlertLog.countDocuments(filter),
+    ]);
+
+    const data = docs.map((l: any) => ({
+      _id: l._id.toString(),
+      measurementId: l.measurementId?.toString(),
+      measurementType: l.measurementType,
+      status: l.status,
+      field: l.field,
+      value: l.value,
+      unit: l.unit,
+      message: l.message,
+      channel: l.channel,
+      delivered: l.delivered,
+      sentAt: l.sentAt?.toISOString?.(),
+    }));
+
+    res.json({
+      data,
+      pagination: {
+        page: pageInt,
+        limit: limitInt,
+        total,
+        totalPages: Math.ceil(total / limitInt),
+      },
+    });
+  } catch (error) { next(error); }
 }
 
 export async function aggregatedTimeseries(

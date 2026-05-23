@@ -68,17 +68,38 @@ export async function listLogs(
       filter.doctorId = req.userId;
     }
 
-    const logs = await AlertLog.find(filter)
-      .populate('patientId', 'name email')
-      .populate('doctorId', 'name email')
-      .sort({ sentAt: -1 })
-      .limit(100)
-      .lean();
+    const {
+      page = '1', limit = '20',
+      measurementType, status, from, to,
+    } = req.query as Record<string, string>;
 
-    const data = logs.map((l: any) => ({
+    if (measurementType) filter.measurementType = measurementType;
+    if (status) filter.status = status;
+    if (from || to) {
+      filter.sentAt = {};
+      if (from) filter.sentAt.$gte = new Date(from);
+      if (to) filter.sentAt.$lte = new Date(to);
+    }
+
+    const pageInt = Math.max(1, parseInt(page));
+    const limitInt = Math.min(100, Math.max(1, parseInt(limit) || 20));
+
+    const [docs, total] = await Promise.all([
+      AlertLog.find(filter)
+        .populate('patientId', 'name email')
+        .populate('doctorId', 'name email')
+        .sort({ sentAt: -1 })
+        .skip((pageInt - 1) * limitInt)
+        .limit(limitInt)
+        .lean(),
+      AlertLog.countDocuments(filter),
+    ]);
+
+    const data = docs.map((l: any) => ({
       _id: l._id.toString(),
       patientId: l.patientId?._id?.toString(),
       patientName: l.patientId?.name,
+      patientEmail: l.patientId?.email,
       doctorId: l.doctorId?._id?.toString(),
       doctorName: l.doctorId?.name,
       measurementId: l.measurementId?.toString(),
@@ -93,6 +114,14 @@ export async function listLogs(
       sentAt: l.sentAt?.toISOString?.(),
     }));
 
-    res.json({ data });
+    res.json({
+      data,
+      pagination: {
+        page: pageInt,
+        limit: limitInt,
+        total,
+        totalPages: Math.ceil(total / limitInt),
+      },
+    });
   } catch (error) { next(error); }
 }

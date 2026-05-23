@@ -16,6 +16,8 @@ import { AdminUsers } from './pages/AdminUsers';
 import { AdminAlertTemplates } from './pages/AdminAlertTemplates';
 import { AdminAssociations } from './pages/AdminAssociations';
 import { DoctorPatients } from './pages/DoctorPatients';
+import { DoctorAlerts } from './pages/DoctorAlerts';
+import { VerifyEmail } from './pages/VerifyEmail';
 
 const queryClient = new QueryClient();
 
@@ -34,6 +36,7 @@ export function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="/" element={<RootRedirect />} />
               <Route path="/measurements" element={<Measurements />} />
@@ -60,6 +63,10 @@ export function App() {
               <Route
                 path="/doctor/patients"
                 element={<ProtectedRoute roles={['doctor']}><DoctorPatients /></ProtectedRoute>}
+              />
+              <Route
+                path="/doctor/alerts"
+                element={<ProtectedRoute roles={['doctor']}><DoctorAlerts /></ProtectedRoute>}
               />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

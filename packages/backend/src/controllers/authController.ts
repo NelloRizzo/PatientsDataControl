@@ -3,20 +3,46 @@ import type { AuthRequest } from '../middleware/auth.js';
 import * as authService from '../services/authService.js';
 import { User } from '../models/User.js';
 import { AppError } from '../middleware/errorHandler.js';
-import { updateProfileSchema } from '@healthbridge/shared';
+import { updateProfileSchema, verifyEmailSchema, resendVerificationSchema, changePasswordSchema } from '@healthbridge/shared';
 
 export async function register(
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
+  req: AuthRequest, res: Response, next: NextFunction
 ): Promise<void> {
   try {
     const { email, password, name } = req.body;
     const result = await authService.registerUser(email, password, name);
     res.status(201).json(result);
-  } catch (error) {
-    next(error);
-  }
+  } catch (error) { next(error); }
+}
+
+export async function verifyEmail(
+  req: AuthRequest, res: Response, next: NextFunction
+): Promise<void> {
+  try {
+    const { token } = verifyEmailSchema.parse(req.body);
+    const result = await authService.verifyEmailToken(token);
+    res.json(result);
+  } catch (error) { next(error); }
+}
+
+export async function resendVerification(
+  req: AuthRequest, res: Response, next: NextFunction
+): Promise<void> {
+  try {
+    const { email } = resendVerificationSchema.parse(req.body);
+    const result = await authService.resendVerification(email);
+    res.json(result);
+  } catch (error) { next(error); }
+}
+
+export async function changePassword(
+  req: AuthRequest, res: Response, next: NextFunction
+): Promise<void> {
+  try {
+    const { oldPassword, newPassword } = changePasswordSchema.parse(req.body);
+    const result = await authService.changePassword(req.userId!, oldPassword, newPassword);
+    res.json(result);
+  } catch (error) { next(error); }
 }
 
 export async function login(

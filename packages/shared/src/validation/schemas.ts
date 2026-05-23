@@ -126,6 +126,19 @@ export const updateProfileSchema = z.object({
   legalAddress: addressSchema.optional().nullable(),
 });
 
+export const verifyEmailSchema = z.object({
+  token: z.string().min(1, 'Verification token is required'),
+});
+
+export const resendVerificationSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
+export const changePasswordSchema = z.object({
+  oldPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
+
 export const createNoteSchema = z.object({
   content: z.string().min(1, 'Content is required').max(2000),
 });

@@ -79,10 +79,14 @@ Chart configurations are saveable per user via `ChartConfig` model:
 ### Auth
 | Method | Path | Description |
 |---|---|---|
-| POST | /api/auth/register | Register (patient role by default) |
+| POST | /api/auth/register | Register (patient role by default, sends verification email) |
 | POST | /api/auth/login | Login, returns JWT pair |
 | POST | /api/auth/refresh | Refresh tokens |
 | GET | /api/auth/me | Current user info |
+| PUT | /api/auth/profile | Update profile (name, email, addresses) |
+| POST | /api/auth/verify-email | Verify email with token |
+| POST | /api/auth/resend-verification | Resend verification email |
+| POST | /api/auth/change-password | Change password (old + new) |
 
 ### Measurements
 | Method | Path | Description |
@@ -123,6 +127,7 @@ Chart configurations are saveable per user via `ChartConfig` model:
 | PUT | /api/doctor/patients/:patientId/profile | Update patient profile |
 | GET | /api/doctor/patients/:patientId/notes | Get patient notes (chronological) |
 | POST | /api/doctor/patients/:patientId/notes | Add patient note |
+| GET | /api/doctor/patients/:patientId/alerts | Get patient alert history |
 
 ### Analyst
 | Method | Path | Description |
@@ -175,6 +180,7 @@ List endpoints accept `type`, `from`, `to` for type + date range filtering.
 - User, Measurement, MeasurementTypeConfig, DeviceConnection, ApiKey, PatientDoctor, ChartConfig, PatientNote, AlertTemplate, AlertLog
 - All models use `timestamps: true` (createdAt/updatedAt)
 - User's password is auto-hashed via pre-save hook, stripped on toJSON
+- User has email verification fields: `emailVerified`, `verificationToken`, `verificationExpires` (token also stripped on toJSON)
 - Admin can update any user's password via `PUT /api/admin/users/:id` with `{ password }`
 - System admin (admin@healthbridge.com) is protected from deletion
 
@@ -215,12 +221,14 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - Navbar: admin links for Users, Types, Associations, Alerts
 - System admin (admin@healthbridge.com) protected from deletion; admin can change any user's password via PUT /api/admin/users/:id with { password }
 - Info notification templates (8 types) for opt-in new measurement notifications to doctors, plus createAlertTemplateSchema now supports 'info' status
+- Alert log viewer for doctors: paginated GET /api/alerts/logs with filters, DoctorAlerts.tsx page, nav link, per-patient GET /api/doctor/patients/:patientId/alerts
+- Email verification: User model fields (emailVerified, verificationToken, verificationExpires), emailService.ts, POST /api/auth/verify-email, POST /api/auth/resend-verification, VerifyEmail.tsx page, banner in Layout/Profile, sent on register and admin create
+- Change password: dedicated POST /api/auth/change-password with oldPassword+newPassword validation, separate UI in Profile page
 
 ### In Progress
 - None currently
 
 ### Triaged / Future
-- Alert log viewer for doctors (filter by their patients)
 - Export CSV/JSON endpoint
 - Advanced charts / Looker Studio connector
 - BigQuery sync, device OAuth (Fitbit, Google Fit), webhook endpoint
@@ -240,6 +248,29 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - `render.yaml` Blueprint: defines `healthbridge-api` web service with Docker runtime, health check at `/api/health`, and secrets for `MONGO_URI`, `JWT_SECRET`, `JWT_REFRESH_SECRET`
 - Backend serves frontend SPA in production mode (`express.static` + catch-all `*` route) — no CORS issues, no separate frontend service needed
 - Root `package.json` now has `npm run deploy` (build all + start backend)
+
+### Alert Log Viewer per Dottori
+- Enhanced `GET /api/alerts/logs` with pagination (page/limit) and filters (measurementType, status, from/to date range)
+- Added `GET /api/doctor/patients/:patientId/alerts` for per-patient alert history
+- Created `DoctorAlerts.tsx` frontend page with filterable table, status badges, delivery indicators, and pagination
+- Added route `/doctor/alerts` and nav link "Alerts" for doctors
+
+### Email Verification
+- User model: added `emailVerified`, `verificationToken`, `verificationExpires` fields; token stripped from JSON
+- `emailService.ts`: standalone email sender with Ethereal fallback for dev, SMTP config via env vars
+- Shared schemas: `verifyEmailSchema`, `resendVerificationSchema`
+- `POST /auth/verify-email`: verifies email via token (24h expiry)
+- `POST /auth/resend-verification`: regenerates token and re-sends email
+- Registration flow: sends verification email after account creation
+- Admin creates user: also sends verification email (emailVerified defaults to false)
+- Soft policy: login allowed, banner in Layout/Profile shows "verify your email"
+- `VerifyEmail.tsx` page at `/verify-email` (unauthenticated) with success/error states
+- `Register.tsx` shows success screen with "Check your email" message after signup
+
+### Change Password (Dedicated Endpoint)
+- `changePasswordSchema`: `{ oldPassword, newPassword }` (shared schema)
+- `POST /auth/change-password`: verifies old password, saves new one
+- Profile page: removed password field from generic form, added "Change Password" section with old + new password inputs
 
 ## Future Phases
 - **Phase 2**: Export CSV/JSON endpoint, advanced charts, Looker Studio Community Connector

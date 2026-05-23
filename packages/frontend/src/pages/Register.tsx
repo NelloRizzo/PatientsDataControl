@@ -7,6 +7,7 @@ export function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -15,11 +16,29 @@ export function Register() {
     setError('');
     try {
       await register(email, password, name);
-      navigate('/');
+      setSuccess(true);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed');
     }
   };
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
+          <div className="text-green-500 text-5xl mb-4">&#10003;</div>
+          <h1 className="text-xl font-bold text-green-700 mb-2">Registration Successful!</h1>
+          <p className="text-gray-600 mb-6">
+            Welcome to HealthBridge! We've sent a verification email to <strong>{email}</strong>.
+            Please check your inbox and verify your email address.
+          </p>
+          <button onClick={() => navigate('/')} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center">

@@ -2,7 +2,7 @@ services:
   - type: web
     name: healthbridge-api
     runtime: docker
-    repo: https://github.com/YOUR_USERNAME/healthbridge
+    repo: https://github.com/NelloRizzo/PatientsDataControl
     plan: free
     branch: main
     dockerfilePath: ./Dockerfile
@@ -30,3 +30,5 @@ services:
         sync: false
       - key: EMAIL_FROM
         value: noreply@healthbridge.com
+      - key: APP_URL
+        value: https://healthbridge-api.onrender.com

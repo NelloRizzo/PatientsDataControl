@@ -21,6 +21,9 @@ export interface IUserDocument extends mongoose.Document {
   sex?: 'male' | 'female' | 'other';
   homeAddress?: Address;
   legalAddress?: Address;
+  emailVerified: boolean;
+  verificationToken?: string;
+  verificationExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -28,58 +31,19 @@ export interface IUserDocument extends mongoose.Document {
 
 const userSchema = new mongoose.Schema<IUserDocument>(
   {
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    password: {
-      type: String,
-      required: true,
-      minlength: 8,
-    },
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    role: {
-      type: String,
-      enum: ['patient', 'doctor', 'analyst', 'admin'],
-      default: 'patient',
-    },
-    unitSystem: {
-      type: String,
-      enum: ['metric', 'imperial'],
-      default: 'metric',
-    },
-    specialty: {
-      type: String,
-      trim: true,
-    },
-    birthDate: Date,
-    sex: {
-      type: String,
-      enum: ['male', 'female', 'other'],
-    },
-    homeAddress: {
-      full: String,
-      city: String,
-      province: String,
-      region: String,
-      country: String,
-      zip: String,
-    },
-    legalAddress: {
-      full: String,
-      city: String,
-      province: String,
-      region: String,
-      country: String,
-      zip: String,
-    },
+    email:             { type: String, required: true, unique: true, lowercase: true, trim: true },
+    password:          { type: String, required: true, minlength: 8 },
+    name:              { type: String, required: true, trim: true },
+    role:              { type: String, enum: ['patient','doctor','analyst','admin'], default: 'patient' },
+    unitSystem:        { type: String, enum: ['metric','imperial'], default: 'metric' },
+    specialty:         { type: String, trim: true },
+    birthDate:         Date,
+    sex:               { type: String, enum: ['male','female','other'] },
+    homeAddress:       { full: String, city: String, province: String, region: String, country: String, zip: String },
+    legalAddress:      { full: String, city: String, province: String, region: String, country: String, zip: String },
+    emailVerified:     { type: Boolean, default: false },
+    verificationToken: { type: String },
+    verificationExpires: { type: Date },
   },
   { timestamps: true }
 );
@@ -99,6 +63,8 @@ userSchema.methods.comparePassword = async function (
 userSchema.set('toJSON', {
   transform: (_doc, ret: any) => {
     delete ret.password;
+    delete ret.verificationToken;
+    delete ret.verificationExpires;
     return ret;
   },
 });

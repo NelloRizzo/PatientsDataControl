@@ -12,6 +12,7 @@ export interface Address {
 export interface IUser {
   _id: string;
   email: string;
+  emailVerified: boolean;
   name: string;
   role: UserRole;
   unitSystem: 'metric' | 'imperial';

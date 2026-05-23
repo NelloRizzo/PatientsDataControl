@@ -16,6 +16,7 @@ router.delete('/patients/:patientId', doctorController.removePatientAssociation)
 router.put('/patients/:patientId/profile', doctorController.updatePatientProfile);
 router.get('/patients/:patientId/notes', doctorController.getPatientNotes);
 router.post('/patients/:patientId/notes', doctorController.addPatientNote);
+router.get('/patients/:patientId/alerts', doctorController.getPatientAlerts);
 router.get('/patients/:patientId/measurements', doctorController.patientMeasurements);
 router.delete('/patients/:patientId/measurements', doctorController.deletePatientMeasurements);
 router.get('/patients/:patientId/timeseries', doctorController.patientTimeseries);

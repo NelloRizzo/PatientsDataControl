@@ -10,7 +10,6 @@ export function Profile() {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [password, setPassword] = useState('');
   const [birthDate, setBirthDate] = useState(user?.birthDate?.split('T')[0] || '');
   const [sex, setSex] = useState(user?.sex || '');
   const [home, setHome] = useState(user?.homeAddress || { ...emptyAddr });
@@ -18,7 +17,41 @@ export function Profile() {
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
+  const [cpOld, setCpOld] = useState('');
+  const [cpNew, setCpNew] = useState('');
+  const [cpMsg, setCpMsg] = useState('');
+  const [cpErr, setCpErr] = useState('');
+
+  // Resend verification
+  const [resending, setResending] = useState(false);
+  const [resendMsg, setResendMsg] = useState('');
+
   if (!user) return null;
+
+  const handleResend = async () => {
+    setResending(true);
+    setResendMsg('');
+    try {
+      await apiClient.post('/auth/resend-verification', { email: user.email });
+      setResendMsg('Verification email sent!');
+    } catch {
+      setResendMsg('Failed to resend.');
+    }
+    setResending(false);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCpMsg(''); setCpErr('');
+    try {
+      await apiClient.post('/auth/change-password', { oldPassword: cpOld, newPassword: cpNew });
+      setCpMsg('Password changed successfully');
+      setCpOld('');
+      setCpNew('');
+    } catch (err: any) {
+      setCpErr(err.response?.data?.error || 'Failed to change password');
+    }
+  };
 
   const addrInput = (label: string, fields: any, setter: any) => (
     <div className="border rounded p-3">
@@ -59,7 +92,6 @@ export function Profile() {
       const body: Record<string, any> = {};
       if (name !== user.name) body.name = name;
       if (email !== user.email) body.email = email;
-      if (password) body.password = password;
       if (birthDate !== user.birthDate?.split('T')[0]) body.birthDate = birthDate || null;
       if (sex !== user.sex) body.sex = sex || null;
       if (JSON.stringify(home) !== JSON.stringify(user.homeAddress)) {
@@ -75,16 +107,6 @@ export function Profile() {
       const me = await apiClient.get('/auth/me');
       setMsg('Profile updated');
       setEditing(false);
-
-      // refresh user in AuthContext
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        const loginRes = await apiClient.post('/auth/login', { email, password: password || undefined }).catch(() => null);
-        if (loginRes) {
-          localStorage.setItem('accessToken', loginRes.data.tokens.accessToken);
-          localStorage.setItem('refreshToken', loginRes.data.tokens.refreshToken);
-        }
-      }
       window.location.reload();
     } catch (err: any) {
       setErr(err.response?.data?.error || 'Update failed');
@@ -102,6 +124,24 @@ export function Profile() {
         )}
       </div>
 
+      {/* Email verification status */}
+      {user.role !== 'admin' && (
+        <div className={`mb-4 p-3 rounded-lg border text-sm flex items-center justify-between ${
+          user.emailVerified ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
+        }`}>
+          <span className={user.emailVerified ? 'text-green-700' : 'text-yellow-800'}>
+            Email: {user.email} — {user.emailVerified ? 'Verified' : 'Not verified'}
+          </span>
+          {!user.emailVerified && (
+            <button onClick={handleResend} disabled={resending}
+              className="text-yellow-700 underline hover:text-yellow-900 disabled:opacity-50 text-xs">
+              {resending ? 'Sending...' : 'Resend verification email'}
+            </button>
+          )}
+          {resendMsg && <span className="text-xs text-green-700">{resendMsg}</span>}
+        </div>
+      )}
+
       <form onSubmit={handleSave} className="bg-white p-6 rounded-lg shadow-sm border space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -111,10 +151,6 @@ export function Profile() {
           <div>
             <label className="block text-xs text-gray-500 mb-1">Email</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full border rounded px-2 py-1.5 text-sm" disabled={!editing} />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">New Password (leave empty to keep)</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} className="w-full border rounded px-2 py-1.5 text-sm" disabled={!editing} />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Birth Date</label>
@@ -144,6 +180,30 @@ export function Profile() {
         {msg && <p className="text-xs text-green-600">{msg}</p>}
         {err && <p className="text-xs text-red-600">{err}</p>}
       </form>
+
+      {/* Change Password Section */}
+      <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border space-y-4">
+        <h2 className="text-lg font-semibold">Change Password</h2>
+        <form onSubmit={handleChangePassword} className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Current Password</label>
+              <input type="password" value={cpOld} onChange={(e) => setCpOld(e.target.value)} required
+                className="w-full border rounded px-2 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">New Password</label>
+              <input type="password" value={cpNew} onChange={(e) => setCpNew(e.target.value)} required minLength={8}
+                className="w-full border rounded px-2 py-1.5 text-sm" />
+            </div>
+          </div>
+          <button type="submit" className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">
+            Change Password
+          </button>
+          {cpMsg && <p className="text-xs text-green-600">{cpMsg}</p>}
+          {cpErr && <p className="text-xs text-red-600">{cpErr}</p>}
+        </form>
+      </div>
     </div>
   );
 }

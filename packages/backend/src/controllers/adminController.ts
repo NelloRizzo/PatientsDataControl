@@ -4,6 +4,8 @@ import { User } from '../models/User.js';
 import { PatientDoctor } from '../models/PatientDoctor.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { registerSchema, createUserSchema, updateUserSchema } from '@healthbridge/shared';
+import { generateVerificationToken } from '../services/authService.js';
+import { sendVerificationEmail } from '../services/emailService.js';
 
 export async function listUsers(
   req: AuthRequest,
@@ -92,6 +94,8 @@ export async function createUser(
     if (existing) throw new AppError(409, 'Email already registered');
 
     const user = await User.create(parsed);
+    const token = await generateVerificationToken(user._id.toString());
+    await sendVerificationEmail(user.email, token);
     res.status(201).json({ data: user.toJSON() });
   } catch (error) {
     next(error);

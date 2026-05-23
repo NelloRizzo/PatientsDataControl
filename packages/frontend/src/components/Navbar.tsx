@@ -29,9 +29,14 @@ export function Navbar() {
               </Link>
             )}
             {user.role === 'doctor' && (
-              <Link to="/doctor/patients" className="text-gray-600 hover:text-gray-900">
-                My Patients
-              </Link>
+              <>
+                <Link to="/doctor/patients" className="text-gray-600 hover:text-gray-900">
+                  My Patients
+                </Link>
+                <Link to="/doctor/alerts" className="text-gray-600 hover:text-gray-900">
+                  Alerts
+                </Link>
+              </>
             )}
             {user.role === 'admin' && (
               <>
