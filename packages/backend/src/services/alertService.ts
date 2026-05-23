@@ -3,7 +3,7 @@ import { AlertLog } from '../models/AlertLog.js';
 import { User } from '../models/User.js';
 import { PatientDoctor } from '../models/PatientDoctor.js';
 import { emailChannel } from './channels/emailChannel.js';
-import type { FieldEvaluation, NotificationChannelType, FieldSummary } from '../../../shared/dist/index.js';
+import type { FieldEvaluation, NotificationChannelType, FieldSummary } from '@healthbridge/shared';
 import type { NotificationChannel } from './channels/channelInterface.js';
 
 const channelRegistry: Record<string, NotificationChannel> = {

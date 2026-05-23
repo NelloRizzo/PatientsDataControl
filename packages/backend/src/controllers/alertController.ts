@@ -3,7 +3,7 @@ import type { AuthRequest } from '../middleware/auth.js';
 import { AlertTemplate } from '../models/AlertTemplate.js';
 import { AlertLog } from '../models/AlertLog.js';
 import { AppError } from '../middleware/errorHandler.js';
-import { createAlertTemplateSchema, updateAlertTemplateSchema } from '../../../shared/dist/index.js';
+import { createAlertTemplateSchema, updateAlertTemplateSchema } from '@healthbridge/shared';
 
 export async function listTemplates(
   req: AuthRequest,

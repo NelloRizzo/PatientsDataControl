@@ -1,4 +1,4 @@
-import type { ChannelConfig } from '../../../../shared/dist/index.js';
+import type { ChannelConfig } from '@healthbridge/shared';
 
 export interface NotificationMessage {
   to: string;

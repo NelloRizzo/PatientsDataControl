@@ -14,7 +14,7 @@ import type {
   AggregationFunction,
   TimeSeriesResponse,
   FieldEvaluation,
-} from '../../../shared/dist/index.js';
+} from '@healthbridge/shared';
 
 const thresholdCache = new Map<string, any>();
 

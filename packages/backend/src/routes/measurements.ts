@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
 import { validate } from '../middleware/validate.js';
 import { upload } from '../middleware/upload.js';
-import { createMeasurementSchema, updateMeasurementSchema } from '../../../shared/dist/index.js';
+import { createMeasurementSchema, updateMeasurementSchema } from '@healthbridge/shared';
 import * as measurementController from '../controllers/measurementController.js';
 
 const router = Router();

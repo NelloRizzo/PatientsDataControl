@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import type { DeviceProvider } from '../../../shared/dist/index.js';
+import type { DeviceProvider } from '@healthbridge/shared';
 
 export interface IDeviceConnectionDocument extends mongoose.Document {
   userId: mongoose.Types.ObjectId;

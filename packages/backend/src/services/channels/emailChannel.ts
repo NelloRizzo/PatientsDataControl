@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import type { ChannelConfig } from '../../../../shared/dist/index.js';
+import type { ChannelConfig } from '@healthbridge/shared';
 import type { NotificationMessage, NotificationChannel } from './channelInterface.js';
 import { env } from '../../config/env.js';
 

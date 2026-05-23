@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { registerSchema, loginSchema, verifyEmailSchema, resendVerificationSchema, changePasswordSchema } from '../../../shared/dist/index.js';
+import { registerSchema, loginSchema, verifyEmailSchema, resendVerificationSchema, changePasswordSchema } from '@healthbridge/shared';
 import * as authController from '../controllers/authController.js';
 
 const router = Router();

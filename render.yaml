@@ -5,7 +5,7 @@ services:
     region: ohio
     plan: free
     branch: main
-    buildCommand: npm ci && npm run build --workspace=packages/shared && npm run build --workspace=packages/backend
+    buildCommand: npm ci && npm run build --workspace=packages/backend
     startCommand: node packages/backend/dist/index.js
     healthCheckPath: /api/health
     envVars:
@@ -34,12 +34,14 @@ services:
       - key: APP_URL
         value: https://healthbridge-frontend.onrender.com
 
-  - type: static
+  - type: web
     name: healthbridge-frontend
+    runtime: node
     region: ohio
+    plan: free
     branch: main
-    buildCommand: npm ci && npm run build --workspace=packages/shared && npm run build --workspace=packages/frontend
-    staticPublishPath: packages/frontend/dist
+    buildCommand: npm ci && npm run build --workspace=packages/frontend
+    startCommand: node packages/frontend/server.js
     envVars:
       - key: VITE_API_URL
         value: https://healthbridge-api.onrender.com

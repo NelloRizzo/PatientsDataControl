@@ -3,7 +3,7 @@ import type { AuthRequest } from '../middleware/auth.js';
 import * as authService from '../services/authService.js';
 import { User } from '../models/User.js';
 import { AppError } from '../middleware/errorHandler.js';
-import { updateProfileSchema, verifyEmailSchema, resendVerificationSchema, changePasswordSchema } from '../../../shared/dist/index.js';
+import { updateProfileSchema, verifyEmailSchema, resendVerificationSchema, changePasswordSchema } from '@healthbridge/shared';
 
 export async function register(
   req: AuthRequest, res: Response, next: NextFunction

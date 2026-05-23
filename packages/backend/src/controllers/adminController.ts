@@ -3,7 +3,7 @@ import type { AuthRequest } from '../middleware/auth.js';
 import { User } from '../models/User.js';
 import { PatientDoctor } from '../models/PatientDoctor.js';
 import { AppError } from '../middleware/errorHandler.js';
-import { registerSchema, createUserSchema, updateUserSchema } from '../../../shared/dist/index.js';
+import { registerSchema, createUserSchema, updateUserSchema } from '@healthbridge/shared';
 import { generateVerificationToken } from '../services/authService.js';
 import { sendVerificationEmail } from '../services/emailService.js';
 
