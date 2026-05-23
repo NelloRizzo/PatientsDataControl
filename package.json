@@ -7,7 +7,7 @@
     "packages/frontend"
   ],
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "npm run dev --workspace=packages/backend & npm run dev --workspace=packages/frontend",
