@@ -5,7 +5,7 @@ services:
     region: ohio
     plan: free
     branch: main
-    buildCommand: npm run build --workspace=packages/shared && npm run build --workspace=packages/backend
+    buildCommand: npm ci && npm run build --workspace=packages/shared && npm run build --workspace=packages/backend
     startCommand: node packages/backend/dist/index.js
     healthCheckPath: /api/health
     envVars:
