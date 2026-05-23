@@ -229,7 +229,7 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - None currently
 
 ### Blocked / Needs Verification
-- Render Docker build — fixed `Dockerfile` final stage: copy full `packages/shared/` directory (not just `dist/`) to preserve npm workspace symlink resolution at runtime; added `packages/backend/package.json` and `packages/frontend/package.json` copies for `npm prune --omit=dev`. Needs manual deploy and build log verification.
+- None currently
 
 ### Triaged / Future
 - Export CSV/JSON endpoint
@@ -238,43 +238,27 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 
 ## Completed Features (Current Session)
 
-### Chart Config Save/Load for Doctors
-- Added `aggregation` field to `IChartConfig`, `CreateChartConfigRequest` (shared types) and `ChartConfig` model
-- Added `createChartConfigSchema` / `updateChartConfigSchema` Zod validation (shared schemas)
-- Added validation middleware to `POST /api/chart-configs` and `PUT /api/chart-configs/:id`
-- Created `packages/frontend/src/api/chartConfigs.ts` API module
-- Added save/load UI in `DoctorPatients.tsx`: dropdown to load saved configs (auto-fills type, groupBy, aggregation, fields, chartType), save-as input with button, and delete button for the currently selected config
+### Render Dual-Service Deployment (No Docker)
+- Replaced Docker multi-stage build with two Render native services:
+  - **healthbridge-api**: Node Web Service, builds shared + backend from repo root
+  - **healthbridge-frontend**: Static Site, builds shared + frontend, publishes `packages/frontend/dist`
+- `render.yaml` defines both services with env vars, build commands, and health check
+- Removed `Dockerfile` and `.dockerignore`
 
-### Render CI/CD
-- `Dockerfile` multi-stage build: installs deps, builds shared/backend/frontend, prunes dev deps, runs backend via `node dist/index.js`
-- `.dockerignore` excludes `node_modules/`, `.git/`, `.env`, `dist/`
-- `render.yaml` Blueprint: defines `healthbridge-api` web service with Docker runtime, health check at `/api/health`, and secrets for `MONGO_URI`, `JWT_SECRET`, `JWT_REFRESH_SECRET`
-- Backend serves frontend SPA in production mode (`express.static` + catch-all `*` route) — no CORS issues, no separate frontend service needed
-- Root `package.json` now has `npm run deploy` (build all + start backend)
-- **Dockerfile fix**: final stage copies full `packages/shared/` (not just `dist/`) so npm workspace symlink `node_modules/@healthbridge/shared` → `../../packages/shared` resolves correctly at runtime; also copies `packages/backend/package.json` and `packages/frontend/package.json` so `npm prune --omit=dev` can read all workspace manifests
+### Backend SPA Serving Removed
+- Removed `express.static` serving of frontend dist and catch-all `*` route from `src/index.ts`
+- Removed unused `path` and `fileURLToPath` imports
+- CORS origin changed from `false` in production to `env.appUrl` (points to frontend URL)
 
-### Alert Log Viewer per Dottori
-- Enhanced `GET /api/alerts/logs` with pagination (page/limit) and filters (measurementType, status, from/to date range)
-- Added `GET /api/doctor/patients/:patientId/alerts` for per-patient alert history
-- Created `DoctorAlerts.tsx` frontend page with filterable table, status badges, delivery indicators, and pagination
-- Added route `/doctor/alerts` and nav link "Alerts" for doctors
+### Frontend VITE_API_URL
+- Added `VITE_API_URL` env var support in `src/api/client.ts`
+- `const API_BASE = import.meta.env.VITE_API_URL || ''`; defaults to empty (same-origin `/api` for dev via Vite proxy)
+- Applied to both `baseURL` and the refresh interceptor's `axios.post` call
 
-### Email Verification
-- User model: added `emailVerified`, `verificationToken`, `verificationExpires` fields; token stripped from JSON
-- `emailService.ts`: standalone email sender with Ethereal fallback for dev, SMTP config via env vars
-- Shared schemas: `verifyEmailSchema`, `resendVerificationSchema`
-- `POST /auth/verify-email`: verifies email via token (24h expiry)
-- `POST /auth/resend-verification`: regenerates token and re-sends email
-- Registration flow: sends verification email after account creation
-- Admin creates user: also sends verification email (emailVerified defaults to false)
-- Soft policy: login allowed, banner in Layout/Profile shows "verify your email"
-- `VerifyEmail.tsx` page at `/verify-email` (unauthenticated) with success/error states
-- `Register.tsx` shows success screen with "Check your email" message after signup
-
-### Change Password (Dedicated Endpoint)
-- `changePasswordSchema`: `{ oldPassword, newPassword }` (shared schema)
-- `POST /auth/change-password`: verifies old password, saves new one
-- Profile page: removed password field from generic form, added "Change Password" section with old + new password inputs
+### `@healthbridge/shared` Relative Imports (Docker Build Fix)
+- Replaced all 19 `@healthbridge/shared` package imports in backend with direct relative paths (`../../../shared/dist/index.js` or `../../../../shared/dist/index.js`)
+- Removed `paths`/`baseUrl` from `packages/backend/tsconfig.json` (no longer needed)
+- This avoids tsconfig `paths` resolution failures that occurred on Render's Docker Linux build
 
 ## Future Phases
 - **Phase 2**: Export CSV/JSON endpoint, advanced charts, Looker Studio Community Connector

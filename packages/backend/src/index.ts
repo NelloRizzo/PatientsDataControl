@@ -1,8 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { env } from './config/env.js';
 import { connectDb } from './config/db.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -18,7 +16,7 @@ import alertRoutes from './routes/alert.js';
 
 const app = express();
 
-app.use(cors({ origin: env.nodeEnv === 'production' ? false : 'http://localhost:5173', credentials: true }));
+app.use(cors({ origin: env.appUrl, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -35,15 +33,6 @@ app.use('/api/measurement-types', measurementTypeRoutes);
 app.use('/api/chart-configs', chartConfigRoutes);
 app.use('/api/analyst', analystRoutes);
 app.use('/api/alerts', alertRoutes);
-
-if (env.nodeEnv === 'production') {
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const frontendDist = path.resolve(__dirname, '../../frontend/dist');
-  app.use(express.static(frontendDist));
-  app.get('*', (_req, res) => {
-    res.sendFile(path.join(frontendDist, 'index.html'));
-  });
-}
 
 app.use(errorHandler);
 
