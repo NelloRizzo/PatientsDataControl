@@ -228,6 +228,9 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 ### In Progress
 - None currently
 
+### Blocked / Needs Verification
+- Render Docker build — fixed `Dockerfile` final stage: copy full `packages/shared/` directory (not just `dist/`) to preserve npm workspace symlink resolution at runtime; added `packages/backend/package.json` and `packages/frontend/package.json` copies for `npm prune --omit=dev`. Needs manual deploy and build log verification.
+
 ### Triaged / Future
 - Export CSV/JSON endpoint
 - Advanced charts / Looker Studio connector
@@ -248,6 +251,7 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - `render.yaml` Blueprint: defines `healthbridge-api` web service with Docker runtime, health check at `/api/health`, and secrets for `MONGO_URI`, `JWT_SECRET`, `JWT_REFRESH_SECRET`
 - Backend serves frontend SPA in production mode (`express.static` + catch-all `*` route) — no CORS issues, no separate frontend service needed
 - Root `package.json` now has `npm run deploy` (build all + start backend)
+- **Dockerfile fix**: final stage copies full `packages/shared/` (not just `dist/`) so npm workspace symlink `node_modules/@healthbridge/shared` → `../../packages/shared` resolves correctly at runtime; also copies `packages/backend/package.json` and `packages/frontend/package.json` so `npm prune --omit=dev` can read all workspace manifests
 
 ### Alert Log Viewer per Dottori
 - Enhanced `GET /api/alerts/logs` with pagination (page/limit) and filters (measurementType, status, from/to date range)

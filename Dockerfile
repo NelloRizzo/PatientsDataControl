@@ -17,8 +17,10 @@ WORKDIR /app
 
 COPY --from=builder /app/package.json /app/package-lock.json ./
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/packages/shared ./packages/shared
+COPY --from=builder /app/packages/backend/package.json ./packages/backend/
 COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
+COPY --from=builder /app/packages/frontend/package.json ./packages/frontend/
 COPY --from=builder /app/packages/frontend/dist ./packages/frontend/dist
 
 RUN npm prune --omit=dev
