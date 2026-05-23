@@ -6,8 +6,11 @@
     "module": "ESNext",
     "target": "ES2022",
     "moduleResolution": "bundler",
-    "composite": true
+    "baseUrl": ".",
+    "paths": {
+      "@healthbridge/shared": ["../shared/dist"],
+      "@healthbridge/shared/*": ["../shared/dist/*"]
+    }
   },
-  "include": ["src"],
-  "references": [{ "path": "../shared" }]
+  "include": ["src"]
 }

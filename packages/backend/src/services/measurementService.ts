@@ -331,6 +331,7 @@ function getDateFormat(groupBy: TimeGroupBy): string {
     case 'week': return '%Y-W%V';
     case 'month': return '%Y-%m';
     case 'year': return '%Y';
+    default: return '%Y-%m-%d';
   }
 }
 

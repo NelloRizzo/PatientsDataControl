@@ -1,5 +1,5 @@
 import { User } from '../models/User.js';
-import type { PatientFilterGroup } from '@healthbridge/shared';
+import type { PatientFilterGroup, PatientFilterCondition } from '@healthbridge/shared';
 
 export async function resolvePatientIds(
   doctorId: string | null,
@@ -19,7 +19,7 @@ export async function resolvePatientIds(
   }
 
   if (patientFilters && patientFilters.conditions.length > 0) {
-    const filterConditions = patientFilters.conditions.map((c) => {
+    const filterConditions = patientFilters.conditions.map((c: PatientFilterCondition) => {
       switch (c.field) {
         case 'sex':
           return { sex: buildOperator(c.operator, c.value) };
