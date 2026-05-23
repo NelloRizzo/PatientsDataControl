@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import type { AlertStatus, ChannelConfig } from '@healthbridge/shared';
+import type { AlertStatus, ChannelConfig } from '../../../shared/dist/index.js';
 
 export interface IAlertTemplateDocument extends mongoose.Document {
   measurementType: string;

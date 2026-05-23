@@ -7,7 +7,7 @@ import { AlertLog } from '../models/AlertLog.js';
 import { AppError } from '../middleware/errorHandler.js';
 import * as measurementService from '../services/measurementService.js';
 import { resolvePatientIds } from '../services/filterUtils.js';
-import { updateProfileSchema, createNoteSchema } from '@healthbridge/shared';
+import { updateProfileSchema, createNoteSchema } from '../../../shared/dist/index.js';
 
 async function verifyAssociation(doctorId: string, patientId: string) {
   const association = await PatientDoctor.findOne({

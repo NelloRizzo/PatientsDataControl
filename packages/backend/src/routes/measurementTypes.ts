@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
 import { validate } from '../middleware/validate.js';
-import { createMeasurementTypeSchema, updateMeasurementTypeSchema } from '@healthbridge/shared';
+import { createMeasurementTypeSchema, updateMeasurementTypeSchema } from '../../../shared/dist/index.js';
 import * as measurementTypeController from '../controllers/measurementTypeController.js';
 
 const router = Router();

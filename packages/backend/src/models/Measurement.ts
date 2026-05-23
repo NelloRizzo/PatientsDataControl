@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import type { MeasurementSource } from '@healthbridge/shared';
+import type { MeasurementSource } from '../../../shared/dist/index.js';
 
 export interface IMeasurementDocument extends mongoose.Document {
   userId: mongoose.Types.ObjectId;

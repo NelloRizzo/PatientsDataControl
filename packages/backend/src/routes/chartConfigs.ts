@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { createChartConfigSchema, updateChartConfigSchema } from '@healthbridge/shared';
+import { createChartConfigSchema, updateChartConfigSchema } from '../../../shared/dist/index.js';
 import * as chartConfigController from '../controllers/chartConfigController.js';
 
 const router = Router();

@@ -1,5 +1,5 @@
 import { User } from '../models/User.js';
-import type { PatientFilterGroup, PatientFilterCondition } from '@healthbridge/shared';
+import type { PatientFilterGroup, PatientFilterCondition } from '../../../shared/dist/index.js';
 
 export async function resolvePatientIds(
   doctorId: string | null,

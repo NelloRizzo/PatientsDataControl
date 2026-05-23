@@ -4,7 +4,7 @@ import { env } from '../config/env.js';
 import { User } from '../models/User.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { sendVerificationEmail } from './emailService.js';
-import type { AuthTokens } from '@healthbridge/shared';
+import type { AuthTokens } from '../../../shared/dist/index.js';
 
 export function generateTokens(userId: string): AuthTokens {
   const accessToken = jwt.sign({ userId }, env.jwtSecret, {

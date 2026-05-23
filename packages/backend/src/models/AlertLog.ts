@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import type { AlertStatus, NotificationChannelType } from '@healthbridge/shared';
+import type { AlertStatus, NotificationChannelType } from '../../../shared/dist/index.js';
 
 export interface IAlertLogDocument extends mongoose.Document {
   patientId: mongoose.Types.ObjectId;

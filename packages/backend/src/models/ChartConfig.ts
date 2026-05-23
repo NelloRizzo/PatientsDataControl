@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import type { TimeGroupBy, ChartType, AggregationFunction } from '@healthbridge/shared';
+import type { TimeGroupBy, ChartType, AggregationFunction } from '../../../shared/dist/index.js';
 
 export interface IChartConfigDocument extends mongoose.Document {
   userId: mongoose.Types.ObjectId;
