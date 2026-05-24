@@ -5,7 +5,11 @@
     "rootDir": "./src",
     "module": "ESNext",
     "target": "ES2022",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@healthbridge/shared": ["../shared/dist"]
+    }
   },
   "include": ["src"]
 }
