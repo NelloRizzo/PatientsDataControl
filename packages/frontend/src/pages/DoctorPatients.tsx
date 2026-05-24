@@ -6,7 +6,7 @@ import {
 import apiClient from '../api/client';
 import { getMeasurementTypes } from '../api/measurementTypes';
 import { getChartConfigs, createChartConfig, deleteChartConfig } from '../api/chartConfigs';
-import type { IChartConfig, IMeasurementTypeConfig, IMeasurement, TimeGroupBy, ChartType, AggregationFunction, TimeSeriesPoint } from '@healthbridge/shared';
+import type { IChartConfig, IMeasurementTypeConfig, IMeasurement, TimeGroupBy, ChartType, AggregationFunction, TimeSeriesPoint } from '../../../shared/dist/index.js';
 
 type ViewMode = 'individual' | 'aggregated';
 

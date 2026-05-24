@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../api/client';
-import type { IAlertTemplate } from '@healthbridge/shared';
+import type { IAlertTemplate } from '../../../shared/dist/index.js';
 
 export function AdminAlertTemplates() {
   const [templates, setTemplates] = useState<IAlertTemplate[]>([]);

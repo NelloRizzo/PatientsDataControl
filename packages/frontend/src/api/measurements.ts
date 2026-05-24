@@ -3,7 +3,7 @@ import type {
   CreateMeasurementRequest, UpdateMeasurementRequest,
   PaginatedResponse, IMeasurement, MeasurementStats, TimeSeriesResponse,
   AggregationFunction,
-} from '@healthbridge/shared';
+} from '../../../shared/dist/index.js';
 
 export async function getMeasurements(params: {
   type?: string; from?: string; to?: string; page?: number; limit?: number;

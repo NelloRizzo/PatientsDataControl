@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   getAllMeasurementTypes, getMeasurementTypes, createMeasurementType, updateMeasurementType, deleteMeasurementType,
 } from '../api/measurementTypes';
-import type { IMeasurementTypeConfig } from '@healthbridge/shared';
+import type { IMeasurementTypeConfig } from '../../../shared/dist/index.js';
 
 const emptyType = {
   key: '', name: '', description: '', category: '',

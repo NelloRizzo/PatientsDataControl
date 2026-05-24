@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import apiClient from '../api/client';
 import { getMeasurementTypes } from '../api/measurementTypes';
-import type { IMeasurementTypeConfig, AlertStatus } from '@healthbridge/shared';
+import type { IMeasurementTypeConfig, AlertStatus } from '../../../shared/dist/index.js';
 
 interface AlertLogEntry {
   _id: string;

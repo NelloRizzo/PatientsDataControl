@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import type { IUser } from '@healthbridge/shared';
+import type { IUser } from '../../../shared/dist/index.js';
 import * as authApi from '../api/auth';
 
 interface AuthContextType {

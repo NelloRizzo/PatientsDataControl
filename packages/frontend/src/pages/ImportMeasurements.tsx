@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import type { IMeasurementTypeConfig } from '@healthbridge/shared';
+import type { IMeasurementTypeConfig } from '../../../shared/dist/index.js';
 
 export function ImportMeasurements() {
   const { user } = useAuth();

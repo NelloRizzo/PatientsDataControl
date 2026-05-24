@@ -5,7 +5,7 @@ services:
     region: ohio
     plan: free
     branch: main
-    buildCommand: npm ci --include=dev && npm run build --workspace=packages/shared && npm run build --workspace=packages/backend
+    buildCommand: NODE_ENV=development npm ci && npm run build --workspace=packages/shared && npm run build --workspace=packages/backend
     startCommand: node packages/backend/dist/index.js
     healthCheckPath: /api/health
     envVars:
@@ -40,8 +40,6 @@ services:
     region: ohio
     plan: free
     branch: main
-    buildCommand: npm ci --include=dev && npm run build --workspace=packages/shared && npm run build --workspace=packages/frontend
+    buildCommand: NODE_ENV=development npm ci && npm run build --workspace=packages/shared && npm run build --workspace=packages/frontend
     startCommand: node packages/frontend/server.js
-    envVars:
-      - key: VITE_API_URL
-        value: https://healthbridge-api.onrender.com
+    envVars: []
