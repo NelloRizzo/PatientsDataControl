@@ -6,7 +6,7 @@ import {
 import { getMeasurementTypes } from '../api/measurementTypes';
 import { getTimeSeries } from '../api/measurements';
 import { useAuth } from '../context/AuthContext';
-import type { IMeasurementTypeConfig, TimeSeriesPoint, TimeGroupBy, ChartType, AggregationFunction } from '../../../shared/dist/index.js';
+import type { IMeasurementTypeConfig, TimeSeriesPoint, TimeGroupBy, ChartType, AggregationFunction } from '@healthbridge/shared';
 
 function formatDate(value: string) {
   try {

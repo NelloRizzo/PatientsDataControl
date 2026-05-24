@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { IMeasurementTypeConfig } from '../../../shared/dist/index.js';
+import type { IMeasurementTypeConfig } from '@healthbridge/shared';
 
 export async function getMeasurementTypes(): Promise<IMeasurementTypeConfig[]> {
   const res = await apiClient.get('/measurement-types');

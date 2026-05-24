@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { LoginRequest, RegisterRequest, AuthResponse, IUser } from '../../../shared/dist/index.js';
+import type { LoginRequest, RegisterRequest, AuthResponse, IUser } from '@healthbridge/shared';
 
 export async function login(data: LoginRequest): Promise<AuthResponse> {
   const res = await apiClient.post('/auth/login', data);

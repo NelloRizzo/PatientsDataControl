@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { getMeasurements, deleteMeasurement } from '../api/measurements';
 import { getMeasurementTypes } from '../api/measurementTypes';
 import apiClient from '../api/client';
-import type { IMeasurement, IMeasurementTypeConfig } from '../../../shared/dist/index.js';
+import type { IMeasurement, IMeasurementTypeConfig } from '@healthbridge/shared';
 
 export function Measurements() {
   const [measurements, setMeasurements] = useState<IMeasurement[]>([]);

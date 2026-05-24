@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMeasurementTypes } from '../api/measurementTypes';
 import { createMeasurement } from '../api/measurements';
-import type { IMeasurementTypeConfig } from '../../../shared/dist/index.js';
+import type { IMeasurementTypeConfig } from '@healthbridge/shared';
 
 export function NewMeasurement() {
   const navigate = useNavigate();

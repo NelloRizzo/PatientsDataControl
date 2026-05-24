@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { IChartConfig, CreateChartConfigRequest } from '../../../shared/dist/index.js';
+import type { IChartConfig, CreateChartConfigRequest } from '@healthbridge/shared';
 
 export async function getChartConfigs(): Promise<IChartConfig[]> {
   const res = await apiClient.get('/chart-configs');

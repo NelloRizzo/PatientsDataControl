@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../api/client';
-import type { IUser } from '../../../shared/dist/index.js';
+import type { IUser } from '@healthbridge/shared';
 
 const emptyAddress = { full: '', city: '', province: '', region: '', country: '', zip: '' };
 
