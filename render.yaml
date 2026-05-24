@@ -5,7 +5,7 @@ services:
     region: ohio
     plan: free
     branch: main
-    buildCommand: NODE_ENV=development npm ci && npm run build --workspace=packages/shared && npm run build --workspace=packages/backend
+    buildCommand: NODE_ENV=development npm install && npm run build --workspace=packages/shared && ls -la packages/shared/dist/ && npm run build --workspace=packages/backend
     startCommand: node packages/backend/dist/index.js
     healthCheckPath: /api/health
     envVars:
@@ -40,6 +40,6 @@ services:
     region: ohio
     plan: free
     branch: main
-    buildCommand: NODE_ENV=development npm ci && npm run build --workspace=packages/shared && npm run build --workspace=packages/frontend
+    buildCommand: NODE_ENV=development npm install && npm run build --workspace=packages/shared && ls -la packages/shared/dist/ && npm run build --workspace=packages/frontend
     startCommand: node packages/frontend/server.js
     envVars: []
