@@ -11,12 +11,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@healthbridge/shared": ["../shared/dist"]
-    }
+    "noEmit": true
   },
   "include": ["src"]
 }
