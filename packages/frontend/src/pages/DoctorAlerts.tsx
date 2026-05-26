@@ -63,7 +63,7 @@ export function DoctorAlerts() {
   const handleFilter = () => { setPage(1); loadAlerts(); };
 
   const statusBadge = (status: AlertStatus) => {
-    const colors = { alert: 'bg-yellow-100 text-yellow-700', danger: 'bg-red-100 text-red-700', info: 'bg-blue-100 text-blue-700' };
+    const colors: Record<string, string> = { alert: 'bg-yellow-100 text-yellow-700', danger: 'bg-red-100 text-red-700', info: 'bg-blue-100 text-blue-700' };
     return <span className={`text-xs px-2 py-0.5 rounded ${colors[status] || 'bg-gray-100'}`}>{status}</span>;
   };
 
