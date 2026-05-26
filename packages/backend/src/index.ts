@@ -16,7 +16,8 @@ import alertRoutes from './routes/alert.js';
 
 const app = express();
 
-app.use(cors({ origin: env.appUrl, credentials: true }));
+const allowedOrigins = ['http://localhost:5173', env.appUrl];
+app.use(cors({ origin: [...new Set(allowedOrigins)], credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 

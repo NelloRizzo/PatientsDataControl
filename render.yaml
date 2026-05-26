@@ -1,11 +1,14 @@
 services:
   - type: web
-    name: healthbridge-api
+    name: patientshealthbridge-api
     runtime: node
     region: ohio
     plan: free
     branch: main
-    buildCommand: NODE_ENV=development npm install && npm run build --workspace=packages/shared && ls -la packages/shared/dist/ && npm run build --workspace=packages/backend
+    buildCommand: |
+      npm install && \
+      npm run build --workspace=packages/shared && \
+      npm run build --workspace=packages/backend
     startCommand: node packages/backend/dist/index.js
     healthCheckPath: /api/health
     envVars:
@@ -13,6 +16,8 @@ services:
         value: production
       - key: PORT
         value: "3001"
+      - key: APP_URL
+        value: https://patientshealthbridge-app.onrender.com
       - key: MONGO_URI
         sync: false
       - key: JWT_SECRET
@@ -31,15 +36,18 @@ services:
         sync: false
       - key: EMAIL_FROM
         value: noreply@healthbridge.com
-      - key: APP_URL
-        value: https://healthbridge-frontend.onrender.com
 
   - type: web
-    name: healthbridge-frontend
+    name: patientshealthbridge-app
     runtime: node
     region: ohio
     plan: free
     branch: main
-    buildCommand: NODE_ENV=development npm install && npm run build --workspace=packages/shared && ls -la packages/shared/dist/ && npm run build --workspace=packages/frontend
+    buildCommand: |
+      npm install && \
+      npm run build --workspace=packages/shared && \
+      npm run build --workspace=packages/frontend
     startCommand: node packages/frontend/server.js
-    envVars: []
+    envVars:
+      - key: VITE_API_URL
+        value: https://patientshealthbridge-api.onrender.com
