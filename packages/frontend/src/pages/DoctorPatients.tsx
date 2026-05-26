@@ -6,7 +6,7 @@ import {
 import apiClient from '../api/client';
 import { getMeasurementTypes } from '../api/measurementTypes';
 import { getChartConfigs, createChartConfig, deleteChartConfig } from '../api/chartConfigs';
-import type { IChartConfig, IMeasurementTypeConfig, IMeasurement, TimeGroupBy, ChartType, AggregationFunction, TimeSeriesPoint } from '@healthbridge/shared';
+import type { IChartConfig, IMeasurementTypeConfig, IMeasurement, TimeGroupBy, ChartType, AggregationFunction, TimeSeriesPoint, IAnamnesis } from '@healthbridge/shared';
 
 type ViewMode = 'individual' | 'aggregated';
 
@@ -55,6 +55,15 @@ export function DoctorPatients() {
   const [noteMsg, setNoteMsg] = useState('');
   const [shareWithPatient, setShareWithPatient] = useState(false);
   const [notifyViaEmail, setNotifyViaEmail] = useState(false);
+  const [noteAnamnesisId, setNoteAnamnesisId] = useState('');
+
+  // Anamnesis
+  const [anamnesis, setAnamnesis] = useState<IAnamnesis[]>([]);
+  const [showAnamnesisForm, setShowAnamnesisForm] = useState(false);
+  const [newPathologies, setNewPathologies] = useState('');
+  const [newTherapies, setNewTherapies] = useState('');
+  const [newAnamnesisNotes, setNewAnamnesisNotes] = useState('');
+  const [anamnesisMsg, setAnamnesisMsg] = useState('');
 
   // Saved chart configs
   const [savedConfigs, setSavedConfigs] = useState<IChartConfig[]>([]);
@@ -202,13 +211,21 @@ export function DoctorPatients() {
       .catch(() => setNotes([]));
   }, [selectedPatient, viewMode]);
 
+  const loadAnamnesis = useCallback(() => {
+    if (!selectedPatient || viewMode !== 'individual') return;
+    import('../api/anamnesis').then((mod) =>
+      mod.getPatientAnamnesis(selectedPatient).then(setAnamnesis).catch(() => {})
+    );
+  }, [selectedPatient, viewMode]);
+
   useEffect(() => {
     if (!selectedPatient || viewMode !== 'individual') return;
     apiClient.get(`/doctor/patients/${selectedPatient}/measurements`, { params: { limit: '10' } })
       .then((res) => setMeasurements(res.data.data))
       .catch(() => setMeasurements([]));
     loadNotes();
-  }, [selectedPatient, viewMode, loadNotes]);
+    loadAnamnesis();
+  }, [selectedPatient, viewMode, loadNotes, loadAnamnesis]);
 
   const toggleField = (key: string) => {
     setSelectedFields((prev) =>
@@ -404,7 +421,28 @@ export function DoctorPatients() {
                     <select value={selectedType} onChange={(e) => { setSelectedType(e.target.value); setSelectedFields([]); }}
                       className="w-full border rounded px-2 py-1.5 text-sm">
                       <option value="">Select...</option>
-                      {types.map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
+                      {(() => {
+                        const groups: Record<string, typeof types> = {};
+                        for (const t of types) {
+                          const g = t.macrogroup || 'other';
+                          if (!groups[g]) groups[g] = [];
+                          groups[g].push(t);
+                        }
+                        const labels: Record<string, string> = {
+                          generalhealth: 'General Health',
+                          cardiac: 'Cardiac',
+                          blood_gas: 'Blood / Gas',
+                          lipidemia: 'Lipid Profile',
+                          renal: 'Renal Function',
+                        };
+                        return Object.entries(groups).map(([group, ts]) => (
+                          <optgroup key={group} label={labels[group] || group}>
+                            {ts.map((t) => (
+                              <option key={t.key} value={t.key}>{t.name}</option>
+                            ))}
+                          </optgroup>
+                        ));
+                      })()}
                     </select>
                   </div>
                   <div>
@@ -596,6 +634,84 @@ export function DoctorPatients() {
               </div>
 
               <div className="bg-white rounded-lg shadow-sm border">
+                <div className="px-4 py-3 border-b font-medium text-sm flex items-center justify-between">
+                  <span>Anamnesis</span>
+                  <button onClick={() => { setShowAnamnesisForm(!showAnamnesisForm); setAnamnesisMsg(''); }}
+                    className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded hover:bg-blue-700">
+                    {showAnamnesisForm ? 'Cancel' : 'New Entry'}
+                  </button>
+                </div>
+                <div className="p-4 space-y-3">
+                  {showAnamnesisForm && (
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!newPathologies.trim() || !newTherapies.trim()) return;
+                      setAnamnesisMsg('');
+                      try {
+                        const { createPatientAnamnesis } = await import('../api/anamnesis');
+                        await createPatientAnamnesis(selectedPatient!, {
+                          pathologies: newPathologies,
+                          therapies: newTherapies,
+                          notes: newAnamnesisNotes || undefined,
+                        });
+                        setNewPathologies(''); setNewTherapies(''); setNewAnamnesisNotes('');
+                        setShowAnamnesisForm(false);
+                        setAnamnesisMsg('Anamnesis saved');
+                        loadAnamnesis();
+                      } catch (err: any) {
+                        setAnamnesisMsg(err.response?.data?.error || 'Failed to save');
+                      }
+                    }} className="space-y-2 border-b pb-4">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-0.5">Pathologies / Concomitant conditions</label>
+                        <textarea value={newPathologies} onChange={(e) => setNewPathologies(e.target.value)}
+                          rows={3} className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. Hypertension, Type 2 Diabetes..." required />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-0.5">Current pharmacological therapies</label>
+                        <textarea value={newTherapies} onChange={(e) => setNewTherapies(e.target.value)}
+                          rows={3} className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. Metformin 500mg, Lisinopril 10mg..." required />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-0.5">Additional notes (optional)</label>
+                        <textarea value={newAnamnesisNotes} onChange={(e) => setNewAnamnesisNotes(e.target.value)}
+                          rows={2} className="w-full border rounded px-3 py-2 text-sm" />
+                      </div>
+                      <button type="submit" className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700">Save Anamnesis</button>
+                    </form>
+                  )}
+                  {anamnesisMsg && <p className="text-xs text-green-600">{anamnesisMsg}</p>}
+                  {anamnesis.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-4">No anamnesis records yet</p>
+                  ) : (
+                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                      {anamnesis.map((a) => (
+                        <div key={a._id} className="border-l-2 border-purple-300 pl-3 py-1">
+                          <p className="text-xs text-gray-400">
+                            Recorded: {new Date(a.recordedAt).toLocaleString()}
+                          </p>
+                          <div className="mt-1">
+                            <p className="text-xs font-medium text-gray-600">Pathologies</p>
+                            <p className="text-sm whitespace-pre-wrap">{a.pathologies}</p>
+                          </div>
+                          <div className="mt-1">
+                            <p className="text-xs font-medium text-gray-600">Therapies</p>
+                            <p className="text-sm whitespace-pre-wrap">{a.therapies}</p>
+                          </div>
+                          {a.notes && (
+                            <div className="mt-1">
+                              <p className="text-xs font-medium text-gray-600">Notes</p>
+                              <p className="text-sm whitespace-pre-wrap">{a.notes}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border">
                 <div className="px-4 py-3 border-b font-medium text-sm">Clinical Notes</div>
                 <div className="p-4 space-y-3">
                   <form onSubmit={async (e) => {
@@ -606,8 +722,9 @@ export function DoctorPatients() {
                         content: newNote,
                         showToPatient: shareWithPatient,
                         notifyPatient: notifyViaEmail && shareWithPatient,
+                        anamnesisId: noteAnamnesisId || undefined,
                       });
-                      setNewNote(''); setShareWithPatient(false); setNotifyViaEmail(false);
+                      setNewNote(''); setShareWithPatient(false); setNotifyViaEmail(false); setNoteAnamnesisId('');
                       setNoteMsg('Note added'); loadNotes();
                     } catch {}
                   }} className="space-y-2">
@@ -616,7 +733,7 @@ export function DoctorPatients() {
                         placeholder="Write a note..." className="flex-1 border rounded px-3 py-2 text-sm" />
                       <button type="submit" className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700">Add</button>
                     </div>
-                    <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-4 text-xs flex-wrap">
                       <label className="flex items-center gap-1 cursor-pointer">
                         <input type="checkbox" checked={shareWithPatient}
                           onChange={(e) => { setShareWithPatient(e.target.checked); if (!e.target.checked) setNotifyViaEmail(false); }} />
@@ -628,6 +745,13 @@ export function DoctorPatients() {
                           onChange={(e) => setNotifyViaEmail(e.target.checked)} />
                         Send email notification
                       </label>
+                      {anamnesis.length > 0 && (
+                        <label className="flex items-center gap-1 cursor-pointer">
+                          <input type="checkbox" checked={!!noteAnamnesisId}
+                            onChange={(e) => setNoteAnamnesisId(e.target.checked ? anamnesis[0]._id : '')} />
+                          Associate with latest anamnesis
+                        </label>
+                      )}
                     </div>
                   </form>
                   {noteMsg && <p className="text-xs text-green-600">{noteMsg}</p>}
@@ -642,6 +766,7 @@ export function DoctorPatients() {
                             <div className="flex gap-1 shrink-0">
                               {n.showToPatient && <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">Shared</span>}
                               {n.patientNotified && <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">Emailed</span>}
+                              {n.anamnesisId && <span className="text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">Anamnesis</span>}
                             </div>
                           </div>
                           <p className="text-xs text-gray-400 mt-1">{n.doctorName || 'Doctor'} · {new Date(n.createdAt).toLocaleString()}</p>

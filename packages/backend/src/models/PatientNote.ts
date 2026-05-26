@@ -6,6 +6,7 @@ export interface IPatientNoteDocument extends mongoose.Document {
   content: string;
   showToPatient: boolean;
   patientNotified: boolean;
+  anamnesisId?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +36,10 @@ const patientNoteSchema = new mongoose.Schema<IPatientNoteDocument>(
     patientNotified: {
       type: Boolean,
       default: false,
+    },
+    anamnesisId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Anamnesis',
     },
   },
   { timestamps: true }

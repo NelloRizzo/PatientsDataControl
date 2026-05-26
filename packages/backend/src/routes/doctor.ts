@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
 import * as doctorController from '../controllers/doctorController.js';
+import * as anamnesisController from '../controllers/anamnesisController.js';
 
 const router = Router();
 
@@ -21,6 +22,8 @@ router.get('/patients/:patientId/measurements', doctorController.patientMeasurem
 router.delete('/patients/:patientId/measurements', doctorController.deletePatientMeasurements);
 router.get('/patients/:patientId/timeseries', doctorController.patientTimeseries);
 router.get('/patients/:patientId/stats', doctorController.patientStats);
+router.get('/patients/:patientId/anamnesis', anamnesisController.listAnamnesis);
+router.post('/patients/:patientId/anamnesis', anamnesisController.createAnamnesis);
 router.get('/recent-activity', doctorController.recentActivity);
 router.get('/timeseries', doctorController.aggregatedTimeseries);
 router.get('/stats', doctorController.aggregatedStats);

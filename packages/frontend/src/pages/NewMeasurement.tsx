@@ -75,9 +75,28 @@ export function NewMeasurement() {
             required
           >
             <option value="">Select type...</option>
-            {types.map((t) => (
-              <option key={t.key} value={t.key}>{t.name}</option>
-            ))}
+            {(() => {
+              const groups: Record<string, typeof types> = {};
+              for (const t of types) {
+                const g = t.macrogroup || 'other';
+                if (!groups[g]) groups[g] = [];
+                groups[g].push(t);
+              }
+              const labels: Record<string, string> = {
+                generalhealth: 'General Health',
+                cardiac: 'Cardiac',
+                blood_gas: 'Blood / Gas',
+                lipidemia: 'Lipid Profile',
+                renal: 'Renal Function',
+              };
+              return Object.entries(groups).map(([group, ts]) => (
+                <optgroup key={group} label={labels[group] || group}>
+                  {ts.map((t) => (
+                    <option key={t.key} value={t.key}>{t.name}</option>
+                  ))}
+                </optgroup>
+              ));
+            })()}
           </select>
         </div>
 

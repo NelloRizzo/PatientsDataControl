@@ -7,5 +7,6 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/notes', patientController.myNotes);
+router.get('/anamnesis', patientController.myAnamnesis);
 
 export default router;

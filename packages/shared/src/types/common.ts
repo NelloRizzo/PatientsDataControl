@@ -35,6 +35,7 @@ export interface IMeasurementTypeConfig {
   name: string;
   description?: string;
   category: string;
+  macrogroup: string;
   fields: MeasurementFieldConfig[];
   active: boolean;
   createdAt: string;

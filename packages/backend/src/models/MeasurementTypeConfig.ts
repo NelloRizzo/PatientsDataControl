@@ -5,6 +5,7 @@ export interface IMeasurementTypeConfigDocument extends mongoose.Document {
   name: string;
   description?: string;
   category: string;
+  macrogroup: string;
   fields: Array<{
     key: string;
     name: string;
@@ -56,6 +57,7 @@ const measurementTypeConfigSchema = new mongoose.Schema<IMeasurementTypeConfigDo
     name: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
     category: { type: String, required: true, trim: true },
+    macrogroup: { type: String, required: true, trim: true },
     fields: { type: [fieldSchema], required: true, validate: [(v: any[]) => v.length > 0, 'At least one field required'] },
     active: { type: Boolean, default: true },
   },

@@ -59,6 +59,7 @@ export const createMeasurementTypeSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
   category: z.string().min(1).max(100),
+  macrogroup: z.string().min(1).max(100),
   fields: z.array(measurementTypeFieldSchema).min(1),
 });
 
@@ -66,6 +67,7 @@ export const updateMeasurementTypeSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional(),
   category: z.string().min(1).max(100).optional(),
+  macrogroup: z.string().min(1).max(100).optional(),
   fields: z.array(measurementTypeFieldSchema).min(1).optional(),
   active: z.boolean().optional(),
 });
@@ -143,6 +145,14 @@ export const createNoteSchema = z.object({
   content: z.string().min(1, 'Content is required').max(2000),
   showToPatient: z.boolean().optional().default(false),
   notifyPatient: z.boolean().optional().default(false),
+  anamnesisId: z.string().optional(),
+});
+
+export const createAnamnesisSchema = z.object({
+  pathologies: z.string().min(1, 'Pathologies is required').max(5000),
+  therapies: z.string().min(1, 'Therapies is required').max(5000),
+  notes: z.string().max(2000).optional(),
+  recordedAt: z.string().datetime().optional(),
 });
 
 const channelConfigSchema = z.object({

@@ -7,4 +7,5 @@ export * from './types/chart.js';
 export * from './types/alert.js';
 export * from './types/note.js';
 export * from './types/notification.js';
+export * from './types/anamnesis.js';
 export * from './validation/schemas.js';

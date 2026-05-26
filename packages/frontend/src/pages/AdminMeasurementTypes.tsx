@@ -5,7 +5,7 @@ import {
 import type { IMeasurementTypeConfig } from '@healthbridge/shared';
 
 const emptyType = {
-  key: '', name: '', description: '', category: '',
+  key: '', name: '', description: '', category: '', macrogroup: '',
   fields: [{ key: '', name: '', unit: '', units: [''], type: 'decimal' as const }],
 };
 
@@ -75,6 +75,7 @@ export function AdminMeasurementTypes() {
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Key</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Name</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Category</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Macrogroup</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Fields</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Active</th>
               <th className="px-4 py-3"></th>
@@ -86,6 +87,7 @@ export function AdminMeasurementTypes() {
                 <td className="px-4 py-3 text-sm">{t.key}</td>
                 <td className="px-4 py-3">{t.name}</td>
                 <td className="px-4 py-3 text-sm text-gray-500">{t.category}</td>
+                <td className="px-4 py-3 text-sm text-gray-500">{t.macrogroup}</td>
                 <td className="px-4 py-3 text-sm text-gray-500">
                   {t.fields.map((f) => f.name).join(', ')}
                 </td>
@@ -141,6 +143,21 @@ export function AdminMeasurementTypes() {
                   onChange={(e) => setEditing({ ...editing, category: e.target.value })}
                   className="w-full border rounded px-3 py-2"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Macrogroup</label>
+                <select
+                  value={editing.macrogroup || ''}
+                  onChange={(e) => setEditing({ ...editing, macrogroup: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                >
+                  <option value="">Select macrogroup...</option>
+                  <option value="generalhealth">General Health</option>
+                  <option value="cardiac">Cardiac</option>
+                  <option value="blood_gas">Blood / Gas</option>
+                  <option value="lipidemia">Lipid Profile</option>
+                  <option value="renal">Renal Function</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium">Description</label>

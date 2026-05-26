@@ -114,9 +114,28 @@ weight,value=75|kg,2026-05-21T10:00,optional note`}
           className="border rounded px-3 py-2"
         >
           <option value="">All types</option>
-          {types.map((t) => (
-            <option key={t.key} value={t.key}>{t.name}</option>
-          ))}
+          {(() => {
+            const groups: Record<string, typeof types> = {};
+            for (const t of types) {
+              const g = t.macrogroup || 'other';
+              if (!groups[g]) groups[g] = [];
+              groups[g].push(t);
+            }
+            const labels: Record<string, string> = {
+              generalhealth: 'General Health',
+              cardiac: 'Cardiac',
+              blood_gas: 'Blood / Gas',
+              lipidemia: 'Lipid Profile',
+              renal: 'Renal Function',
+            };
+            return Object.entries(groups).map(([group, ts]) => (
+              <optgroup key={group} label={labels[group] || group}>
+                {ts.map((t) => (
+                  <option key={t.key} value={t.key}>{t.name}</option>
+                ))}
+              </optgroup>
+            ));
+          })()}
         </select>
         <button onClick={handleDeleteAll} className="text-sm text-red-600 border border-red-300 px-3 py-2 rounded hover:bg-red-50">
           Delete All

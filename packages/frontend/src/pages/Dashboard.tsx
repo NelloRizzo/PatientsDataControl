@@ -6,7 +6,7 @@ import {
 import { getMeasurementTypes } from '../api/measurementTypes';
 import { getTimeSeries } from '../api/measurements';
 import { useAuth } from '../context/AuthContext';
-import type { IMeasurementTypeConfig, TimeSeriesPoint, TimeGroupBy, ChartType, AggregationFunction, IPatientNote } from '@healthbridge/shared';
+import type { IMeasurementTypeConfig, TimeSeriesPoint, TimeGroupBy, ChartType, AggregationFunction, IPatientNote, IAnamnesis } from '@healthbridge/shared';
 
 function formatDate(value: string) {
   try {
@@ -25,6 +25,7 @@ export function Dashboard() {
   const [data, setData] = useState<TimeSeriesPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [notes, setNotes] = useState<IPatientNote[]>([]);
+  const [anamnesis, setAnamnesis] = useState<IAnamnesis[]>([]);
 
   useEffect(() => {
     getMeasurementTypes().then(setTypes).catch(() => {});
@@ -33,6 +34,7 @@ export function Dashboard() {
   useEffect(() => {
     if (user?.role === 'patient') {
       import('../api/note').then((mod) => mod.getMyNotes().then(setNotes).catch(() => {}));
+      import('../api/anamnesis').then((mod) => mod.getMyAnamnesis().then(setAnamnesis).catch(() => {}));
     }
   }, [user?.role]);
 
@@ -114,9 +116,28 @@ export function Dashboard() {
               className="w-full border rounded px-3 py-2"
             >
               <option value="">Select type...</option>
-              {types.map((t) => (
-                <option key={t.key} value={t.key}>{t.name}</option>
-              ))}
+              {(() => {
+                const groups: Record<string, typeof types> = {};
+                for (const t of types) {
+                  const g = t.macrogroup || 'other';
+                  if (!groups[g]) groups[g] = [];
+                  groups[g].push(t);
+                }
+                const labels: Record<string, string> = {
+                  generalhealth: 'General Health',
+                  cardiac: 'Cardiac',
+                  blood_gas: 'Blood / Gas',
+                  lipidemia: 'Lipid Profile',
+                  renal: 'Renal Function',
+                };
+                return Object.entries(groups).map(([group, ts]) => (
+                  <optgroup key={group} label={labels[group] || group}>
+                    {ts.map((t) => (
+                      <option key={t.key} value={t.key}>{t.name}</option>
+                    ))}
+                  </optgroup>
+                ));
+              })()}
             </select>
           </div>
           <div>
@@ -189,6 +210,33 @@ export function Dashboard() {
           </p>
         )}
       </div>
+
+      {anamnesis.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border">
+          <div className="px-4 py-3 border-b font-medium text-sm">Your Anamnesis (Medical History)</div>
+          <div className="divide-y">
+            {anamnesis.map((a) => (
+              <div key={a._id} className="px-4 py-3 border-l-2 border-purple-300 ml-4 mr-4 my-2">
+                <p className="text-xs text-gray-400">Recorded: {new Date(a.recordedAt).toLocaleString()}</p>
+                <div className="mt-1">
+                  <p className="text-xs font-medium text-gray-600">Pathologies</p>
+                  <p className="text-sm whitespace-pre-wrap">{a.pathologies}</p>
+                </div>
+                <div className="mt-1">
+                  <p className="text-xs font-medium text-gray-600">Therapies</p>
+                  <p className="text-sm whitespace-pre-wrap">{a.therapies}</p>
+                </div>
+                {a.notes && (
+                  <div className="mt-1">
+                    <p className="text-xs font-medium text-gray-600">Notes</p>
+                    <p className="text-sm whitespace-pre-wrap">{a.notes}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {notes.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border">

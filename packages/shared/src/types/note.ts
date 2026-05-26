@@ -6,6 +6,7 @@ export interface IPatientNote {
   content: string;
   showToPatient: boolean;
   patientNotified: boolean;
+  anamnesisId?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -262,6 +262,7 @@ export async function getPatientNotes(
       doctorName: n.doctorId?.name,
       showToPatient: n.showToPatient ?? false,
       patientNotified: n.patientNotified ?? false,
+      anamnesisId: n.anamnesisId?.toString(),
       createdAt: n.createdAt?.toISOString?.(),
       updatedAt: n.updatedAt?.toISOString?.(),
     }));
@@ -281,15 +282,19 @@ export async function addPatientNote(
     await verifyAssociation(req.userId!, patientId);
 
     const { PatientNote } = await import('../models/PatientNote.js');
-    const { content, showToPatient, notifyPatient } = createNoteSchema.parse(req.body);
+    const { content, showToPatient, notifyPatient, anamnesisId } = createNoteSchema.parse(req.body);
 
-    const note = await PatientNote.create({
+    const noteDoc: Record<string, any> = {
       patientId,
       doctorId: req.userId,
       content,
       showToPatient: showToPatient ?? false,
       patientNotified: false,
-    });
+    };
+    if (anamnesisId) {
+      noteDoc.anamnesisId = anamnesisId;
+    }
+    const note = await PatientNote.create(noteDoc);
 
     if (showToPatient) {
       const { Notification } = await import('../models/Notification.js');
@@ -329,6 +334,7 @@ export async function addPatientNote(
       doctorName: (note.doctorId as any)?.name,
       showToPatient: note.showToPatient,
       patientNotified: note.patientNotified,
+      anamnesisId: note.anamnesisId?.toString(),
       createdAt: note.createdAt?.toISOString?.(),
       updatedAt: note.updatedAt?.toISOString?.(),
     };

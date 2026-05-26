@@ -30,6 +30,7 @@ async function seed() {
       key: 'blood_pressure',
       name: 'Blood Pressure',
       category: 'vital',
+      macrogroup: 'cardiac',
       fields: [
         {
           key: 'systolic', name: 'Systolic', unit: 'mmHg', units: ['mmHg'],
@@ -50,6 +51,7 @@ async function seed() {
       key: 'glucose',
       name: 'Glucose',
       category: 'lab',
+      macrogroup: 'blood_gas',
       fields: [
         {
           key: 'value', name: 'Glucose Level', unit: 'mg/dL', units: ['mg/dL', 'mmol/L'],
@@ -64,6 +66,7 @@ async function seed() {
       key: 'heart_rate',
       name: 'Heart Rate',
       category: 'vital',
+      macrogroup: 'cardiac',
       fields: [
         {
           key: 'value', name: 'BPM', unit: 'bpm', units: ['bpm'],
@@ -78,6 +81,7 @@ async function seed() {
       key: 'weight',
       name: 'Weight',
       category: 'body',
+      macrogroup: 'generalhealth',
       fields: [
         {
           key: 'value', name: 'Weight', unit: 'kg', units: ['kg', 'lbs', 'stones'],
@@ -90,6 +94,7 @@ async function seed() {
       key: 'temperature',
       name: 'Temperature',
       category: 'vital',
+      macrogroup: 'generalhealth',
       fields: [
         {
           key: 'value', name: 'Temperature', unit: '°C', units: ['°C', '°F'],
@@ -104,6 +109,7 @@ async function seed() {
       key: 'spo2',
       name: 'Oxygen Saturation (SpO₂)',
       category: 'vital',
+      macrogroup: 'blood_gas',
       fields: [
         {
           key: 'value', name: 'SpO₂', unit: '%', units: ['%'],
@@ -118,6 +124,7 @@ async function seed() {
       key: 'respiratory_rate',
       name: 'Respiratory Rate',
       category: 'vital',
+      macrogroup: 'blood_gas',
       fields: [
         {
           key: 'value', name: 'Breaths/min', unit: 'bpm', units: ['bpm'],
@@ -132,6 +139,7 @@ async function seed() {
       key: 'cholesterol',
       name: 'Cholesterol',
       category: 'lab',
+      macrogroup: 'lipidemia',
       fields: [
         {
           key: 'total', name: 'Total', unit: 'mg/dL', units: ['mg/dL', 'mmol/L'],
