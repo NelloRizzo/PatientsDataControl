@@ -5,4 +5,6 @@ export * from './types/device.js';
 export * from './types/association.js';
 export * from './types/chart.js';
 export * from './types/alert.js';
+export * from './types/note.js';
+export * from './types/notification.js';
 export * from './validation/schemas.js';

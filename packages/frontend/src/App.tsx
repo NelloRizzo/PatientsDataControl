@@ -17,6 +17,7 @@ import { AdminAlertTemplates } from './pages/AdminAlertTemplates';
 import { AdminAssociations } from './pages/AdminAssociations';
 import { DoctorPatients } from './pages/DoctorPatients';
 import { DoctorAlerts } from './pages/DoctorAlerts';
+import { Notifications } from './pages/Notifications';
 import { VerifyEmail } from './pages/VerifyEmail';
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ export function App() {
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="/" element={<RootRedirect />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/measurements" element={<Measurements />} />
               <Route path="/measurements/new" element={<NewMeasurement />} />
               <Route path="/measurements/import" element={<ImportMeasurements />} />

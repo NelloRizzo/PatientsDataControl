@@ -1,5 +1,6 @@
 import { AlertTemplate } from '../models/AlertTemplate.js';
 import { AlertLog } from '../models/AlertLog.js';
+import { Notification } from '../models/Notification.js';
 import { User } from '../models/User.js';
 import { PatientDoctor } from '../models/PatientDoctor.js';
 import { emailChannel } from './channels/emailChannel.js';
@@ -89,6 +90,18 @@ export async function processAlert(
       }
     }
   }
+
+  for (const field of alertFields) {
+    const category = field.status === 'danger' ? 'danger' : 'alert';
+    await Notification.create({
+      userId: patientId,
+      category,
+      title: `${measurementType}: ${field.status === 'danger' ? 'Critical' : 'Warning'} - ${field.key}`,
+      body: `${field.key}: ${field.value} ${field.unit || ''}`,
+      referenceId: measurementId,
+      referenceModel: 'Measurement',
+    });
+  }
 }
 
 export async function sendInfoNotification(
@@ -163,4 +176,13 @@ export async function sendInfoNotification(
       });
     }
   }
+
+  await Notification.create({
+    userId: patientId,
+    category: 'info',
+    title: `New measurement recorded: ${typeName}`,
+    body: fieldSummary,
+    referenceId: measurementId,
+    referenceModel: 'Measurement',
+  });
 }

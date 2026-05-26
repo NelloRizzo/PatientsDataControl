@@ -6,7 +6,7 @@ import {
 import { getMeasurementTypes } from '../api/measurementTypes';
 import { getTimeSeries } from '../api/measurements';
 import { useAuth } from '../context/AuthContext';
-import type { IMeasurementTypeConfig, TimeSeriesPoint, TimeGroupBy, ChartType, AggregationFunction } from '@healthbridge/shared';
+import type { IMeasurementTypeConfig, TimeSeriesPoint, TimeGroupBy, ChartType, AggregationFunction, IPatientNote } from '@healthbridge/shared';
 
 function formatDate(value: string) {
   try {
@@ -24,10 +24,17 @@ export function Dashboard() {
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [data, setData] = useState<TimeSeriesPoint[]>([]);
   const [loading, setLoading] = useState(false);
+  const [notes, setNotes] = useState<IPatientNote[]>([]);
 
   useEffect(() => {
     getMeasurementTypes().then(setTypes).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (user?.role === 'patient') {
+      import('../api/note').then((mod) => mod.getMyNotes().then(setNotes).catch(() => {}));
+    }
+  }, [user?.role]);
 
   useEffect(() => {
     if (!selectedType) return;
@@ -182,6 +189,22 @@ export function Dashboard() {
           </p>
         )}
       </div>
+
+      {notes.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border">
+          <div className="px-4 py-3 border-b font-medium text-sm">Notes from your doctor</div>
+          <div className="divide-y">
+            {notes.map((n) => (
+              <div key={n._id} className="px-4 py-3 border-l-2 border-green-300 ml-4 mr-4 my-2">
+                <p className="text-sm">{n.content}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {n.doctorName || 'Doctor'} · {new Date(n.createdAt).toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -260,7 +260,10 @@ export async function getPatientNotes(
       content: n.content,
       doctorId: n.doctorId?._id?.toString(),
       doctorName: n.doctorId?.name,
+      showToPatient: n.showToPatient ?? false,
+      patientNotified: n.patientNotified ?? false,
       createdAt: n.createdAt?.toISOString?.(),
+      updatedAt: n.updatedAt?.toISOString?.(),
     }));
     res.json({ data });
   } catch (error) {
@@ -278,24 +281,58 @@ export async function addPatientNote(
     await verifyAssociation(req.userId!, patientId);
 
     const { PatientNote } = await import('../models/PatientNote.js');
-    const { content } = createNoteSchema.parse(req.body);
+    const { content, showToPatient, notifyPatient } = createNoteSchema.parse(req.body);
 
     const note = await PatientNote.create({
       patientId,
       doctorId: req.userId,
       content,
+      showToPatient: showToPatient ?? false,
+      patientNotified: false,
     });
 
+    if (showToPatient) {
+      const { Notification } = await import('../models/Notification.js');
+      await Notification.create({
+        userId: patientId,
+        category: 'medicalnote',
+        title: 'New clinical note from your doctor',
+        body: content,
+        referenceId: note._id,
+        referenceModel: 'PatientNote',
+      });
+    }
+
+    if (notifyPatient && showToPatient) {
+      try {
+        const patient = await User.findById(patientId).select('email name').lean();
+        const doctor = await User.findById(req.userId).select('name').lean();
+        if (patient?.email) {
+          const { sendEmail } = await import('../services/emailService.js');
+          await sendEmail(
+            patient.email,
+            `New clinical note from Dr. ${(doctor as any)?.name || 'your doctor'}`,
+            `Dr. ${(doctor as any)?.name || 'Your doctor'} has shared a clinical note with you:\n\n${content}`
+          );
+          await PatientNote.updateOne({ _id: note._id }, { patientNotified: true });
+        }
+      } catch {
+        // email failure is non-critical
+      }
+    }
+
     await note.populate('doctorId', 'name');
-    res.status(201).json({
-      data: {
-        _id: note._id.toString(),
-        content: note.content,
-        doctorId: note.doctorId?._id?.toString(),
-        doctorName: (note.doctorId as any)?.name,
-        createdAt: note.createdAt?.toISOString?.(),
-      },
-    });
+    const responseData = {
+      _id: note._id.toString(),
+      content: note.content,
+      doctorId: note.doctorId?._id?.toString(),
+      doctorName: (note.doctorId as any)?.name,
+      showToPatient: note.showToPatient,
+      patientNotified: note.patientNotified,
+      createdAt: note.createdAt?.toISOString?.(),
+      updatedAt: note.updatedAt?.toISOString?.(),
+    };
+    res.status(201).json({ data: responseData });
   } catch (error) {
     next(error);
   }

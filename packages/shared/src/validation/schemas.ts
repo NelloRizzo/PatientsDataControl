@@ -141,6 +141,8 @@ export const changePasswordSchema = z.object({
 
 export const createNoteSchema = z.object({
   content: z.string().min(1, 'Content is required').max(2000),
+  showToPatient: z.boolean().optional().default(false),
+  notifyPatient: z.boolean().optional().default(false),
 });
 
 const channelConfigSchema = z.object({

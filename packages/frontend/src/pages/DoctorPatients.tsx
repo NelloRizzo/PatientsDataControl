@@ -53,6 +53,8 @@ export function DoctorPatients() {
   const [notes, setNotes] = useState<any[]>([]);
   const [newNote, setNewNote] = useState('');
   const [noteMsg, setNoteMsg] = useState('');
+  const [shareWithPatient, setShareWithPatient] = useState(false);
+  const [notifyViaEmail, setNotifyViaEmail] = useState(false);
 
   // Saved chart configs
   const [savedConfigs, setSavedConfigs] = useState<IChartConfig[]>([]);
@@ -600,13 +602,33 @@ export function DoctorPatients() {
                     e.preventDefault(); if (!newNote.trim()) return;
                     setNoteMsg('');
                     try {
-                      await apiClient.post(`/doctor/patients/${selectedPatient}/notes`, { content: newNote });
-                      setNewNote(''); setNoteMsg('Note added');
-                      loadNotes();
+                      await apiClient.post(`/doctor/patients/${selectedPatient}/notes`, {
+                        content: newNote,
+                        showToPatient: shareWithPatient,
+                        notifyPatient: notifyViaEmail && shareWithPatient,
+                      });
+                      setNewNote(''); setShareWithPatient(false); setNotifyViaEmail(false);
+                      setNoteMsg('Note added'); loadNotes();
                     } catch {}
-                  }} className="flex gap-2">
-                    <input value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="Write a note..." className="flex-1 border rounded px-3 py-2 text-sm" />
-                    <button type="submit" className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700">Add</button>
+                  }} className="space-y-2">
+                    <div className="flex gap-2">
+                      <input value={newNote} onChange={(e) => setNewNote(e.target.value)}
+                        placeholder="Write a note..." className="flex-1 border rounded px-3 py-2 text-sm" />
+                      <button type="submit" className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700">Add</button>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <label className="flex items-center gap-1 cursor-pointer">
+                        <input type="checkbox" checked={shareWithPatient}
+                          onChange={(e) => { setShareWithPatient(e.target.checked); if (!e.target.checked) setNotifyViaEmail(false); }} />
+                        Show to patient
+                      </label>
+                      <label className={`flex items-center gap-1 cursor-pointer ${!shareWithPatient ? 'opacity-50' : ''}`}>
+                        <input type="checkbox" checked={notifyViaEmail}
+                          disabled={!shareWithPatient}
+                          onChange={(e) => setNotifyViaEmail(e.target.checked)} />
+                        Send email notification
+                      </label>
+                    </div>
                   </form>
                   {noteMsg && <p className="text-xs text-green-600">{noteMsg}</p>}
                   {notes.length === 0 ? (
@@ -615,7 +637,13 @@ export function DoctorPatients() {
                     <div className="space-y-2 max-h-60 overflow-y-auto">
                       {notes.map((n) => (
                         <div key={n._id} className="border-l-2 border-blue-300 pl-3 py-1">
-                          <p className="text-sm">{n.content}</p>
+                          <div className="flex items-start gap-2">
+                            <p className="text-sm flex-1">{n.content}</p>
+                            <div className="flex gap-1 shrink-0">
+                              {n.showToPatient && <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">Shared</span>}
+                              {n.patientNotified && <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">Emailed</span>}
+                            </div>
+                          </div>
                           <p className="text-xs text-gray-400 mt-1">{n.doctorName || 'Doctor'} · {new Date(n.createdAt).toLocaleString()}</p>
                         </div>
                       ))}
