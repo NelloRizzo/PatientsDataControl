@@ -6,7 +6,7 @@ services:
     plan: free
     branch: main
     buildCommand: |
-      npm install && \
+      NODE_ENV=development npm install && \
       npm run build --workspace=packages/shared && \
       npm run build --workspace=packages/backend
     startCommand: node packages/backend/dist/index.js
