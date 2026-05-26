@@ -12,7 +12,7 @@ type ViewMode = 'individual' | 'aggregated';
 
 function formatDate(value: string) {
   try {
-    return new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    return new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch { return value; }
 }
 
@@ -587,7 +587,7 @@ export function DoctorPatients() {
                       <tr key={m._id}>
                         <td className="px-4 py-2">{m.type}</td>
                         <td className="px-4 py-2 text-gray-600">{JSON.stringify(m.values)}</td>
-                        <td className="px-4 py-2 text-gray-500">{new Date(m.timestamp).toLocaleDateString()}</td>
+                        <td className="px-4 py-2 text-gray-500">{new Date(m.timestamp).toLocaleString()}</td>
                       </tr>
                     ))}
                     {measurements.length === 0 && <tr><td colSpan={3} className="text-center py-6 text-gray-500">No measurements</td></tr>}

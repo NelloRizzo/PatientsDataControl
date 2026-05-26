@@ -10,7 +10,7 @@ import type { IMeasurementTypeConfig, TimeSeriesPoint, TimeGroupBy, ChartType, A
 
 function formatDate(value: string) {
   try {
-    return new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    return new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch { return value; }
 }
 

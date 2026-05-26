@@ -153,7 +153,7 @@ weight,value=75|kg,2026-05-21T10:00,optional note`}
                 <td className="px-4 py-3 text-sm">{formatValue(m)}</td>
                 <td className="px-4 py-3 text-sm text-gray-500">{m.source}</td>
                 <td className="px-4 py-3 text-sm text-gray-500">
-                  {new Date(m.timestamp).toLocaleDateString()}
+                  {new Date(m.timestamp).toLocaleString()}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Link
