@@ -15,7 +15,7 @@ healthbridge/
 ## Tech Stack
 | Layer | Technology |
 |---|---|
-| Runtime | Node.js + TypeScript (strict mode) |
+| Runtime | Node.js + TypeScript 6.0.3 (strict mode) |
 | Backend | Express + Mongoose (ODM MongoDB) |
 | Auth | JWT (access 15m + refresh 7d) |
 | Validation | Zod (shared between frontend/backend) |
@@ -25,6 +25,7 @@ healthbridge/
 | Charts | Recharts |
 | Styling | TailwindCSS |
 | HTTP | Axios |
+| Hosting | Render (API web service + App web service) |
 
 ## Key Design Decisions
 
@@ -238,27 +239,31 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 
 ## Completed Features (Current Session)
 
-### Render Dual-Service Deployment (No Docker)
-- Replaced Docker multi-stage build with two Render native services:
-  - **healthbridge-api**: Node Web Service, builds shared + backend from repo root
-  - **healthbridge-frontend**: Static Site, builds shared + frontend, publishes `packages/frontend/dist`
-- `render.yaml` defines both services with env vars, build commands, and health check
-- Removed `Dockerfile` and `.dockerignore`
+### Render Deployment — Due Servizi (render.yaml)
+- Sostituito Docker multi-stage build con due servizi nativi Render definiti in `render.yaml`:
+  - **`patientshealthbridge-api`** — Node Web Service, Express backend su `https://patientshealthbridge-api.onrender.com`
+  - **`patientshealthbridge-app`** — Node Web Service, frontend statico con `server.js` su `https://patientshealthbridge-app.onrender.com`
+- Nomi univoci scelti per evitare suffissi casuali di Render
+- `NODE_ENV=development npm install` nel build command per garantire installazione devDependencies (TypeScript)
+- `VITE_API_URL` configurato sul frontend service per puntare all'API
+- `APP_URL` configurato sul backend per CORS e link email
 
-### Backend SPA Serving Removed
-- Removed `express.static` serving of frontend dist and catch-all `*` route from `src/index.ts`
-- Removed unused `path` and `fileURLToPath` imports
-- CORS origin changed from `false` in production to `env.appUrl` (points to frontend URL)
+### CORS Multi-Origin
+- `packages/backend/src/index.ts` — CORS cambiato da `origin: env.appUrl` (stringa singola) ad array con `['http://localhost:5173', env.appUrl]`, così funziona sia in dev che in prod
+
+### TypeScript 6.0.3 + ignoreDeprecations
+- Aggiornato TypeScript da `^5.5.0` a `6.0.3` (esatto) in tutti e tre i packages
+- Aggiunto `"ignoreDeprecations": "6.0"` nei tsconfig di backend e frontend per silenziare l'errore TS5101 su `baseUrl`/`paths` (deprecati in TS 7.0)
+- `baseUrl`/`paths` mantenuti per risolvere `@healthbridge/shared` (necessario con npm workspaces)
 
 ### Frontend VITE_API_URL
-- Added `VITE_API_URL` env var support in `src/api/client.ts`
-- `const API_BASE = import.meta.env.VITE_API_URL || ''`; defaults to empty (same-origin `/api` for dev via Vite proxy)
-- Applied to both `baseURL` and the refresh interceptor's `axios.post` call
+- Aggiunto `VITE_API_URL` env var support in `src/api/client.ts`
+- `const API_BASE = import.meta.env.VITE_API_URL || ''`; defaults to empty (same-origin `/api` per dev via Vite proxy)
+- Applicato sia a `baseURL` che al refresh interceptor
 
-### `@healthbridge/shared` Relative Imports (Docker Build Fix)
-- Replaced all 19 `@healthbridge/shared` package imports in backend with direct relative paths (`../../../shared/dist/index.js` or `../../../../shared/dist/index.js`)
-- Removed `paths`/`baseUrl` from `packages/backend/tsconfig.json` (no longer needed)
-- This avoids tsconfig `paths` resolution failures that occurred on Render's Docker Linux build
+### Backend SPA Serving Removed
+- Rimosso `express.static` serving del frontend dist e catch-all `*` route da `src/index.ts`
+- Rimossi import `path` e `fileURLToPath` inutilizzati
 
 ## Future Phases
 - **Phase 2**: Export CSV/JSON endpoint, advanced charts, Looker Studio Community Connector
