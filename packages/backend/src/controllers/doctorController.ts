@@ -1,5 +1,6 @@
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
+import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { Measurement } from '../models/Measurement.js';
 import { PatientDoctor } from '../models/PatientDoctor.js';
@@ -78,7 +79,7 @@ export async function patientLatestMeasurements(
     await verifyAssociation(req.userId!, patientId);
 
     const docs = await Measurement.aggregate([
-      { $match: { userId: patientId as any } },
+      { $match: { userId: new mongoose.Types.ObjectId(patientId) } },
       { $sort: { timestamp: -1 } },
       { $group: { _id: '$type', doc: { $first: '$$ROOT' } } },
       { $replaceRoot: { newRoot: '$doc' } },
