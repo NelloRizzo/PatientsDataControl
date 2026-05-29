@@ -220,7 +220,7 @@ export function DoctorPatients() {
 
   useEffect(() => {
     if (!selectedPatient || viewMode !== 'individual') return;
-    apiClient.get(`/doctor/patients/${selectedPatient}/measurements`, { params: { limit: '10' } })
+    apiClient.get(`/doctor/patients/${selectedPatient}/latest-measurements`)
       .then((res) => setMeasurements(res.data.data))
       .catch(() => setMeasurements([]));
     loadNotes();
@@ -319,11 +319,12 @@ export function DoctorPatients() {
                 selectedPatient === p._id && viewMode === 'individual'
                   ? 'bg-blue-50 text-blue-700 font-medium' : ''
               }`}>
-                <div className="flex-1 truncate cursor-pointer" onClick={() => { setSelectedPatient(p._id); setViewMode('individual'); setSelectedFields([]); setChartData([]); }}>
-                  <span className="font-medium">{p.name}</span>
-                  {p.sex && <span className="text-xs text-gray-400 ml-1">({p.sex})</span>}
+                <div className="flex-1 truncate cursor-pointer flex items-center gap-1.5" onClick={() => { setSelectedPatient(p._id); setViewMode('individual'); setSelectedFields([]); setChartData([]); }}>
+                  {p.hasAlerts && <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" title="Has active alerts" />}
+                  <span className="font-medium truncate">{p.name}</span>
+                  {p.sex && <span className="text-xs text-gray-400 shrink-0">({p.sex})</span>}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={(e) => { e.stopPropagation(); handleToggleNotify(p._id, p.notifyOnNewMeasurement); }}
                     className={`text-xs px-1.5 py-0.5 rounded ${p.notifyOnNewMeasurement ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
@@ -607,30 +608,42 @@ export function DoctorPatients() {
 
               <div className="bg-white rounded-lg shadow-sm border">
                 <div className="px-4 py-3 border-b font-medium text-sm flex items-center justify-between">
-                  <span>Recent Measurements — {selectedPatientData?.name}</span>
-                  <button onClick={handleDeletePatientMeasurements} className="text-xs text-red-600 border border-red-300 px-2 py-0.5 rounded hover:bg-red-50">
-                    Delete All
-                  </button>
+                  <span>Latest Measurements — {selectedPatientData?.name}</span>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-xs text-gray-400">(per type)</span>
+                    <button onClick={handleDeletePatientMeasurements} className="text-xs text-red-600 border border-red-300 px-2 py-0.5 rounded hover:bg-red-50">
+                      Delete All
+                    </button>
+                  </div>
                 </div>
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left px-4 py-2 text-xs text-gray-500">Type</th>
-                      <th className="text-left px-4 py-2 text-xs text-gray-500">Values</th>
-                      <th className="text-left px-4 py-2 text-xs text-gray-500">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {measurements.map((m) => (
-                      <tr key={m._id}>
-                        <td className="px-4 py-2">{m.type}</td>
-                        <td className="px-4 py-2 text-gray-600">{JSON.stringify(m.values)}</td>
-                        <td className="px-4 py-2 text-gray-500">{new Date(m.timestamp).toLocaleString()}</td>
-                      </tr>
-                    ))}
-                    {measurements.length === 0 && <tr><td colSpan={3} className="text-center py-6 text-gray-500">No measurements</td></tr>}
-                  </tbody>
-                </table>
+                {measurements.length === 0 ? (
+                  <p className="text-center py-6 text-sm text-gray-500">No measurements yet</p>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
+                    {measurements.map((m) => {
+                      const typeCfg = types.find((t) => t.key === m.type);
+                      return (
+                        <div key={m._id} className="border rounded-lg p-3 hover:shadow-sm transition-shadow">
+                          <p className="text-xs font-medium text-blue-600 mb-1">{typeCfg?.name || m.type}</p>
+                          <div className="space-y-0.5">
+                            {Object.entries(m.values as Record<string, number>).map(([k, v]) => {
+                              const field = typeCfg?.fields.find((f) => f.key === k);
+                              const unit = (m.units as Record<string, string>)?.[k] || field?.unit || '';
+                              return (
+                                <p key={k} className="text-sm">
+                                  <span className="text-gray-500">{field?.name || k}: </span>
+                                  <span className="font-medium">{v}</span>
+                                  {unit && <span className="text-gray-400 text-xs ml-0.5">{unit}</span>}
+                                </p>
+                              );
+                            })}
+                          </div>
+                          <p className="text-xs text-gray-400 mt-1">{new Date(m.timestamp).toLocaleString()}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="bg-white rounded-lg shadow-sm border">

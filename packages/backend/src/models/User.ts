@@ -24,6 +24,7 @@ export interface IUserDocument extends mongoose.Document {
   emailVerified: boolean;
   verificationToken?: string;
   verificationExpires?: Date;
+  maxPatients?: number;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -44,6 +45,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     emailVerified:     { type: Boolean, default: false },
     verificationToken: { type: String },
     verificationExpires: { type: Date },
+    maxPatients:       { type: Number },
   },
   { timestamps: true }
 );

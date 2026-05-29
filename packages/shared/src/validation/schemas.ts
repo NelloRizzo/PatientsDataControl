@@ -101,6 +101,7 @@ export const createUserSchema = z.object({
   sex: z.enum(['male', 'female', 'other']).optional(),
   homeAddress: addressSchema.optional(),
   legalAddress: addressSchema.optional(),
+  maxPatients: z.number().int().positive().optional(),
 });
 
 export const updateUserSchema = z.object({
@@ -112,6 +113,7 @@ export const updateUserSchema = z.object({
   sex: z.enum(['male', 'female', 'other']).optional().nullable(),
   homeAddress: addressSchema.optional().nullable(),
   legalAddress: addressSchema.optional().nullable(),
+  maxPatients: z.number().int().positive().optional().nullable(),
 });
 
 export const addPatientSchema = z.object({

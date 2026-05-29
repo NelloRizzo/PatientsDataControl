@@ -49,7 +49,43 @@ export async function myPatients(
         assignedAt: a.assignedAt?.toISOString?.() || '',
       }));
 
-    res.json({ data: patients });
+    // Batch fetch alert presence for all patients
+    const patientIds = patients.map((p) => p._id);
+    const alertCounts = await AlertLog.aggregate([
+      { $match: { patientId: { $in: patientIds }, doctorId: req.userId, status: { $in: ['alert', 'danger'] } } },
+      { $group: { _id: '$patientId', count: { $sum: 1 } } },
+    ]);
+    const alertMap = new Map(alertCounts.map((a) => [a._id.toString(), a.count]));
+
+    const data = patients.map((p) => ({
+      ...p,
+      hasAlerts: (alertMap.get(p._id) || 0) > 0,
+    }));
+
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function patientLatestMeasurements(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { patientId } = req.params;
+    await verifyAssociation(req.userId!, patientId);
+
+    const docs = await Measurement.aggregate([
+      { $match: { userId: patientId as any } },
+      { $sort: { timestamp: -1 } },
+      { $group: { _id: '$type', doc: { $first: '$$ROOT' } } },
+      { $replaceRoot: { newRoot: '$doc' } },
+      { $sort: { timestamp: -1 } },
+    ]);
+
+    res.json({ data: docs });
   } catch (error) {
     next(error);
   }
@@ -81,6 +117,18 @@ export async function addPatient(
       await existing.save();
       res.json({ message: 'Patient reactivated', associationId: existing._id.toString() });
       return;
+    }
+
+    // Check max patients limit
+    const doctor = await User.findById(req.userId).select('maxPatients');
+    if (doctor?.maxPatients != null) {
+      const activeCount = await PatientDoctor.countDocuments({
+        doctorId: req.userId,
+        status: 'active',
+      });
+      if (activeCount >= doctor.maxPatients) {
+        throw new AppError(403, `Maximum of ${doctor.maxPatients} patients reached. Contact admin.`);
+      }
     }
 
     const association = await PatientDoctor.create({

@@ -15,6 +15,8 @@ import { AdminMeasurementTypes } from './pages/AdminMeasurementTypes';
 import { AdminUsers } from './pages/AdminUsers';
 import { AdminAlertTemplates } from './pages/AdminAlertTemplates';
 import { AdminAssociations } from './pages/AdminAssociations';
+import { AdminContracts } from './pages/AdminContracts';
+import { AdminContractReport } from './pages/AdminContractReport';
 import { DoctorPatients } from './pages/DoctorPatients';
 import { DoctorAlerts } from './pages/DoctorAlerts';
 import { Notifications } from './pages/Notifications';
@@ -61,6 +63,14 @@ export function App() {
               <Route
                 path="/admin/associations"
                 element={<ProtectedRoute roles={['admin']}><AdminAssociations /></ProtectedRoute>}
+              />
+              <Route
+                path="/admin/contracts"
+                element={<ProtectedRoute roles={['admin']}><AdminContracts /></ProtectedRoute>}
+              />
+              <Route
+                path="/admin/contracts/report"
+                element={<ProtectedRoute roles={['admin']}><AdminContractReport /></ProtectedRoute>}
               />
               <Route
                 path="/doctor/patients"

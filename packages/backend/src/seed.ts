@@ -169,8 +169,8 @@ async function seed() {
   console.log('Creating users...');
   const usersRaw = [
     { email: 'admin@healthbridge.com', password: 'admin1234', name: 'System Admin', role: 'admin' as const },
-    { email: 'dr.smith@healthbridge.com', password: 'doctor1234', name: 'Dr. Alice Smith', role: 'doctor' as const, specialty: 'Cardiology' },
-    { email: 'dr.jones@healthbridge.com', password: 'doctor1234', name: 'Dr. Bob Jones', role: 'doctor' as const, specialty: 'Endocrinology' },
+    { email: 'dr.smith@healthbridge.com', password: 'doctor1234', name: 'Dr. Alice Smith', role: 'doctor' as const, specialty: 'Cardiology', maxPatients: 2 },
+    { email: 'dr.jones@healthbridge.com', password: 'doctor1234', name: 'Dr. Bob Jones', role: 'doctor' as const, specialty: 'Endocrinology', maxPatients: 2 },
     { email: 'analyst@healthbridge.com', password: 'analyst1234', name: 'Charlie Data', role: 'analyst' as const },
     { email: 'patient1@example.com', password: 'patient1234', name: 'John Doe', role: 'patient' as const, birthDate: new Date('1985-06-15'), sex: 'male' as const, homeAddress: { full: '123 Main St, Milan, MI 20100, Italy', city: 'Milan', province: 'MI', region: 'Lombardy', country: 'Italy' }, legalAddress: { full: '123 Main St, Milan, MI 20100, Italy', city: 'Milan', province: 'MI', region: 'Lombardy', country: 'Italy' } },
     { email: 'patient2@example.com', password: 'patient1234', name: 'Jane Roe', role: 'patient' as const, birthDate: new Date('1990-11-22'), sex: 'female' as const, homeAddress: { full: '456 Oak Ave, Rome, RM 00100, Italy', city: 'Rome', province: 'RM', region: 'Lazio', country: 'Italy' }, legalAddress: { full: '789 Pine Rd, Florence, FI 50100, Italy', city: 'Florence', province: 'FI', region: 'Tuscany', country: 'Italy' } },

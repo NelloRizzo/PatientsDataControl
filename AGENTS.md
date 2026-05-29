@@ -125,6 +125,7 @@ Chart configurations are saveable per user via `ChartConfig` model:
 | PATCH | /api/doctor/patients/:patientId | Toggle status (active/inactive) |
 | DELETE | /api/doctor/patients/:patientId | Remove association |
 | GET | /api/doctor/patients/:id/measurements | View patient's measurements |
+| GET | /api/doctor/patients/:patientId/latest-measurements | Latest measurement per type for patient |
 | PUT | /api/doctor/patients/:patientId/profile | Update patient profile |
 | GET | /api/doctor/patients/:patientId/notes | Get patient notes (chronological) |
 | POST | /api/doctor/patients/:patientId/notes | Add patient note |
@@ -147,6 +148,11 @@ Chart configurations are saveable per user via `ChartConfig` model:
 | GET | /api/admin/associations | List all associations |
 | PATCH | /api/admin/associations/:id/remove | Soft-deactivate association |
 | PUT | /api/admin/users/:id | Update user (including password); system admin (admin@healthbridge.com) is protected from deletion |
+| GET | /api/admin/contracts | List all doctor contracts |
+| POST | /api/admin/contracts | Create contract (syncs maxPatients to User) |
+| PUT | /api/admin/contracts/:id | Update contract |
+| DELETE | /api/admin/contracts/:id | Delete contract |
+| GET | /api/admin/contracts/report | Contract report with peak/avg patients per doctor |
 
 ### Device (stub for future)
 | Method | Path | Description |
@@ -225,6 +231,12 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - Alert log viewer for doctors: paginated GET /api/alerts/logs with filters, DoctorAlerts.tsx page, nav link, per-patient GET /api/doctor/patients/:patientId/alerts
 - Email verification: User model fields (emailVerified, verificationToken, verificationExpires), emailService.ts, POST /api/auth/verify-email, POST /api/auth/resend-verification, VerifyEmail.tsx page, banner in Layout/Profile, sent on register and admin create
 - Change password: dedicated POST /api/auth/change-password with oldPassword+newPassword validation, separate UI in Profile page
+- Macrogroup field on MeasurementTypeConfig: backfill script (`scripts/backfillMacrogroups.ts`) mapped all 8 types to cardiac/blood_gas/generalhealth/lipidemia
+- `User.maxPatients` field (doctor limit): enforced in `addPatient()`, visible/editable in AdminUsers create+edit forms
+- `DoctorContract` model + admin CRUD + report with peak/avg patient calculation (7-day sampling), CSV export
+- Doctor sidebar: patient names marked with red dot when `hasAlerts` (aggregated from AlertLog)
+- Patient detail in DoctorPatients: shows grid of latest measurement per type (via `GET /doctor/patients/:patientId/latest-measurements`), chart below shows all historical data of selected type
+- NewMeasurement page redesigned as gallery-style card grid (manual input or file upload per type)
 
 ### In Progress
 - None currently
@@ -264,6 +276,32 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 ### Backend SPA Serving Removed
 - Rimosso `express.static` serving del frontend dist e catch-all `*` route da `src/index.ts`
 - Rimossi import `path` e `fileURLToPath` inutilizzati
+
+### Macrogroup Backfill Script
+- `packages/backend/scripts/backfillMacrogroups.ts` — mappa tutte le 8 chiavi measurement type a un macrogroup (cardiac/blood_gas/generalhealth/lipidemia)
+- Aggiunto script npm: `npm run backfill:macrogroups --workspace=packages/backend`
+
+### Doctor maxPatients + DoctorContract
+- `User.maxPatients` aggiunto al model User, allo shared type IUser e agli Zod schemas
+- `DoctorContract` model (doctorId, startDate, endDate, maxPatients, fee, currency, notes, status)
+- Admin CRUD per contratti su `/api/admin/contracts` con autosync di `User.maxPatients`
+- Report con peak/avg patients + CSV export su `/api/admin/contracts/report`
+- Frontend: `AdminContracts.tsx` (modal CRUD), `AdminContractReport.tsx` (date range + tabella + export)
+- `AdminUsers.tsx`: colonna maxPatients in tabella, campo edit/crea (solo per ruolo doctor)
+- Seed: `maxPatients: 2` per dr.smith e dr.jones
+
+### Alert Dot nella Doctor Dashboard
+- `GET /api/doctor/patients` ora restituisce `hasAlerts: bool` per ogni paziente (aggregato da AlertLog)
+- Frontend: pallino rosso accanto ai nomi dei pazienti con alert attivi
+
+### Latest-per-Type per Doctor
+- Nuovo endpoint `GET /api/doctor/patients/:patientId/latest-measurements` che raggruppa per type e restituisce l'ultima misurazione
+- Frontend: griglia di card "Latest Measurements" nel pannello dettaglio paziente (al posto della tabella flat precedent)
+
+### NewMeasurement Gallery
+- Redesign completo: griglia responsive di card (una per tipo misurazione)
+- Ogni card espandibile con due modalità: Manual (input numerico + unità) e Upload (drag & drop file CSV/immagine)
+- Bottone Save/Upload individuale per card con feedback visivo
 
 ## Future Phases
 - **Phase 2**: Export CSV/JSON endpoint, advanced charts, Looker Studio Community Connector

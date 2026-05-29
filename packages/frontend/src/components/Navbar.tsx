@@ -53,6 +53,12 @@ export function Navbar() {
                 <Link to="/admin/alert-templates" className="text-gray-600 hover:text-gray-900">
                   Alerts
                 </Link>
+                <Link to="/admin/contracts" className="text-gray-600 hover:text-gray-900">
+                  Contracts
+                </Link>
+                <Link to="/admin/contracts/report" className="text-gray-600 hover:text-gray-900">
+                  Report
+                </Link>
               </>
             )}
           </div>

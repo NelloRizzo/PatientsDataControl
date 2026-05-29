@@ -15,6 +15,7 @@ import analystRoutes from './routes/analyst.js';
 import alertRoutes from './routes/alert.js';
 import notificationRoutes from './routes/notifications.js';
 import patientRoutes from './routes/patient.js';
+import contractRoutes from './routes/contracts.js';
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/api/analyst', analystRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/patient', patientRoutes);
+app.use('/api/admin/contracts', contractRoutes);
 
 app.use(errorHandler);
 

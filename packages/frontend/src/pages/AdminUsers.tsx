@@ -15,6 +15,7 @@ export function AdminUsers() {
   const [newRole, setNewRole] = useState('patient');
   const [newBirthDate, setNewBirthDate] = useState('');
   const [newSex, setNewSex] = useState('');
+  const [newMaxPatients, setNewMaxPatients] = useState('');
   const [newHome, setNewHome] = useState({ ...emptyAddress });
   const [newLegal, setNewLegal] = useState({ ...emptyAddress });
   const [createMsg, setCreateMsg] = useState('');
@@ -27,6 +28,7 @@ export function AdminUsers() {
   const [editRole, setEditRole] = useState('');
   const [editBirthDate, setEditBirthDate] = useState('');
   const [editSex, setEditSex] = useState('');
+  const [editMaxPatients, setEditMaxPatients] = useState('');
   const [editHome, setEditHome] = useState({ ...emptyAddress });
   const [editLegal, setEditLegal] = useState({ ...emptyAddress });
   const [editMsg, setEditMsg] = useState('');
@@ -42,7 +44,7 @@ export function AdminUsers() {
 
   const resetForm = () => {
     setNewName(''); setNewEmail(''); setNewPassword(''); setNewRole('patient');
-    setNewBirthDate(''); setNewSex('');
+    setNewBirthDate(''); setNewSex(''); setNewMaxPatients('');
     setNewHome({ ...emptyAddress }); setNewLegal({ ...emptyAddress });
   };
 
@@ -53,6 +55,7 @@ export function AdminUsers() {
       const body: Record<string, any> = { email: newEmail, password: newPassword, name: newName, role: newRole };
       if (newBirthDate) body.birthDate = newBirthDate;
       if (newSex) body.sex = newSex;
+      if (newMaxPatients) body.maxPatients = parseInt(newMaxPatients);
       if (Object.values(newHome).some(Boolean)) body.homeAddress = newHome;
       if (Object.values(newLegal).some(Boolean)) body.legalAddress = newLegal;
 
@@ -81,6 +84,7 @@ export function AdminUsers() {
     setEditRole(u.role);
     setEditBirthDate(u.birthDate?.split('T')[0] || '');
     setEditSex(u.sex || '');
+    setEditMaxPatients(u.maxPatients != null ? String(u.maxPatients) : '');
     setEditHome(normAddr(u.homeAddress));
     setEditLegal(normAddr(u.legalAddress));
     setEditMsg(''); setEditErr('');
@@ -96,6 +100,7 @@ export function AdminUsers() {
       if (editRole !== orig.role) body.role = editRole;
       if (editBirthDate !== (orig.birthDate?.split('T')[0] || '')) body.birthDate = editBirthDate || null;
       if (editSex !== (orig.sex || '')) body.sex = editSex || null;
+      if (editMaxPatients !== (orig.maxPatients != null ? String(orig.maxPatients) : '')) body.maxPatients = editMaxPatients ? parseInt(editMaxPatients) : null;
       if (JSON.stringify(editHome) !== JSON.stringify(orig.homeAddress)) {
         body.homeAddress = Object.values(editHome).some(Boolean) ? editHome : null;
       }
@@ -174,6 +179,17 @@ export function AdminUsers() {
                 <option value="admin">Admin</option>
               </select>
             </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Max Patients</label>
+              <input
+                type="number"
+                min={1}
+                value={newMaxPatients}
+                onChange={(e) => setNewMaxPatients(e.target.value)}
+                className="w-full border rounded px-2 py-1.5 text-sm"
+                disabled={newRole !== 'doctor'}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -218,6 +234,7 @@ export function AdminUsers() {
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Name</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Email</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Role</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Max Patients</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Area</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Actions</th>
             </tr>
@@ -229,6 +246,9 @@ export function AdminUsers() {
                 <td className="px-4 py-3 text-sm text-gray-500">{u.email}</td>
                 <td className="px-4 py-3">
                   <span className="text-xs bg-gray-100 px-2 py-1 rounded">{u.role}</span>
+                </td>
+                <td className="px-4 py-3 text-sm">
+                  {u.role === 'doctor' ? (u.maxPatients ?? '-') : '-'}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-500">
                   {u.homeAddress?.city || u.legalAddress?.city || '-'}
@@ -287,6 +307,17 @@ export function AdminUsers() {
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Birth Date</label>
                   <input type="date" value={editBirthDate} onChange={(e) => setEditBirthDate(e.target.value)} className="w-full border rounded px-2 py-1 text-sm bg-white" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Max Patients</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={editMaxPatients}
+                    onChange={(e) => setEditMaxPatients(e.target.value)}
+                    className="w-full border rounded px-2 py-1 text-sm bg-white"
+                    disabled={editRole !== 'doctor'}
+                  />
                 </div>
               </div>
               {addrInput('Home Address', editHome, setEditHome)}

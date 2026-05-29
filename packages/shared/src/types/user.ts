@@ -21,6 +21,7 @@ export interface IUser {
   sex?: 'male' | 'female' | 'other';
   homeAddress?: Address;
   legalAddress?: Address;
+  maxPatients?: number;
   createdAt: string;
   updatedAt: string;
 }
