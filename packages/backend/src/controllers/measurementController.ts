@@ -8,7 +8,13 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   try {
-    const measurement = await measurementService.createMeasurement(req.userId!, req.body);
+    const { patientId, ...data } = req.body;
+    const measurement = await measurementService.createMeasurement(
+      req.userId!,
+      data,
+      req.userRole!,
+      patientId,
+    );
     res.status(201).json(measurement);
   } catch (error) {
     next(error);

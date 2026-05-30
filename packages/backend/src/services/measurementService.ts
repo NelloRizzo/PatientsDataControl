@@ -85,25 +85,36 @@ function toJSON(doc: any): IMeasurement {
 
 export async function createMeasurement(
   userId: string,
-  data: CreateMeasurementRequest
+  data: CreateMeasurementRequest,
+  userRole?: string,
+  patientId?: string,
 ): Promise<IMeasurement> {
+  const targetUserId = patientId && (userRole === 'doctor' || userRole === 'admin')
+    ? determineTargetUserId(userId, userRole, patientId)
+    : userId;
+
   const typeConfig = await getTypeConfig(data.type);
   const evaluation = typeConfig ? evaluateThresholds(data.values, typeConfig) : undefined;
 
   const doc = await Measurement.create({
-    userId,
-    ...data,
-    evaluation,
+    userId: targetUserId,
+    type: data.type,
+    values: data.values,
+    units: data.units,
+    source: data.source || 'manual',
     timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
+    notes: data.notes,
+    tags: data.tags,
+    evaluation,
   });
 
   if (evaluation && evaluation.some((f) => f.status !== 'normal')) {
-    processAlert(userId, doc._id.toString(), data.type, evaluation, data.values).catch((err) =>
+    processAlert(doc.userId.toString(), doc._id.toString(), data.type, evaluation, data.values).catch((err) =>
       console.error('[Alert] processAlert error:', err)
     );
   }
 
-  sendInfoNotification(userId, doc._id.toString(), data.type, data.values, typeConfig).catch((err) =>
+  sendInfoNotification(doc.userId.toString(), doc._id.toString(), data.type, data.values, typeConfig).catch((err) =>
     console.error('[Alert] sendInfoNotification error:', err)
   );
 

@@ -2,7 +2,7 @@ import apiClient from './client';
 import type {
   CreateMeasurementRequest, UpdateMeasurementRequest,
   PaginatedResponse, IMeasurement, MeasurementStats, TimeSeriesResponse,
-  AggregationFunction,
+  AggregationFunction, ExtractionResult,
 } from '@healthbridge/shared';
 
 export async function getMeasurements(params: {
@@ -43,4 +43,13 @@ export async function getTimeSeries(params: {
 }): Promise<TimeSeriesResponse> {
   const res = await apiClient.get('/measurements/timeseries', { params });
   return res.data;
+}
+
+export async function extractMeasurements(file: File): Promise<ExtractionResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await apiClient.post('/measurements/extract', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data.data;
 }

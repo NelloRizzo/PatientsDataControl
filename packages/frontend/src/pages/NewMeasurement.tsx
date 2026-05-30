@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { getMeasurementTypes } from '../api/measurementTypes';
-import { createMeasurement } from '../api/measurements';
-import type { IMeasurementTypeConfig } from '@healthbridge/shared';
+import { createMeasurement, extractMeasurements } from '../api/measurements';
+import apiClient from '../api/client';
+import { useAuth } from '../context/AuthContext';
+import type { IMeasurementTypeConfig, ExtractionResult, ExtractedField, IUser } from '@healthbridge/shared';
 
 type CardMode = 'manual' | 'upload';
 
@@ -32,15 +34,37 @@ function getIcon(key: string) {
   return icons[key] || '📊';
 }
 
+function ConfidenceBadge({ value }: { value: number }) {
+  if (value >= 80) return <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">{value}%</span>;
+  if (value >= 50) return <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-medium">{value}%</span>;
+  return <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-medium">{value}%</span>;
+}
+
 export function NewMeasurement() {
+  const { user } = useAuth();
+  const isDoctor = user?.role === 'doctor';
+
   const [types, setTypes] = useState<IMeasurementTypeConfig[]>([]);
   const [cards, setCards] = useState<Record<string, CardState>>({});
   const [globalMsg, setGlobalMsg] = useState('');
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
+  // Doctor patient selector
+  const [patients, setPatients] = useState<IUser[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState('');
+
+  // AI extraction state
+  const [aiResult, setAiResult] = useState<ExtractionResult | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [aiCardKey, setAiCardKey] = useState<string | null>(null);
+
   useEffect(() => {
     getMeasurementTypes().then(setTypes).catch(() => {});
-  }, []);
+    if (isDoctor) {
+      apiClient.get('/doctor/patients').then((res) => setPatients(res.data.data)).catch(() => {});
+    }
+  }, [isDoctor]);
 
   const initCard = (key: string, t: IMeasurementTypeConfig): CardState => {
     const values: Record<string, string> = {};
@@ -82,51 +106,135 @@ export function NewMeasurement() {
     setCards((prev) => ({ ...prev, [key]: { ...prev[key], file } }));
   };
 
+  const buildPayload = (key: string, card: CardState) => {
+    const numValues: Record<string, number> = {};
+    for (const [k, v] of Object.entries(card.values)) {
+      numValues[k] = parseFloat(v);
+    }
+    const payload: Record<string, any> = {
+      type: key,
+      values: numValues,
+      units: card.units,
+      notes: card.notes || undefined,
+    };
+    if (isDoctor && selectedPatientId) {
+      payload.patientId = selectedPatientId;
+    }
+    return payload;
+  };
+
+  const handleManualSave = async (key: string, card: CardState) => {
+    const numValues: Record<string, number> = {};
+    for (const [k, v] of Object.entries(card.values)) {
+      if (!v.trim()) {
+        setCards((prev) => ({ ...prev, [key]: { ...prev[key], error: 'Fill in all fields' } }));
+        return;
+      }
+      numValues[k] = parseFloat(v);
+      if (isNaN(numValues[k])) {
+        setCards((prev) => ({ ...prev, [key]: { ...prev[key], error: `Invalid value for "${k}"` } }));
+        return;
+      }
+    }
+
+    setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: true, error: '' } }));
+    try {
+      const payload = buildPayload(key, card);
+      payload.values = numValues;
+      await createMeasurement(payload as any);
+      const t = types.find((t) => t.key === key);
+      setCards((prev) => ({ ...prev, [key]: { ...initCard(key, t!), saving: false, done: true, expanded: false } }));
+      setGlobalMsg('Measurement saved');
+      setTimeout(() => setGlobalMsg(''), 2000);
+    } catch (err: any) {
+      setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: false, error: err.response?.data?.error || 'Failed' } }));
+    }
+  };
+
+  const handleAiExtract = async (key: string, card: CardState) => {
+    if (!card.file) {
+      setCards((prev) => ({ ...prev, [key]: { ...prev[key], error: 'Select a file' } }));
+      return;
+    }
+    setAiLoading(true);
+    setAiError('');
+    setAiCardKey(key);
+    try {
+      const result = await extractMeasurements(card.file);
+      setAiResult(result);
+    } catch (err: any) {
+      setAiError(err.response?.data?.error || 'AI extraction failed');
+      setAiCardKey(null);
+    }
+    setAiLoading(false);
+  };
+
+  const handleAiConfirm = async () => {
+    if (!aiResult || !aiCardKey) return;
+    const key = aiCardKey;
+    setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: true, error: '' } }));
+    try {
+      const numValues: Record<string, number> = {};
+      const units: Record<string, string> = {};
+      for (const f of aiResult.fields) {
+        numValues[f.key] = f.value;
+        units[f.key] = f.unit;
+      }
+      const payload: Record<string, any> = {
+        type: aiResult.type,
+        values: numValues,
+        units,
+        notes: aiResult.notes || undefined,
+      };
+      if (isDoctor && selectedPatientId) {
+        payload.patientId = selectedPatientId;
+      }
+      await createMeasurement(payload as any);
+      setAiResult(null);
+      setAiCardKey(null);
+      const t = types.find((t) => t.key === key);
+      setCards((prev) => ({ ...prev, [key]: { ...initCard(key, t!), saving: false, done: true, expanded: false } }));
+      setGlobalMsg('Measurement saved');
+      setTimeout(() => setGlobalMsg(''), 2000);
+    } catch (err: any) {
+      setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: false, error: err.response?.data?.error || 'Failed' } }));
+    }
+  };
+
+  const updateAiField = (index: number, value: number) => {
+    if (!aiResult) return;
+    const fields = [...aiResult.fields];
+    fields[index] = { ...fields[index], value };
+    setAiResult({ ...aiResult, fields });
+  };
+
   const handleSave = async (key: string) => {
     const card = cards[key];
     if (!card) return;
-
     if (card.mode === 'manual') {
-      const numValues: Record<string, number> = {};
-      for (const [k, v] of Object.entries(card.values)) {
-        if (!v.trim()) {
-          setCards((prev) => ({ ...prev, [key]: { ...prev[key], error: `Fill in all fields` } }));
-          return;
-        }
-        numValues[k] = parseFloat(v);
-        if (isNaN(numValues[k])) {
-          setCards((prev) => ({ ...prev, [key]: { ...prev[key], error: `Invalid value for "${k}"` } }));
-          return;
-        }
-      }
-
-      setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: true, error: '' } }));
-      try {
-        await createMeasurement({ type: key, values: numValues, units: card.units, notes: card.notes || undefined });
-        const t = types.find((t) => t.key === key);
-        setCards((prev) => ({ ...prev, [key]: { ...initCard(key, t!), saving: false, done: true, expanded: false } }));
-        setTimeout(() => setCards((prev) => ({ ...prev, [key]: { ...prev[key], done: false } })), 2000);
-      } catch (err: any) {
-        setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: false, error: err.response?.data?.error || 'Failed' } }));
-      }
+      await handleManualSave(key, card);
     } else {
-      // Upload mode — for now just confirm the file is selected
-      if (!card.file) {
-        setCards((prev) => ({ ...prev, [key]: { ...prev[key], error: 'Select a file' } }));
-        return;
+      await handleAiExtract(key, card);
+    }
+  };
+
+  const handleCsvUpload = async (key: string, card: CardState) => {
+    setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: true, error: '' } }));
+    try {
+      const formData = new FormData();
+      formData.append('file', card.file!);
+      formData.append('measurementType', key);
+      if (isDoctor && selectedPatientId) {
+        formData.append('patientId', selectedPatientId);
       }
-      setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: true, error: '' } }));
-      try {
-        const { default: apiClient } = await import('../api/client');
-        const formData = new FormData();
-        formData.append('file', card.file);
-        formData.append('type', key);
-        await apiClient.post('/measurements/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        setCards((prev) => ({ ...prev, [key]: { ...initCard(key, types.find((t) => t.key === key)!), saving: false, done: true, expanded: false } }));
-        setTimeout(() => setCards((prev) => ({ ...prev, [key]: { ...prev[key], done: false } })), 2000);
-      } catch (err: any) {
-        setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: false, error: err.response?.data?.error || 'Upload failed' } }));
-      }
+      await apiClient.post('/measurements/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setCards((prev) => ({ ...prev, [key]: { ...initCard(key, types.find((t) => t.key === key)!), saving: false, done: true, expanded: false } }));
+      setGlobalMsg('CSV imported');
+      setTimeout(() => setGlobalMsg(''), 2000);
+    } catch (err: any) {
+      setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: false, error: err.response?.data?.error || 'Import failed' } }));
     }
   };
 
@@ -137,6 +245,118 @@ export function NewMeasurement() {
         {globalMsg && <p className="text-sm text-green-600">{globalMsg}</p>}
       </div>
 
+      {/* Patient selector (doctor only) */}
+      {isDoctor && (
+        <div className="bg-white rounded-lg border shadow-sm p-4 mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Patient</label>
+          <select
+            value={selectedPatientId}
+            onChange={(e) => setSelectedPatientId(e.target.value)}
+            className="w-full max-w-sm border rounded px-3 py-2 text-sm"
+          >
+            <option value="">Select a patient...</option>
+            {patients.map((p) => (
+              <option key={p._id} value={p._id}>{p.name} ({p.email})</option>
+            ))}
+          </select>
+          {!selectedPatientId && (
+            <p className="text-xs text-amber-600 mt-1">Select a patient to record measurements for them</p>
+          )}
+        </div>
+      )}
+
+      {/* AI extraction loading */}
+      {aiLoading && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 shadow-xl text-center">
+            <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-3" />
+            <p className="text-sm text-gray-600">Analyzing document with AI...</p>
+          </div>
+        </div>
+      )}
+
+      {/* AI extraction error */}
+      {aiError && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => { setAiError(''); setAiCardKey(null); }}>
+          <div className="bg-white rounded-xl p-6 shadow-xl max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <p className="text-red-600 font-medium mb-2">Extraction Error</p>
+            <p className="text-sm text-gray-600 mb-4">{aiError}</p>
+            <button onClick={() => { setAiError(''); setAiCardKey(null); }} className="bg-gray-200 px-4 py-1.5 rounded text-sm hover:bg-gray-300">Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* AI preview modal */}
+      {aiResult && !aiLoading && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => { setAiResult(null); setAiCardKey(null); }}>
+          <div className="bg-white rounded-xl p-6 shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold">AI Extracted Values</h2>
+              <span className="text-xs text-gray-400">{aiCardKey ? types.find(t => t.key === aiCardKey)?.name : ''}</span>
+            </div>
+
+            <div className="flex items-center gap-2 mb-4 text-sm">
+              <span className="text-gray-500">Overall confidence:</span>
+              <ConfidenceBadge value={aiResult.overallConfidence} />
+            </div>
+
+            {/* Field warnings */}
+            {aiResult.fields.some(f => f.alertStatus && f.alertStatus !== 'normal') && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 space-y-1">
+                <p className="text-xs font-medium text-red-700">Threshold Warnings</p>
+                {aiResult.fields.filter(f => f.alertStatus && f.alertStatus !== 'normal').map((f, i) => (
+                  <p key={i} className={`text-xs ${f.alertStatus === 'danger' ? 'text-red-600' : 'text-amber-600'}`}>
+                    {f.alertStatus === 'danger' ? '🚨' : '⚠️'} {f.key}: {f.alertMessage}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            <div className="space-y-3 mb-4">
+              {aiResult.fields.map((f, i) => (
+                <div key={f.key} className="border rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-sm font-medium text-gray-700 capitalize">{f.key}</label>
+                    <ConfidenceBadge value={f.confidence} />
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="number"
+                      step={f.value % 1 === 0 ? 1 : 0.01}
+                      value={f.value}
+                      onChange={(e) => updateAiField(i, parseFloat(e.target.value) || 0)}
+                      className="flex-1 border rounded px-3 py-1.5 text-sm"
+                    />
+                    <span className="text-sm text-gray-500">{f.unit}</span>
+                  </div>
+                  {f.alertStatus && f.alertStatus !== 'normal' && (
+                    <p className={`text-xs mt-1 ${f.alertStatus === 'danger' ? 'text-red-600' : 'text-amber-600'}`}>
+                      {f.alertMessage}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleAiConfirm}
+                className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700"
+              >
+                Confirm & Save
+              </button>
+              <button
+                onClick={() => { setAiResult(null); setAiCardKey(null); }}
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Measurement type cards */}
       {types.length === 0 && (
         <p className="text-center py-12 text-gray-500 bg-white rounded-lg border">No measurement types available</p>
       )}
@@ -194,7 +414,7 @@ export function NewMeasurement() {
                         mode === 'upload' ? 'bg-white text-gray-800 shadow-sm font-medium' : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      Upload
+                      Upload (CSV/Image/PDF)
                     </button>
                   </div>
 
@@ -253,6 +473,11 @@ export function NewMeasurement() {
                           <div>
                             <p className="text-sm font-medium text-blue-600">{card.file.name}</p>
                             <p className="text-xs text-gray-400">{(card.file.size / 1024).toFixed(0)} KB</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {card.file.type === 'text/csv' || card.file.name.endsWith('.csv')
+                                ? 'CSV file — will be imported directly'
+                                : 'Image/PDF — AI will extract values'}
+                            </p>
                             <button
                               onClick={(e) => { e.stopPropagation(); setFile(t.key, null); }}
                               className="text-xs text-red-500 hover:underline mt-1"
@@ -265,7 +490,8 @@ export function NewMeasurement() {
                             <svg className="w-6 h-6 text-gray-400 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
-                            <p className="text-xs text-gray-500">Click to upload CSV / image</p>
+                            <p className="text-xs text-gray-500">Click to upload CSV / image / PDF</p>
+                            <p className="text-xs text-gray-400 mt-1">CSV imports directly; images/PDFs use AI extraction</p>
                           </div>
                         )}
                       </div>
@@ -279,13 +505,24 @@ export function NewMeasurement() {
                     </div>
                   )}
 
-                  {/* Save button */}
+                  {/* Save / Upload button */}
                   <button
-                    onClick={() => handleSave(t.key)}
-                    disabled={saving}
+                    onClick={() => {
+                      if (mode === 'upload' && card?.file) {
+                        const isCsv = card.file.type === 'text/csv' || card.file.name.endsWith('.csv');
+                        if (isCsv) {
+                          handleCsvUpload(t.key, card);
+                        } else {
+                          handleSave(t.key);
+                        }
+                      } else {
+                        handleSave(t.key);
+                      }
+                    }}
+                    disabled={saving || aiLoading}
                     className="w-full bg-blue-600 text-white text-sm py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
-                    {saving ? 'Saving...' : mode === 'manual' ? 'Save' : 'Upload & Save'}
+                    {saving ? 'Saving...' : mode === 'manual' ? 'Save' : card?.file?.name?.endsWith('.csv') || card?.file?.type === 'text/csv' ? 'Import CSV' : 'Extract with AI'}
                   </button>
                 </div>
               )}

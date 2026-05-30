@@ -5,6 +5,7 @@ import { validate } from '../middleware/validate.js';
 import { upload } from '../middleware/upload.js';
 import { createMeasurementSchema, updateMeasurementSchema } from '@healthbridge/shared';
 import * as measurementController from '../controllers/measurementController.js';
+import * as aiExtractController from '../controllers/aiExtractController.js';
 
 const router = Router();
 
@@ -13,6 +14,7 @@ router.use(authenticate);
 router.get('/', measurementController.list);
 router.post('/', validate(createMeasurementSchema), measurementController.create);
 router.post('/import', upload.single('file'), measurementController.importCsv);
+router.post('/extract', upload.single('file'), aiExtractController.extractMeasurements);
 router.get('/timeseries', measurementController.timeseries);
 router.get('/stats', measurementController.stats);
 router.delete('/all', measurementController.deleteAll);

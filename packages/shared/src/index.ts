@@ -9,4 +9,5 @@ export * from './types/note.js';
 export * from './types/notification.js';
 export * from './types/anamnesis.js';
 export * from './types/contract.js';
+export * from './types/extraction.js';
 export * from './validation/schemas.js';

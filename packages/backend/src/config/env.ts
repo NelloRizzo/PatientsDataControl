@@ -18,4 +18,5 @@ export const env = {
     pass: process.env.EMAIL_PASS || '',
     from: process.env.EMAIL_FROM || 'noreply@healthbridge.com',
   },
+  groqApiKey: process.env.GROQ_API_KEY || '',
 };
