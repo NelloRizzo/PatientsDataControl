@@ -14,6 +14,9 @@ const MACROGROUP_MAP: Record<string, string> = {
   triglycerides: 'lipidemia',
   hba1c: 'blood_gas',
   creatinine: 'renal',
+  height: 'generalhealth',
+  body_composition: 'generalhealth',
+  body_circumferences: 'generalhealth',
 };
 
 async function backfill() {

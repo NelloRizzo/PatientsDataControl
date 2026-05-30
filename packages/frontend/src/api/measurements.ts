@@ -45,7 +45,7 @@ export async function getTimeSeries(params: {
   return res.data;
 }
 
-export async function extractMeasurements(file: File): Promise<ExtractionResult> {
+export async function extractMeasurements(file: File): Promise<ExtractionResult[]> {
   const formData = new FormData();
   formData.append('file', file);
   const res = await apiClient.post('/measurements/extract', formData, {

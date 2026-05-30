@@ -163,6 +163,76 @@ async function seed() {
       ],
       active: true,
     },
+    {
+      key: 'height',
+      name: 'Height',
+      category: 'body',
+      macrogroup: 'generalhealth',
+      fields: [
+        {
+          key: 'value', name: 'Height', unit: 'cm', units: ['cm', 'm', 'in'],
+          type: 'decimal', min: 20, max: 300,
+        },
+      ],
+      active: true,
+    },
+    {
+      key: 'body_composition',
+      name: 'Body Composition',
+      description: 'Bioimpedance analysis',
+      category: 'body',
+      macrogroup: 'generalhealth',
+      fields: [
+        {
+          key: 'body_fat_pct', name: 'Body Fat', unit: '%', units: ['%'],
+          type: 'decimal', min: 0, max: 100,
+        },
+        {
+          key: 'muscle_mass_kg', name: 'Muscle Mass', unit: 'kg', units: ['kg'],
+          type: 'decimal', min: 0, max: 300,
+        },
+        {
+          key: 'bone_mass_kg', name: 'Bone Mass', unit: 'kg', units: ['kg'],
+          type: 'decimal', min: 0, max: 50,
+        },
+        {
+          key: 'water_pct', name: 'Body Water', unit: '%', units: ['%'],
+          type: 'decimal', min: 0, max: 100,
+        },
+        {
+          key: 'visceral_fat', name: 'Visceral Fat', unit: 'index', units: ['index'],
+          type: 'integer', min: 1, max: 59,
+        },
+        {
+          key: 'bmr_kcal', name: 'BMR', unit: 'kcal', units: ['kcal'],
+          type: 'integer', min: 500, max: 5000,
+        },
+        {
+          key: 'metabolic_age', name: 'Metabolic Age', unit: 'years', units: ['years'],
+          type: 'integer', min: 10, max: 120,
+        },
+      ],
+      active: true,
+    },
+    {
+      key: 'body_circumferences',
+      name: 'Body Circumferences',
+      description: 'Tape measurements',
+      category: 'body',
+      macrogroup: 'generalhealth',
+      fields: [
+        { key: 'neck', name: 'Neck', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'chest', name: 'Chest', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'waist', name: 'Waist', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'hip', name: 'Hip', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'abdomen', name: 'Abdomen', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'arm', name: 'Arm', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'forearm', name: 'Forearm', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'thigh', name: 'Thigh', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'calf', name: 'Calf', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+      ],
+      active: true,
+    },
   ]);
   console.log(`  Created ${typeConfigs.length} measurement types.`);
 
