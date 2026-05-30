@@ -19,6 +19,7 @@ import { AdminContracts } from './pages/AdminContracts';
 import { AdminContractReport } from './pages/AdminContractReport';
 import { DoctorPatients } from './pages/DoctorPatients';
 import { DoctorAlerts } from './pages/DoctorAlerts';
+import { DoctorContractStatus } from './pages/DoctorContractStatus';
 import { Notifications } from './pages/Notifications';
 import { VerifyEmail } from './pages/VerifyEmail';
 
@@ -79,6 +80,10 @@ export function App() {
               <Route
                 path="/doctor/alerts"
                 element={<ProtectedRoute roles={['doctor']}><DoctorAlerts /></ProtectedRoute>}
+              />
+              <Route
+                path="/doctor/contract"
+                element={<ProtectedRoute roles={['doctor']}><DoctorContractStatus /></ProtectedRoute>}
               />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

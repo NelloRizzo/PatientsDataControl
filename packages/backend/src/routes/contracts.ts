@@ -13,5 +13,6 @@ router.post('/', contractController.createContract);
 router.put('/:id', contractController.updateContract);
 router.delete('/:id', contractController.deleteContract);
 router.get('/report', contractController.getContractReport);
+router.put('/:id/invoice', contractController.invoiceContract);
 
 export default router;

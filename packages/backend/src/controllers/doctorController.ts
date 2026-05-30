@@ -9,6 +9,8 @@ import { AppError } from '../middleware/errorHandler.js';
 import * as measurementService from '../services/measurementService.js';
 import { resolvePatientIds } from '../services/filterUtils.js';
 import { updateProfileSchema, createNoteSchema } from '@healthbridge/shared';
+import { DoctorContract } from '../models/DoctorContract.js';
+import { calculateConsumedSince } from '../services/contractHelper.js';
 
 async function verifyAssociation(doctorId: string, patientId: string) {
   const association = await PatientDoctor.findOne({
@@ -669,4 +671,51 @@ function buildAggregatedFilters(params: {
 
   if (conditions.length === 0) return undefined;
   return { logic: (params.filterLogic === 'or' ? 'or' : 'and') as 'and' | 'or', conditions };
+}
+
+export async function getContractStatus(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const contract = await DoctorContract.findOne({
+      doctorId: req.userId,
+      status: 'active',
+    }).lean();
+
+    if (!contract) {
+      res.json({ data: null });
+      return;
+    }
+
+    const sinceDate = contract.lastInvoiceDate || contract.startDate;
+    const now = new Date();
+    const consumedSinceInvoice = calculateConsumedSince(
+      contract.fee,
+      contract.feeType,
+      sinceDate,
+      contract.startDate,
+      contract.endDate,
+      contract.maxPatients || 1,
+      now,
+    );
+
+    res.json({
+      data: {
+        contractId: contract._id.toString(),
+        feeType: contract.feeType,
+        fee: contract.fee,
+        maxPatients: contract.maxPatients,
+        lastInvoiceDate: contract.lastInvoiceDate?.toISOString?.()?.split('T')[0] || null,
+        sinceDate: sinceDate.toISOString?.()?.split('T')[0],
+        consumedSinceInvoice,
+        currency: contract.currency || 'EUR',
+        startDate: contract.startDate?.toISOString?.()?.split('T')[0],
+        endDate: contract.endDate?.toISOString?.()?.split('T')[0],
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 }

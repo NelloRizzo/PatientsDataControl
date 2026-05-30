@@ -1,5 +1,7 @@
 import apiClient from './client';
 
+export type FeeType = 'fixed' | 'monthly' | 'per_patient';
+
 export interface ContractData {
   _id: string;
   doctorId: string;
@@ -9,28 +11,36 @@ export interface ContractData {
   endDate: string;
   maxPatients: number;
   fee: number;
+  feeType: FeeType;
   currency: string;
   notes?: string;
   status: 'active' | 'expired' | 'cancelled';
   createdAt: string;
 }
 
+export interface ContractReportContract {
+  _id: string;
+  startDate: string;
+  endDate: string;
+  maxPatients: number;
+  fee: number;
+  feeType: FeeType;
+  currency: string;
+  status: string;
+  overlapMonths: number;
+  totalFee: number;
+  consumedFee: number;
+}
+
 export interface ContractReportRow {
   doctorId: string;
   doctorName: string;
   doctorEmail: string;
-  contracts: Array<{
-    _id: string;
-    startDate: string;
-    endDate: string;
-    maxPatients: number;
-    fee: number;
-    currency: string;
-    status: string;
-  }>;
+  contracts: ContractReportContract[];
   actualPeakPatients: number;
   actualAvgPatients: number;
   totalFeeOwed: number;
+  totalContractFee: number;
   currency: string;
 }
 
@@ -51,6 +61,29 @@ export async function updateContract(id: string, data: Record<string, any>) {
 
 export async function deleteContract(id: string) {
   await apiClient.delete(`/admin/contracts/${id}`);
+}
+
+export async function invoiceContract(id: string) {
+  const res = await apiClient.put(`/admin/contracts/${id}/invoice`);
+  return res.data;
+}
+
+export interface ContractStatus {
+  contractId: string;
+  feeType: FeeType;
+  fee: number;
+  maxPatients: number;
+  lastInvoiceDate: string | null;
+  sinceDate: string;
+  consumedSinceInvoice: number;
+  currency: string;
+  startDate: string;
+  endDate: string;
+}
+
+export async function getMyContractStatus() {
+  const res = await apiClient.get('/doctor/contract-status');
+  return res.data.data as ContractStatus | null;
 }
 
 export async function getContractReport(from: string, to: string) {

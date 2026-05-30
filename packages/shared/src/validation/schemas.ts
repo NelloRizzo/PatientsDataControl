@@ -198,3 +198,29 @@ export const updateAlertTemplateSchema = z.object({
   channels: z.array(channelConfigSchema).optional(),
   active: z.boolean().optional(),
 });
+
+const feeTypeEnum = z.enum(['fixed', 'monthly', 'per_patient']);
+
+export const createContractSchema = z.object({
+  doctorId: z.string().min(1, 'Doctor is required'),
+  startDate: z.string().min(1, 'Start date is required'),
+  endDate: z.string().min(1, 'End date is required'),
+  maxPatients: z.number().int().positive('Must be at least 1'),
+  fee: z.number().min(0, 'Fee must be ≥ 0'),
+  feeType: feeTypeEnum.default('fixed'),
+  currency: z.string().min(1).default('EUR'),
+  notes: z.string().max(500).optional(),
+  status: z.enum(['active', 'expired', 'cancelled']).default('active'),
+});
+
+export const updateContractSchema = z.object({
+  doctorId: z.string().min(1).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  maxPatients: z.number().int().positive().optional(),
+  fee: z.number().min(0).optional(),
+  feeType: feeTypeEnum.optional(),
+  currency: z.string().min(1).optional(),
+  notes: z.string().max(500).optional(),
+  status: z.enum(['active', 'expired', 'cancelled']).optional(),
+});

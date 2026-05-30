@@ -6,6 +6,7 @@ import { MeasurementTypeConfig } from './models/MeasurementTypeConfig.js';
 import { PatientDoctor } from './models/PatientDoctor.js';
 import { ChartConfig } from './models/ChartConfig.js';
 import { AlertTemplate } from './models/AlertTemplate.js';
+import { DoctorContract } from './models/DoctorContract.js';
 
 async function seed() {
   console.log('Connecting to MongoDB...');
@@ -326,6 +327,36 @@ async function seed() {
   await AlertTemplate.deleteMany({});
   await AlertTemplate.insertMany(alertTemplates);
   console.log(`  Created ${alertTemplates.length} alert templates.`);
+
+  // ── Doctor Contracts ──
+  console.log('Creating doctor contracts...');
+  const contractStart = new Date();
+  contractStart.setFullYear(contractStart.getFullYear() - 1);
+  const contractEnd = new Date();
+  contractEnd.setFullYear(contractEnd.getFullYear() + 1);
+  const contracts = await DoctorContract.insertMany([
+    {
+      doctorId: drSmith._id,
+      startDate: contractStart,
+      endDate: contractEnd,
+      maxPatients: 30,
+      fee: 500,
+      feeType: 'monthly',
+      currency: 'EUR',
+      status: 'active',
+    },
+    {
+      doctorId: drJones._id,
+      startDate: contractStart,
+      endDate: contractEnd,
+      maxPatients: 25,
+      fee: 12000,
+      feeType: 'fixed',
+      currency: 'EUR',
+      status: 'active',
+    },
+  ]);
+  console.log(`  Created ${contracts.length} contracts.`);
 
   console.log('\n✅ Seed complete!');
   console.log('── Login credentials ──');

@@ -28,7 +28,8 @@ export function AdminContractReport() {
     setLoading(false);
   };
 
-  const totalFee = data.reduce((s, r) => s + r.totalFeeOwed, 0);
+  const totalConsumed = data.reduce((s, r) => s + r.totalFeeOwed, 0);
+  const totalContractFee = data.reduce((s, r) => s + (r.totalContractFee || 0), 0);
   const currency = data[0]?.currency || 'EUR';
 
   return (
@@ -50,8 +51,8 @@ export function AdminContractReport() {
         {data.length > 0 && (
           <button onClick={() => {
             const csv = [
-              ['Doctor', 'Email', 'Contracts', 'Peak Patients', 'Avg Patients', 'Total Fee'].join(','),
-              ...data.map(r => [r.doctorName, r.doctorEmail, r.contracts.length, r.actualPeakPatients, r.actualAvgPatients, r.totalFeeOwed].join(',')),
+              ['Doctor', 'Email', 'Contracts', 'Peak Patients', 'Avg Patients', 'Total Contract Fee', 'Consumed Fee'].join(','),
+              ...data.map(r => [r.doctorName, r.doctorEmail, r.contracts.length, r.actualPeakPatients, r.actualAvgPatients, r.totalContractFee, r.totalFeeOwed].join(',')),
             ].join('\n');
             const blob = new Blob([csv], { type: 'text/csv' });
             const a = document.createElement('a');
@@ -82,7 +83,8 @@ export function AdminContractReport() {
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Max (Contract)</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Peak Patients</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Avg Patients</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Fee Due</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Contract Fee</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Consumed Fee</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -98,8 +100,17 @@ export function AdminContractReport() {
                     ) : (
                       <div className="space-y-1">
                         {r.contracts.map((c) => (
-                          <div key={c._id} className="text-xs">
-                            {c.startDate} → {c.endDate} ({c.maxPatients} pts)
+                          <div key={c._id} className="text-xs border-b border-gray-100 pb-1 last:border-0">
+                            <div>{c.startDate} → {c.endDate} ({c.maxPatients} pts)</div>
+                            <div className="text-gray-400">
+                              {c.feeType === 'fixed' ? 'Fixed' : c.feeType === 'monthly' ? 'Monthly' : 'Per patient'} | {c.fee} {c.currency}
+                              {c.overlapMonths ? ` × ${c.overlapMonths}mo` : ''}
+                            </div>
+                            <div>
+                              <span className="text-gray-400">Total: </span>{c.totalFee} {c.currency}
+                              <span className="text-gray-400 ml-1">Consumed: </span>
+                              <span className="font-medium">{c.consumedFee} {c.currency}</span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -117,14 +128,16 @@ export function AdminContractReport() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm">{r.actualAvgPatients}</td>
+                  <td className="px-4 py-3 text-sm font-medium">{r.totalContractFee} {r.currency}</td>
                   <td className="px-4 py-3 text-sm font-medium">{r.totalFeeOwed} {r.currency}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot className="bg-gray-50 font-medium">
               <tr>
-                <td colSpan={5} className="text-right px-4 py-3 text-sm">Total</td>
-                <td className="px-4 py-3 text-sm">{totalFee} {currency}</td>
+                <td colSpan={6} className="text-right px-4 py-3 text-sm">Total</td>
+                <td className="px-4 py-3 text-sm">{totalContractFee} {currency}</td>
+                <td className="px-4 py-3 text-sm">{totalConsumed} {currency}</td>
               </tr>
             </tfoot>
           </table>

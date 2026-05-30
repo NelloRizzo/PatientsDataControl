@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../api/client';
-import { getContracts, createContract, updateContract, deleteContract } from '../api/contracts';
-import type { ContractData } from '../api/contracts';
+import { getContracts, createContract, updateContract, deleteContract, invoiceContract } from '../api/contracts';
+import type { ContractData, FeeType } from '../api/contracts';
 import type { IUser } from '@healthbridge/shared';
 
 export function AdminContracts() {
@@ -48,7 +48,7 @@ export function AdminContracts() {
           <Link to="/admin/contracts/report" className="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700">
             Report
           </Link>
-          <button onClick={() => { setEditing({ doctorId: '', startDate: '', endDate: '', maxPatients: 1, fee: 0, currency: 'EUR', status: 'active' }); setMsg(''); setErr(''); }} className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700">
+          <button onClick={() => { setEditing({ doctorId: '', startDate: '', endDate: '', maxPatients: 1, fee: 0, feeType: 'fixed' as FeeType, currency: 'EUR', status: 'active' }); setMsg(''); setErr(''); }} className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700">
             New Contract
           </button>
         </div>
@@ -111,6 +111,18 @@ export function AdminContracts() {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium">Fee Type</label>
+                  <select
+                    value={editing.feeType || 'fixed'}
+                    onChange={(e) => setEditing({ ...editing, feeType: e.target.value as FeeType })}
+                    className="w-full border rounded px-3 py-2"
+                  >
+                    <option value="fixed">Fixed (total contract)</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="per_patient">Monthly per patient</option>
+                  </select>
+                </div>
+                <div>
                   <label className="block text-sm font-medium">Fee</label>
                   <input
                     type="number"
@@ -121,6 +133,11 @@ export function AdminContracts() {
                     className="w-full border rounded px-3 py-2"
                     required
                   />
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {editing.feeType === 'fixed' ? 'Total amount for entire contract duration' :
+                     editing.feeType === 'monthly' ? 'Amount per month' :
+                     'Amount per patient per month'}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium">Currency</label>
@@ -177,6 +194,7 @@ export function AdminContracts() {
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Period</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Max Patients</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Fee</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Type</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Status</th>
               <th className="px-4 py-3"></th>
             </tr>
@@ -193,6 +211,9 @@ export function AdminContracts() {
                 </td>
                 <td className="px-4 py-3 text-sm">{c.maxPatients}</td>
                 <td className="px-4 py-3 text-sm">{c.fee} {c.currency}</td>
+                <td className="px-4 py-3 text-sm">
+                  {c.feeType === 'fixed' ? 'Fixed' : c.feeType === 'monthly' ? 'Monthly' : 'Per patient'}
+                </td>
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-1 rounded ${
                     c.status === 'active' ? 'bg-green-100 text-green-700' :
@@ -204,12 +225,13 @@ export function AdminContracts() {
                 </td>
                 <td className="px-4 py-3 text-right">
                   <button onClick={() => { setEditing({ ...c, doctorId: c.doctorId }); setMsg(''); setErr(''); }} className="text-blue-600 hover:underline text-sm mr-2">Edit</button>
+                  <button onClick={async () => { if (confirm('Invoice this contract?')) { await invoiceContract(c._id); setMsg('Contract invoiced'); load(); } }} className="text-green-600 hover:underline text-sm mr-2">Invoice</button>
                   <button onClick={async () => { if (confirm('Delete this contract?')) { await deleteContract(c._id); load(); } }} className="text-red-600 hover:underline text-sm">Delete</button>
                 </td>
               </tr>
             ))}
             {contracts.length === 0 && (
-              <tr><td colSpan={6} className="text-center py-8 text-gray-500 text-sm">No contracts yet</td></tr>
+              <tr><td colSpan={7} className="text-center py-8 text-gray-500 text-sm">No contracts yet</td></tr>
             )}
           </tbody>
         </table>

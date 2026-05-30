@@ -4,6 +4,7 @@ import { User } from '../models/User.js';
 import { DoctorContract } from '../models/DoctorContract.js';
 import { PatientDoctor } from '../models/PatientDoctor.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { monthsBetween, calculateContractFee } from '../services/contractHelper.js';
 
 export async function listContracts(
   req: AuthRequest,
@@ -38,6 +39,7 @@ export async function listContracts(
       endDate: c.endDate?.toISOString?.()?.split('T')[0],
       maxPatients: c.maxPatients,
       fee: c.fee,
+      feeType: c.feeType,
       currency: c.currency,
       notes: c.notes,
       status: c.status,
@@ -59,7 +61,7 @@ export async function createContract(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { doctorId, startDate, endDate, maxPatients, fee, currency, notes, status } = req.body;
+    const { doctorId, startDate, endDate, maxPatients, fee, feeType, currency, notes, status } = req.body;
 
     const doctor = await User.findById(doctorId);
     if (!doctor || doctor.role !== 'doctor') {
@@ -76,6 +78,7 @@ export async function createContract(
       endDate,
       maxPatients,
       fee: fee || 0,
+      feeType: feeType || 'fixed',
       currency: currency || 'EUR',
       notes,
       status: status || 'active',
@@ -100,7 +103,7 @@ export async function updateContract(
   try {
     const { id } = req.params;
     const updates: Record<string, any> = {};
-    const allowedFields = ['startDate', 'endDate', 'maxPatients', 'fee', 'currency', 'notes', 'status'];
+    const allowedFields = ['startDate', 'endDate', 'maxPatients', 'fee', 'feeType', 'currency', 'notes', 'status'];
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) updates[field] = req.body[field];
     }
@@ -131,6 +134,25 @@ export async function deleteContract(
     const contract = await DoctorContract.findByIdAndDelete(req.params.id);
     if (!contract) throw new AppError(404, 'Contract not found');
     res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function invoiceContract(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { id } = req.params;
+    const contract = await DoctorContract.findByIdAndUpdate(
+      id,
+      { $set: { lastInvoiceDate: new Date() } },
+      { new: true }
+    );
+    if (!contract) throw new AppError(404, 'Contract not found');
+    res.json({ data: contract.toJSON() });
   } catch (error) {
     next(error);
   }
@@ -168,26 +190,49 @@ export async function getContractReport(
         // Calculate average active patients
         const avgPatients = await calculateAvgPatients(doctor._id.toString(), fromDate, toDate);
 
-        const totalFeeOwed = activeContractsInPeriod.reduce(
-          (sum: number, c: any) => sum + (c.fee || 0), 0
-        );
+        let totalConsumedFee = 0;
+        let totalContractFee = 0;
 
-        return {
-          doctorId: doctor._id.toString(),
-          doctorName: doctor.name,
-          doctorEmail: doctor.email,
-          contracts: activeContractsInPeriod.map((c: any) => ({
+        const contractInfos = activeContractsInPeriod.map((c: any) => {
+          const cStart = new Date(c.startDate);
+          const cEnd = new Date(c.endDate);
+          const overlapStart = cStart > fromDate ? cStart : fromDate;
+          const overlapEnd = cEnd < toDate ? cEnd : toDate;
+          const overlapMonths = monthsBetween(overlapStart, overlapEnd);
+          const contractMonths = monthsBetween(cStart, cEnd);
+          const { totalFee, consumedFee } = calculateContractFee(
+            c.fee || 0,
+            c.feeType || 'fixed',
+            overlapMonths,
+            contractMonths,
+            c.maxPatients || 1,
+          );
+          totalContractFee += totalFee;
+          totalConsumedFee += consumedFee;
+          return {
             _id: c._id.toString(),
             startDate: c.startDate?.toISOString?.()?.split('T')[0],
             endDate: c.endDate?.toISOString?.()?.split('T')[0],
             maxPatients: c.maxPatients,
             fee: c.fee,
+            feeType: c.feeType,
             currency: c.currency,
             status: c.status,
-          })),
+            overlapMonths: Math.round(overlapMonths * 100) / 100,
+            totalFee,
+            consumedFee,
+          };
+        });
+
+        return {
+          doctorId: doctor._id.toString(),
+          doctorName: doctor.name,
+          doctorEmail: doctor.email,
+          contracts: contractInfos,
           actualPeakPatients: peakPatients,
           actualAvgPatients: avgPatients,
-          totalFeeOwed,
+          totalFeeOwed: Math.round(totalConsumedFee * 100) / 100,
+          totalContractFee: Math.round(totalContractFee * 100) / 100,
           currency: activeContractsInPeriod[0]?.currency || 'EUR',
         };
       })

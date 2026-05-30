@@ -37,6 +37,9 @@ export function Navbar() {
                 <Link to="/doctor/alerts" className="text-gray-600 hover:text-gray-900">
                   Alerts
                 </Link>
+                <Link to="/doctor/contract" className="text-gray-600 hover:text-gray-900">
+                  Contract
+                </Link>
               </>
             )}
             {user.role === 'admin' && (

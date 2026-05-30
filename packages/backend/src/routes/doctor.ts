@@ -28,5 +28,6 @@ router.post('/patients/:patientId/anamnesis', anamnesisController.createAnamnesi
 router.get('/recent-activity', doctorController.recentActivity);
 router.get('/timeseries', doctorController.aggregatedTimeseries);
 router.get('/stats', doctorController.aggregatedStats);
+router.get('/contract-status', doctorController.getContractStatus);
 
 export default router;
