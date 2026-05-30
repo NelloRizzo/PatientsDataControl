@@ -6,7 +6,9 @@ import {
 import apiClient from '../api/client';
 import { getMeasurementTypes } from '../api/measurementTypes';
 import { getChartConfigs, createChartConfig, deleteChartConfig } from '../api/chartConfigs';
+import { getMyContractStatus } from '../api/contracts';
 import type { IChartConfig, IMeasurementTypeConfig, IMeasurement, TimeGroupBy, ChartType, AggregationFunction, TimeSeriesPoint, IAnamnesis } from '@healthbridge/shared';
+import type { ContractStatus } from '../api/contracts';
 
 type ViewMode = 'individual' | 'aggregated';
 
@@ -72,6 +74,9 @@ export function DoctorPatients() {
   const [configMsg, setConfigMsg] = useState('');
   const [configErr, setConfigErr] = useState('');
 
+  // Contract status
+  const [contractStatus, setContractStatus] = useState<ContractStatus | null | undefined>(undefined);
+
   // Aggregated filters
   const [filterSex, setFilterSex] = useState('');
   const [filterAgeFrom, setFilterAgeFrom] = useState('');
@@ -87,6 +92,7 @@ export function DoctorPatients() {
   useEffect(() => {
     loadPatients();
     getMeasurementTypes().then(setTypes).catch(() => {});
+    getMyContractStatus().then(setContractStatus).catch(() => setContractStatus(null));
   }, [loadPatients]);
 
   const loadRecentActivity = useCallback(async () => {
@@ -368,7 +374,24 @@ export function DoctorPatients() {
                 ))}
               </div>
             )}
-          </details>
+            </details>
+
+          {contractStatus && (
+            <div className="bg-white p-3 rounded-lg shadow-sm border flex items-center gap-4 text-sm">
+              <span className="font-medium text-gray-700">Contract:</span>
+              <span className="capitalize text-gray-600">
+                {contractStatus.feeType === 'fixed' ? 'Fixed' : contractStatus.feeType === 'monthly' ? 'Monthly' : 'Per patient'}
+              </span>
+              <span className="text-gray-600">{contractStatus.fee} {contractStatus.currency}</span>
+              <span className="text-gray-400">|</span>
+              <span className="text-gray-600">Max {contractStatus.maxPatients} pts</span>
+              <span className="text-gray-400">|</span>
+              <span className="text-gray-600">
+                Since last invoice:{' '}
+                <span className="font-medium text-blue-600">{contractStatus.consumedSinceInvoice} {contractStatus.currency}</span>
+              </span>
+            </div>
+          )}
 
           {viewMode === 'aggregated' && (
             <details className="bg-white p-4 rounded-lg shadow-sm border">
