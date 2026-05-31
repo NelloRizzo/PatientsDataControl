@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getMeasurementTypes } from '../api/measurementTypes';
 import { createMeasurement, extractMeasurements } from '../api/measurements';
 import apiClient from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import type { IMeasurementTypeConfig, ExtractionResult, ExtractedField, IUser } from '@healthbridge/shared';
+import type { IMeasurementTypeConfig, ExtractionResult, ExtractedField } from '@healthbridge/shared';
 
 type CardMode = 'manual' | 'upload';
 
@@ -49,16 +50,21 @@ function ConfidenceBadge({ value }: { value: number }) {
 
 export function NewMeasurement() {
   const { user } = useAuth();
-  const isDoctor = user?.role === 'doctor';
+  const [searchParams] = useSearchParams();
+  const forPatient = searchParams.get('forPatient');
 
   const [types, setTypes] = useState<IMeasurementTypeConfig[]>([]);
   const [cards, setCards] = useState<Record<string, CardState>>({});
   const [globalMsg, setGlobalMsg] = useState('');
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  // Doctor patient selector
-  const [patients, setPatients] = useState<IUser[]>([]);
-  const [selectedPatientId, setSelectedPatientId] = useState('');
+  // Patient name for title
+  const [patientName, setPatientName] = useState('');
+  const isForPatient = !!forPatient;
+
+  // Doctor patient selector (fallback if no forPatient)
+  const [patients, setPatients] = useState<any[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState(forPatient || '');
 
   // Global AI extraction state
   const [globalFile, setGlobalFile] = useState<File | null>(null);
@@ -69,10 +75,22 @@ export function NewMeasurement() {
 
   useEffect(() => {
     getMeasurementTypes().then(setTypes).catch(() => {});
-    if (isDoctor) {
+    if (forPatient) {
+      apiClient.get(`/doctor/patients/${forPatient}/measurements`, { params: { limit: '1' } })
+        .then(() => setPatientName(`Paziente #${forPatient.slice(-4)}`))
+        .catch(() => {});
+    }
+    if (user?.role === 'doctor' && !forPatient) {
       apiClient.get('/doctor/patients').then((res) => setPatients(res.data.data)).catch(() => {});
     }
-  }, [isDoctor]);
+  }, [user?.role, forPatient]);
+
+  useEffect(() => {
+    if (selectedPatientId && patients.length > 0) {
+      const p = patients.find((p: any) => p._id === selectedPatientId);
+      if (p) setPatientName(p.name);
+    }
+  }, [selectedPatientId, patients]);
 
   const initCard = (key: string, t: IMeasurementTypeConfig): CardState => {
     const values: Record<string, string> = {};
@@ -121,35 +139,43 @@ export function NewMeasurement() {
       units,
       notes,
     };
-    if (isDoctor && selectedPatientId) {
+    if (selectedPatientId) {
       payload.patientId = selectedPatientId;
     }
     return payload;
+  };
+
+  const saveMeasurement = async (payload: Record<string, any>) => {
+    if (isForPatient || (user?.role === 'doctor' && selectedPatientId)) {
+      await apiClient.post(`/doctor/patients/${selectedPatientId}/measurements`, payload);
+    } else {
+      await createMeasurement(payload as any);
+    }
   };
 
   const handleManualSave = async (key: string, card: CardState) => {
     const numValues: Record<string, number> = {};
     for (const [k, v] of Object.entries(card.values)) {
       if (!v.trim()) {
-        setCards((prev) => ({ ...prev, [key]: { ...prev[key], error: 'Fill in all fields' } }));
+        setCards((prev) => ({ ...prev, [key]: { ...prev[key], error: 'Compila tutti i campi' } }));
         return;
       }
       numValues[k] = parseFloat(v);
       if (isNaN(numValues[k])) {
-        setCards((prev) => ({ ...prev, [key]: { ...prev[key], error: `Invalid value for "${k}"` } }));
+        setCards((prev) => ({ ...prev, [key]: { ...prev[key], error: `Valore non valido per "${k}"` } }));
         return;
       }
     }
 
     setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: true, error: '' } }));
     try {
-      await createMeasurement(buildPayload(key, numValues, card.units, card.notes || undefined) as any);
+      await saveMeasurement(buildPayload(key, numValues, card.units, card.notes || undefined));
       const t = types.find((t) => t.key === key);
       setCards((prev) => ({ ...prev, [key]: { ...initCard(key, t!), saving: false, done: true, expanded: false } }));
-      setGlobalMsg('Measurement saved');
+      setGlobalMsg('Misurazione salvata');
       setTimeout(() => setGlobalMsg(''), 2000);
     } catch (err: any) {
-      setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: false, error: err.response?.data?.error || 'Failed' } }));
+      setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: false, error: err.response?.data?.error || 'Errore' } }));
     }
   };
 
@@ -159,17 +185,17 @@ export function NewMeasurement() {
       const formData = new FormData();
       formData.append('file', card.file!);
       formData.append('measurementType', key);
-      if (isDoctor && selectedPatientId) {
+      if (selectedPatientId) {
         formData.append('patientId', selectedPatientId);
       }
       await apiClient.post('/measurements/import', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setCards((prev) => ({ ...prev, [key]: { ...initCard(key, types.find((t) => t.key === key)!), saving: false, done: true, expanded: false } }));
-      setGlobalMsg('CSV imported');
+      setGlobalMsg('CSV importato');
       setTimeout(() => setGlobalMsg(''), 2000);
     } catch (err: any) {
-      setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: false, error: err.response?.data?.error || 'Import failed' } }));
+      setCards((prev) => ({ ...prev, [key]: { ...prev[key], saving: false, error: err.response?.data?.error || 'Import fallito' } }));
     }
   };
 
@@ -183,7 +209,7 @@ export function NewMeasurement() {
       if (isCsv) {
         await handleCsvUpload(key, card);
       } else {
-        setCards((prev) => ({ ...prev, [key]: { ...prev[key], error: 'Use the global upload area above for images/PDFs' } }));
+        setCards((prev) => ({ ...prev, [key]: { ...prev[key], error: 'Usa l\'area di upload globale per immagini/PDF' } }));
       }
     }
   };
@@ -202,12 +228,12 @@ export function NewMeasurement() {
     try {
       const results = await extractMeasurements(globalFile);
       if (results.length === 0) {
-        setGlobalError('AI could not identify any measurements in this document.');
+        setGlobalError('L\'IA non ha identificato misurazioni in questo documento.');
       } else {
         setGlobalResults(results);
       }
     } catch (err: any) {
-      setGlobalError(err.response?.data?.error || 'AI extraction failed');
+      setGlobalError(err.response?.data?.error || 'Estrazione IA fallita');
     }
     setGlobalExtracting(false);
   };
@@ -225,7 +251,7 @@ export function NewMeasurement() {
           values[f.key] = f.value;
           units[f.key] = f.unit;
         }
-        await createMeasurement(buildPayload(result.type, values, units, result.notes) as any);
+        await saveMeasurement(buildPayload(result.type, values, units, result.notes));
         saved++;
       } catch {
         failed++;
@@ -234,7 +260,7 @@ export function NewMeasurement() {
     setGlobalResults(null);
     setGlobalFile(null);
     setGlobalExtracting(false);
-    setGlobalMsg(`Saved ${saved} measurement(s)${failed > 0 ? `, ${failed} failed` : ''}`);
+    setGlobalMsg(`Salvate ${saved} misurazione(i)${failed > 0 ? `, ${failed} fallite` : ''}`);
     setTimeout(() => setGlobalMsg(''), 3000);
   };
 
@@ -247,38 +273,39 @@ export function NewMeasurement() {
     setGlobalResults(results);
   };
 
+  const title = isForPatient
+    ? (patientName ? `Nuova Misurazione per ${patientName}` : 'Nuova Misurazione Paziente')
+    : 'Nuova Misurazione';
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">New Measurement</h1>
+        <h1 className="text-2xl font-bold">{title}</h1>
         {globalMsg && <p className="text-sm text-green-600">{globalMsg}</p>}
       </div>
 
-      {/* Patient selector (doctor only) */}
-      {isDoctor && (
+      {/* Patient selector (doctor only, no forPatient) */}
+      {user?.role === 'doctor' && !isForPatient && (
         <div className="bg-white rounded-lg border shadow-sm p-4 mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Patient</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Paziente</label>
           <select
             value={selectedPatientId}
             onChange={(e) => setSelectedPatientId(e.target.value)}
             className="w-full max-w-sm border rounded px-3 py-2 text-sm"
           >
-            <option value="">Select a patient...</option>
-            {patients.map((p) => (
+            <option value="">Le mie misure</option>
+            {patients.map((p: any) => (
               <option key={p._id} value={p._id}>{p.name} ({p.email})</option>
             ))}
           </select>
-          {isDoctor && !selectedPatientId && (
-            <p className="text-xs text-amber-600 mt-1">Select a patient to record measurements for them</p>
-          )}
         </div>
       )}
 
       {/* Global upload zone */}
       <div className="bg-white rounded-lg border shadow-sm p-4 mb-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-2">Upload Document</h2>
+        <h2 className="text-sm font-semibold text-gray-700 mb-2">Carica Documento</h2>
         <p className="text-xs text-gray-500 mb-3">
-          Upload a lab report PDF, screenshot, or image. AI will extract all measurements automatically.
+          Carica un referto PDF, screenshot o immagine. L'IA estrarrà automaticamente tutte le misurazioni.
         </p>
 
         <div
@@ -293,7 +320,7 @@ export function NewMeasurement() {
                 onClick={(e) => { e.stopPropagation(); handleGlobalFileChange(null); }}
                 className="text-xs text-red-500 hover:underline mt-1"
               >
-                Remove
+                Rimuovi
               </button>
             </div>
           ) : (
@@ -301,8 +328,8 @@ export function NewMeasurement() {
               <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
-              <p className="text-sm text-gray-500">Click to upload PDF or image</p>
-              <p className="text-xs text-gray-400 mt-1">PNG, JPG, PDF accepted</p>
+              <p className="text-sm text-gray-500">Clicca per caricare PDF o immagine</p>
+              <p className="text-xs text-gray-400 mt-1">PNG, JPG, PDF accettati</p>
             </div>
           )}
         </div>
@@ -321,7 +348,7 @@ export function NewMeasurement() {
             disabled={globalExtracting}
             className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {globalExtracting ? 'Analyzing with AI...' : 'Analyze Document with AI'}
+            {globalExtracting ? 'Analisi in corso...' : 'Analizza Documento con IA'}
           </button>
         )}
 
@@ -335,7 +362,7 @@ export function NewMeasurement() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-8 shadow-xl text-center">
             <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-3" />
-            <p className="text-sm text-gray-600">Analyzing document with AI...</p>
+            <p className="text-sm text-gray-600">Analisi documento in corso...</p>
           </div>
         </div>
       )}
@@ -345,8 +372,8 @@ export function NewMeasurement() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => { setGlobalResults(null); setGlobalFile(null); }}>
           <div className="bg-white rounded-xl p-6 shadow-xl max-w-2xl w-full mx-4 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">Extracted Measurements</h2>
-              <span className="text-xs text-gray-400">{globalResults.length} type(s) found</span>
+              <h2 className="text-lg font-bold">Misurazioni Estratte</h2>
+              <span className="text-xs text-gray-400">{globalResults.length} tipo(i) trovati</span>
             </div>
 
             {globalResults.map((result, ti) => (
@@ -397,13 +424,13 @@ export function NewMeasurement() {
                 onClick={handleGlobalSaveAll}
                 className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700"
               >
-                Save All ({globalResults.length} measurement{globalResults.length > 1 ? 's' : ''})
+                Salva Tutto ({globalResults.length} misurazione{globalResults.length > 1 ? 'i' : ''})
               </button>
               <button
                 onClick={() => { setGlobalResults(null); setGlobalFile(null); }}
                 className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg text-sm hover:bg-gray-300"
               >
-                Cancel
+                Annulla
               </button>
             </div>
           </div>
@@ -412,11 +439,11 @@ export function NewMeasurement() {
 
       {/* Measurement type cards */}
       {types.length === 0 && (
-        <p className="text-center py-12 text-gray-500 bg-white rounded-lg border">No measurement types available</p>
+        <p className="text-center py-12 text-gray-500 bg-white rounded-lg border">Nessun tipo misurazione disponibile</p>
       )}
 
       <div className="mb-4">
-        <h2 className="text-sm font-semibold text-gray-700">Or enter manually</h2>
+        <h2 className="text-sm font-semibold text-gray-700">Oppure inserisci manualmente</h2>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -444,7 +471,7 @@ export function NewMeasurement() {
                   <p className="text-sm font-medium truncate">{t.name}</p>
                   <p className="text-xs text-gray-400 truncate">{t.description || t.fields.map((f) => f.name).join(', ')}</p>
                 </div>
-                {done && <span className="text-green-600 text-sm shrink-0">✓ Saved</span>}
+                {done && <span className="text-green-600 text-sm shrink-0">✓ Salvato</span>}
                 {!done && (
                   <svg className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -461,7 +488,7 @@ export function NewMeasurement() {
                         mode === 'manual' ? 'bg-white text-gray-800 shadow-sm font-medium' : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      Manual
+                      Manuale
                     </button>
                     <button
                       onClick={() => setMode(t.key, 'upload')}
@@ -508,7 +535,7 @@ export function NewMeasurement() {
                         <input
                           value={card?.notes || ''}
                           onChange={(e) => setNotes(t.key, e.target.value)}
-                          placeholder="Notes (optional)"
+                          placeholder="Note (opzionale)"
                           maxLength={500}
                           className="w-full border rounded px-2 py-1 text-xs"
                         />
@@ -526,12 +553,12 @@ export function NewMeasurement() {
                           <div>
                             <p className="text-sm font-medium text-blue-600">{card.file.name}</p>
                             <p className="text-xs text-gray-400">{(card.file.size / 1024).toFixed(0)} KB</p>
-                            <p className="text-xs text-gray-400 mt-1">Click Import CSV below</p>
+                            <p className="text-xs text-gray-400 mt-1">Clicca Importa CSV qui sotto</p>
                             <button
                               onClick={(e) => { e.stopPropagation(); setFile(t.key, null); }}
                               className="text-xs text-red-500 hover:underline mt-1"
                             >
-                              Remove
+                              Rimuovi
                             </button>
                           </div>
                         ) : (
@@ -539,7 +566,7 @@ export function NewMeasurement() {
                             <svg className="w-6 h-6 text-gray-400 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
-                            <p className="text-xs text-gray-500">Upload CSV file for bulk import</p>
+                            <p className="text-xs text-gray-500">Carica file CSV per import massivo</p>
                           </div>
                         )}
                       </div>
@@ -558,7 +585,7 @@ export function NewMeasurement() {
                     disabled={saving}
                     className="w-full bg-blue-600 text-white text-sm py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
-                    {saving ? 'Saving...' : mode === 'manual' ? 'Save' : 'Import CSV'}
+                    {saving ? 'Salvataggio...' : mode === 'manual' ? 'Salva' : 'Importa CSV'}
                   </button>
                 </div>
               )}

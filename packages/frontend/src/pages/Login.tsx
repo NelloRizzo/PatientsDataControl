@@ -16,7 +16,7 @@ export function Login() {
       await login(email, password);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed');
+      setError(err.response?.data?.error || 'Login fallito');
     }
   };
 
@@ -24,7 +24,7 @@ export function Login() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h1 className="text-2xl font-bold mb-6 text-center">HealthBridge</h1>
-        <h2 className="text-lg mb-4 text-center text-gray-600">Sign in</h2>
+        <h2 className="text-lg mb-4 text-center text-gray-600">Accedi</h2>
         {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -51,13 +51,13 @@ export function Login() {
             type="submit"
             className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
           >
-            Sign in
+            Accedi
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-500">
-          Don't have an account?{' '}
+          Non hai un account?{' '}
           <Link to="/register" className="text-blue-600 hover:underline">
-            Register
+            Registrati
           </Link>
         </p>
       </div>

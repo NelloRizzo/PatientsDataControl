@@ -4,6 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import apiClient from '../api/client';
+import { Link } from 'react-router-dom';
 import { getMeasurementTypes } from '../api/measurementTypes';
 import { getChartConfigs, createChartConfig, deleteChartConfig } from '../api/chartConfigs';
 import { getMyContractStatus } from '../api/contracts';
@@ -190,7 +191,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
       setConfigMsg('Saved');
       loadSavedConfigs();
     } catch (err: any) {
-      setConfigErr(err.response?.data?.error || 'Failed to save');
+      setConfigErr(err.response?.data?.error || 'Salvataggio fallito');
     }
   };
 
@@ -334,7 +335,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Doctor Dashboard</h1>
+      <h1 className="text-2xl font-bold">Dashboard Medico</h1>
 
       <div className="flex gap-4">
         <div className="w-64 shrink-0 space-y-1">
@@ -342,15 +343,15 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
 
           {/* Add Patient */}
           <div className="bg-white border rounded p-2 mb-2">
-            <p className="text-xs font-medium text-gray-600 mb-1">Add Patient</p>
+            <p className="text-xs font-medium text-gray-600 mb-1">Aggiungi Paziente</p>
             <div className="flex gap-1 mb-2">
               <button onClick={() => setAddMode('email')}
                 className={`text-xs px-2 py-0.5 rounded ${addMode === 'email' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
-                By Email
+                Per Email
               </button>
               <button onClick={() => setAddMode('create')}
                 className={`text-xs px-2 py-0.5 rounded ${addMode === 'create' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
-                Create Account
+                Crea Account
               </button>
             </div>
             {addMode === 'email' ? (
@@ -358,13 +359,13 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                 e.preventDefault();
                 setAddMsg(''); setAddError('');
                 apiClient.post('/doctor/patients', { email: addEmail })
-                  .then(() => { setAddEmail(''); setAddMsg('Patient added (pending confirmation)'); loadPatients(); })
-                  .catch((err) => setAddError(err.response?.data?.error || 'Failed to add patient'));
+                  .then(() => { setAddEmail(''); setAddMsg('Paziente aggiunto (conferma in sospeso)'); loadPatients(); })
+                  .catch((err) => setAddError(err.response?.data?.error || 'Impossibile aggiungere paziente'));
               }} className="flex gap-1">
-                <input type="email" value={addEmail} placeholder="patient@email.com"
+                <input type="email" value={addEmail} placeholder="paziente@email.com"
                   onChange={(e) => setAddEmail(e.target.value)} required
                   className="flex-1 border rounded px-2 py-1 text-xs" />
-                <button type="submit" className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">Add</button>
+                <button type="submit" className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">Aggiungi</button>
               </form>
             ) : (
               <form onSubmit={async (e) => {
@@ -385,13 +386,13 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                   setCreateBirthCity(''); setCreateHeight(''); setCreateWeight('');
                   setCreateHomeFull(''); setCreateHomeCity(''); setCreateHomeProvince('');
                   setCreateHomeRegion(''); setCreateHomeCountry(''); setCreateHomeZip('');
-                  setCreateMsg('Patient account created (email sent for password set).');
+                  setCreateMsg('Account paziente creato (email inviata per impostare password).');
                   loadPatients();
                 } catch (err: any) {
-                  setCreateErr(err.response?.data?.error || 'Failed to create patient');
+                  setCreateErr(err.response?.data?.error || 'Impossibile creare paziente');
                 }
               }} className="space-y-1.5">
-                <input value={createName} placeholder="Full name" onChange={(e) => setCreateName(e.target.value)} required
+                <input value={createName} placeholder="Nome completo" onChange={(e) => setCreateName(e.target.value)} required
                   className="w-full border rounded px-2 py-1 text-xs" />
                 <input type="email" value={createEmail} placeholder="Email" onChange={(e) => setCreateEmail(e.target.value)} required
                   className="w-full border rounded px-2 py-1 text-xs" />
@@ -400,39 +401,39 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                     className="w-0 flex-1 min-w-0 border rounded px-1 py-1 text-xs" />
                   <select value={createSex} onChange={(e) => setCreateSex(e.target.value)} required
                     className="w-0 flex-1 min-w-0 border rounded px-1 py-1 text-xs">
-                    <option value="">Sex</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
+                    <option value="">Sesso</option>
+                    <option value="male">Maschio</option>
+                    <option value="female">Femmina</option>
+                    <option value="other">Altro</option>
                   </select>
                 </div>
-                <input value={createBirthCity} placeholder="Birth city (optional)" onChange={(e) => setCreateBirthCity(e.target.value)}
+                <input value={createBirthCity} placeholder="Città di nascita (opzionale)" onChange={(e) => setCreateBirthCity(e.target.value)}
                   className="w-full border rounded px-2 py-1 text-xs" />
                 <div className="flex gap-1">
-                  <input type="number" step="0.1" value={createHeight} placeholder="Height (cm)" onChange={(e) => setCreateHeight(e.target.value)}
+                  <input type="number" step="0.1" value={createHeight} placeholder="Altezza (cm)" onChange={(e) => setCreateHeight(e.target.value)}
                     className="w-0 flex-1 min-w-0 border rounded px-1 py-1 text-xs" />
-                  <input type="number" step="0.1" value={createWeight} placeholder="Weight (kg)" onChange={(e) => setCreateWeight(e.target.value)}
+                  <input type="number" step="0.1" value={createWeight} placeholder="Peso (kg)" onChange={(e) => setCreateWeight(e.target.value)}
                     className="w-0 flex-1 min-w-0 border rounded px-1 py-1 text-xs" />
                 </div>
                 <details className="text-xs">
-                  <summary className="cursor-pointer text-gray-500">Home address (optional)</summary>
+                  <summary className="cursor-pointer text-gray-500">Indirizzo di casa (opzionale)</summary>
                   <div className="mt-1 space-y-1">
-                    <input value={createHomeFull} placeholder="Full address" onChange={(e) => setCreateHomeFull(e.target.value)}
+                    <input value={createHomeFull} placeholder="Indirizzo completo" onChange={(e) => setCreateHomeFull(e.target.value)}
                       className="w-full border rounded px-2 py-1 text-xs" />
-                    <input value={createHomeCity} placeholder="City" onChange={(e) => setCreateHomeCity(e.target.value)}
+                    <input value={createHomeCity} placeholder="Città" onChange={(e) => setCreateHomeCity(e.target.value)}
                       className="w-full border rounded px-2 py-1 text-xs" />
-                    <input value={createHomeProvince} placeholder="Province" onChange={(e) => setCreateHomeProvince(e.target.value)}
+                    <input value={createHomeProvince} placeholder="Provincia" onChange={(e) => setCreateHomeProvince(e.target.value)}
                       className="w-full border rounded px-2 py-1 text-xs" />
-                    <input value={createHomeRegion} placeholder="Region" onChange={(e) => setCreateHomeRegion(e.target.value)}
+                    <input value={createHomeRegion} placeholder="Regione" onChange={(e) => setCreateHomeRegion(e.target.value)}
                       className="w-full border rounded px-2 py-1 text-xs" />
-                    <input value={createHomeCountry} placeholder="Country" onChange={(e) => setCreateHomeCountry(e.target.value)}
+                    <input value={createHomeCountry} placeholder="Paese" onChange={(e) => setCreateHomeCountry(e.target.value)}
                       className="w-full border rounded px-2 py-1 text-xs" />
-                    <input value={createHomeZip} placeholder="ZIP" onChange={(e) => setCreateHomeZip(e.target.value)}
+                    <input value={createHomeZip} placeholder="CAP" onChange={(e) => setCreateHomeZip(e.target.value)}
                       className="w-full border rounded px-2 py-1 text-xs" />
                   </div>
                 </details>
                 <button type="submit" className="w-full bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
-                  Create Patient Account
+                  Crea Account Paziente
                 </button>
                 {createMsg && <p className="text-xs text-green-600">{createMsg}</p>}
                 {createErr && <p className="text-xs text-red-600">{createErr}</p>}
@@ -448,10 +449,10 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
               viewMode === 'aggregated' ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-100'
             }`}
           >
-            All Patients (Aggregated)
+            Tutti i Pazienti (Aggregato)
           </button>
           <div className="border-t pt-1 mt-1">
-            <p className="text-xs text-gray-400 px-3 mb-1">Individual Patients</p>
+            <p className="text-xs text-gray-400 px-3 mb-1">Pazienti Individuali</p>
             {patients.map((p) => (
               <div key={p._id} className={`flex items-center px-3 py-1.5 rounded text-sm ${
                 selectedPatient === p._id && viewMode === 'individual'
@@ -476,7 +477,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                     p.status === 'rejected' ? 'bg-red-100 text-red-700' :
                     'bg-gray-100 text-gray-500'
                   }`}>
-                    {p.status || 'inactive'}
+                    {p.status === 'active' ? 'Attivo' : p.status === 'pending' ? 'In attesa' : p.status === 'rejected' ? 'Rifiutato' : 'Inattivo'}
                   </span>
                 </div>
               </div>
@@ -487,14 +488,14 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
         <div className="flex-1 space-y-4">
           {/* Recent Activity */}
           <details className="bg-white p-4 rounded-lg shadow-sm border">
-            <summary className="cursor-pointer text-sm font-medium text-gray-700 flex items-center gap-2">
-              <span>Recent Activity (last 24h)</span>
+              <summary className="cursor-pointer text-sm font-medium text-gray-700 flex items-center gap-2">
+              <span>Attività Recente (ultime 24h)</span>
               <button onClick={(e) => { e.preventDefault(); loadRecentActivity(); }} className="text-xs text-blue-600 hover:underline">
-                {activityLoading ? '...' : 'Refresh'}
+                {activityLoading ? '...' : 'Aggiorna'}
               </button>
             </summary>
             {recentActivity.length === 0 ? (
-              <p className="text-xs text-gray-400 mt-2">No recent activity</p>
+              <p className="text-xs text-gray-400 mt-2">Nessuna attività recente</p>
             ) : (
               <div className="mt-2 space-y-1 max-h-64 overflow-y-auto">
                 {recentActivity.map((a: any) => (
@@ -515,16 +516,16 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
 
           {contractStatus && (
             <div className="bg-white p-3 rounded-lg shadow-sm border flex items-center gap-4 text-sm">
-              <span className="font-medium text-gray-700">Contract:</span>
+              <span className="font-medium text-gray-700">Contratto:</span>
               <span className="capitalize text-gray-600">
-                {contractStatus.feeType === 'fixed' ? 'Fixed' : contractStatus.feeType === 'monthly' ? 'Monthly' : 'Per patient'}
+                {contractStatus.feeType === 'fixed' ? 'Fisso' : contractStatus.feeType === 'monthly' ? 'Mensile' : 'Per paziente'}
               </span>
               <span className="text-gray-600">{contractStatus.fee} {contractStatus.currency}</span>
               <span className="text-gray-400">|</span>
-              <span className="text-gray-600">Max {contractStatus.maxPatients} pts</span>
+              <span className="text-gray-600">Max {contractStatus.maxPatients} paz.</span>
               <span className="text-gray-400">|</span>
               <span className="text-gray-600">
-                Since last invoice:{' '}
+                Dall'ultima fattura:{' '}
                 <span className="font-medium text-blue-600">{contractStatus.consumedSinceInvoice} {contractStatus.currency}</span>
               </span>
             </div>
@@ -532,35 +533,35 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
 
           {viewMode === 'aggregated' && (
             <details className="bg-white p-4 rounded-lg shadow-sm border">
-              <summary className="cursor-pointer text-sm font-medium text-gray-700">Patient Filters</summary>
+              <summary className="cursor-pointer text-sm font-medium text-gray-700">Filtri Pazienti</summary>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
                 <div>
-                  <label className="block text-xs text-gray-500">Sex</label>
+                  <label className="block text-xs text-gray-500">Sesso</label>
                   <select value={filterSex} onChange={(e) => setFilterSex(e.target.value)} className="w-full border rounded px-2 py-1 text-sm">
-                    <option value="">All</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
+                    <option value="">Tutti</option>
+                    <option value="male">Maschio</option>
+                    <option value="female">Femmina</option>
+                    <option value="other">Altro</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500">Age from</label>
+                  <label className="block text-xs text-gray-500">Età da</label>
                   <input type="number" value={filterAgeFrom} onChange={(e) => setFilterAgeFrom(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500">Age to</label>
+                  <label className="block text-xs text-gray-500">Età a</label>
                   <input type="number" value={filterAgeTo} onChange={(e) => setFilterAgeTo(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500">Home City</label>
+                  <label className="block text-xs text-gray-500">Città</label>
                   <input value={filterHomeCity} onChange={(e) => setFilterHomeCity(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500">Home Region</label>
+                  <label className="block text-xs text-gray-500">Regione</label>
                   <input value={filterHomeRegion} onChange={(e) => setFilterHomeRegion(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500">Home Country</label>
+                  <label className="block text-xs text-gray-500">Paese</label>
                   <input value={filterHomeCountry} onChange={(e) => setFilterHomeCountry(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" />
                 </div>
               </div>
@@ -568,9 +569,9 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
           )}
 
           {viewMode === 'individual' && !selectedPatient && (
-            <p className="text-gray-500 text-center py-12 bg-white rounded-lg border">
-              Select a patient from the left panel
-            </p>
+              <p className="text-gray-500 text-center py-12 bg-white rounded-lg border">
+                Seleziona un paziente dal pannello sinistro
+              </p>
           )}
 
           {(selectedPatient || viewMode === 'aggregated') && (
@@ -578,10 +579,10 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
               <div className="bg-white p-4 rounded-lg shadow-sm border space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                   <div>
-                    <label className="block text-xs text-gray-500">Measurement Type</label>
+                    <label className="block text-xs text-gray-500">Tipo Misurazione</label>
                     <select value={selectedType} onChange={(e) => { setSelectedType(e.target.value); setSelectedFields([]); }}
                       className="w-full border rounded px-2 py-1.5 text-sm">
-                      <option value="">Select...</option>
+                      <option value="">Seleziona...</option>
                       {(() => {
                         const groups: Record<string, typeof types> = {};
                         for (const t of types) {
@@ -590,11 +591,11 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                           groups[g].push(t);
                         }
                         const labels: Record<string, string> = {
-                          generalhealth: 'General Health',
-                          cardiac: 'Cardiac',
-                          blood_gas: 'Blood / Gas',
-                          lipidemia: 'Lipid Profile',
-                          renal: 'Renal Function',
+                          generalhealth: 'Salute Generale',
+                          cardiac: 'Cardiaco',
+                          blood_gas: 'Sangue / Gas',
+                          lipidemia: 'Profilo Lipidico',
+                          renal: 'Funzione Renale',
                         };
                         return Object.entries(groups).map(([group, ts]) => (
                           <optgroup key={group} label={labels[group] || group}>
@@ -607,37 +608,37 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500">Time Grouping</label>
+                    <label className="block text-xs text-gray-500">Raggruppamento Temporale</label>
                     <select value={groupBy} onChange={(e) => setGroupBy(e.target.value as TimeGroupBy)}
                       className="w-full border rounded px-2 py-1.5 text-sm">
-                      <option value="hour">Hour</option>
-                      <option value="day">Day</option>
-                      <option value="week">Week</option>
-                      <option value="month">Month</option>
-                      <option value="year">Year</option>
+                      <option value="hour">Ora</option>
+                      <option value="day">Giorno</option>
+                      <option value="week">Settimana</option>
+                      <option value="month">Mese</option>
+                      <option value="year">Anno</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500">Aggregation</label>
+                    <label className="block text-xs text-gray-500">Aggregazione</label>
                     <select value={aggregation} onChange={(e) => setAggregation(e.target.value as AggregationFunction)}
                       className="w-full border rounded px-2 py-1.5 text-sm">
-                      <option value="avg">Average</option>
-                      <option value="min">Minimum</option>
-                      <option value="max">Maximum</option>
+                      <option value="avg">Media</option>
+                      <option value="min">Minimo</option>
+                      <option value="max">Massimo</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500">Chart Type</label>
+                    <label className="block text-xs text-gray-500">Tipo Grafico</label>
                     <select value={chartType} onChange={(e) => setChartType(e.target.value as ChartType)}
                       className="w-full border rounded px-2 py-1.5 text-sm">
-                      <option value="line">Line</option>
+                      <option value="line">Linea</option>
                       <option value="area">Area</option>
-                      <option value="bar">Bar</option>
+                      <option value="bar">Barre</option>
                     </select>
                   </div>
                   <div className="flex items-end">
                     <button onClick={loadChart} className="w-full bg-blue-600 text-white py-1.5 rounded text-sm hover:bg-blue-700">
-                      Refresh Chart
+                      Aggiorna Grafico
                     </button>
                   </div>
                 </div>
@@ -657,27 +658,27 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                 {/* Saved configs */}
                 <div className="border-t pt-3 mt-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-medium text-gray-600">Saved Configs:</span>
+                    <span className="text-xs font-medium text-gray-600">Configurazioni Salvate:</span>
                     <select value={selectedConfigId} onChange={(e) => handleLoadConfig(e.target.value)}
                       className="border rounded px-2 py-1 text-xs min-w-[140px]">
-                      <option value="">— Select —</option>
+                      <option value="">— Seleziona —</option>
                       {savedConfigs.map((c) => (
                         <option key={c._id} value={c._id}>{c.name}</option>
                       ))}
                     </select>
                     <div className="flex items-center gap-1">
-                      <input value={configName} placeholder="Save as..."
+                      <input value={configName} placeholder="Salva come..."
                         onChange={(e) => setConfigName(e.target.value)}
                         className="border rounded px-2 py-1 text-xs w-32"
                       />
                       <button onClick={handleSaveConfig} className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
-                        Save
+                        Salva
                       </button>
                     </div>
                     {selectedConfigId && (
                       <button onClick={(e) => handleDeleteConfig(e, selectedConfigId)}
                         className="text-red-600 border border-red-300 px-2 py-1 rounded text-xs hover:bg-red-50">
-                        Delete
+                        Elimina
                       </button>
                     )}
                     {configMsg && <span className="text-xs text-green-600">{configMsg}</span>}
@@ -702,13 +703,13 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                   selectedPatientData?.status === 'rejected' ? 'bg-red-100 text-red-700' :
                   'bg-gray-100 text-gray-500'
                 }`}>
-                  {selectedPatientData?.status || 'inactive'}
+                  {selectedPatientData?.status === 'active' ? 'Attivo' : selectedPatientData?.status === 'pending' ? 'In attesa' : selectedPatientData?.status === 'rejected' ? 'Rifiutato' : 'Inattivo'}
                 </span>
                 {selectedPatientData?.status !== 'active' && selectedPatientData?.status !== 'rejected' && (
-                  <button onClick={() => apiClient.patch(`/doctor/patients/${selectedPatient}`, { status: 'active' }).then(loadPatients)} className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700">Activate</button>
+                  <button onClick={() => apiClient.patch(`/doctor/patients/${selectedPatient}`, { status: 'active' }).then(loadPatients)} className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700">Attiva</button>
                 )}
                 {selectedPatientData?.status === 'active' && (
-                  <button onClick={() => apiClient.patch(`/doctor/patients/${selectedPatient}`, { status: 'inactive' }).then(loadPatients)} className="text-xs bg-yellow-600 text-white px-2 py-0.5 rounded hover:bg-yellow-700">Deactivate</button>
+                  <button onClick={() => apiClient.patch(`/doctor/patients/${selectedPatient}`, { status: 'inactive' }).then(loadPatients)} className="text-xs bg-yellow-600 text-white px-2 py-0.5 rounded hover:bg-yellow-700">Disattiva</button>
                 )}
                 <button onClick={() => {
                   setEditName(selectedPatientData?.name || '');
@@ -717,7 +718,11 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                   setEditSex(selectedPatientData?.sex || '');
                   setEditMsg(''); setEditErr('');
                   setShowEditPatient(true);
-                }} className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded hover:bg-blue-700">Edit</button>
+                }} className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded hover:bg-blue-700">Modifica</button>
+                <Link to={`/measurements/new?forPatient=${selectedPatient}`}
+                  className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700">
+                  Nuova Misurazione
+                </Link>
                 <button onClick={async () => {
                   setSharingMsg('');
                   try {
@@ -725,13 +730,13 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                     setPatientSharing(res.data.data?.types || []);
                     setShowRequestSharing(true);
                   } catch { setPatientSharing([]); setShowRequestSharing(true); }
-                }} className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded hover:bg-purple-700">Sharing</button>
+                }} className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded hover:bg-purple-700">Condivisione</button>
                 <button onClick={async () => {
-                  if (!window.confirm('Remove this patient from your list?')) return;
+                    if (!window.confirm('Rimuovere questo paziente dalla lista?')) return;
                   await apiClient.delete(`/doctor/patients/${selectedPatient}`);
                   setSelectedPatient(null);
                   loadPatients();
-                }} className="text-xs bg-red-600 text-white px-2 py-0.5 rounded hover:bg-red-700 ml-auto">Remove</button>
+                }} className="text-xs bg-red-600 text-white px-2 py-0.5 rounded hover:bg-red-700 ml-auto">Rimuovi</button>
               </div>
 
               {/* BMI Card */}
@@ -840,22 +845,22 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                       <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500">Birth Date</label>
+                      <label className="block text-xs text-gray-500">Data di Nascita</label>
                       <input type="date" value={editBirthDate} onChange={(e) => setEditBirthDate(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500">Sex</label>
+                      <label className="block text-xs text-gray-500">Sesso</label>
                       <select value={editSex} onChange={(e) => setEditSex(e.target.value)} className="w-full border rounded px-2 py-1 text-sm">
-                        <option value="">Not specified</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
+                        <option value="">Non specificato</option>
+                        <option value="male">Maschio</option>
+                        <option value="female">Femmina</option>
+                        <option value="other">Altro</option>
                       </select>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Save</button>
-                    <button onClick={() => setShowEditPatient(false)} className="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-400">Cancel</button>
+                    <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Salva</button>
+                    <button onClick={() => setShowEditPatient(false)} className="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-400">Annulla</button>
                   </div>
                   {editMsg && <p className="text-xs text-green-600">{editMsg}</p>}
                   {editErr && <p className="text-xs text-red-600">{editErr}</p>}
@@ -864,9 +869,9 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
 
               <div className="bg-white rounded-lg shadow-sm border">
                 <div className="px-4 py-3 border-b font-medium text-sm flex items-center justify-between">
-                  <span>Latest Measurements — {selectedPatientData?.name}</span>
+                  <span>Ultime Misurazioni — {selectedPatientData?.name}</span>
                   <div className="flex gap-2 items-center">
-                    <span className="text-xs text-gray-400">(per type)</span>
+                    <span className="text-xs text-gray-400">(per tipo)</span>
                     <button onClick={handleDeletePatientMeasurements} className="text-xs text-red-600 border border-red-300 px-2 py-0.5 rounded hover:bg-red-50">
                       Delete All
                     </button>
@@ -904,10 +909,10 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
 
               <div className="bg-white rounded-lg shadow-sm border">
                 <div className="px-4 py-3 border-b font-medium text-sm flex items-center justify-between">
-                  <span>Anamnesis</span>
+                  <span>Anamnesi</span>
                   <button onClick={() => { setShowAnamnesisForm(!showAnamnesisForm); setAnamnesisMsg(''); setAnamTab('fisiologica'); }}
                     className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded hover:bg-blue-700">
-                    {showAnamnesisForm ? 'Cancel' : 'New Entry'}
+                    {showAnamnesisForm ? 'Annulla' : 'Nuova Voce'}
                   </button>
                 </div>
                 <div className="p-4 space-y-3">
@@ -930,10 +935,10 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                         setAnamEntries({ fisiologica: '', familiare: '', farmacologica: '', patologicaRemota: '', patologicaProssima: '', sociale: '' });
                         setNewAnamnesisNotes('');
                         setShowAnamnesisForm(false);
-                        setAnamnesisMsg('Anamnesis saved');
+                        setAnamnesisMsg('Anamnesi salvata');
                         loadAnamnesis();
                       } catch (err: any) {
-                        setAnamnesisMsg(err.response?.data?.error || 'Failed to save');
+                        setAnamnesisMsg(err.response?.data?.error || 'Salvataggio fallito');
                       }
                     }} className="space-y-2 border-b pb-4">
                       <div className="flex gap-1 flex-wrap">
@@ -946,30 +951,30 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                       </div>
                       <div>
                         <label className="block text-xs text-gray-500 mb-0.5">
-                          {anamTabs.find((t) => t.key === anamTab)?.label} — one entry per line
+                          {anamTabs.find((t) => t.key === anamTab)?.label} — una voce per riga
                         </label>
                         <textarea value={anamEntries[anamTab]} onChange={(e) => setAnamEntries((prev) => ({ ...prev, [anamTab]: e.target.value }))}
                           rows={4} className="w-full border rounded px-3 py-2 text-sm"
-                          placeholder={`Enter ${anamTabs.find((t) => t.key === anamTab)?.label.toLowerCase()} entries, one per line...`} />
+                          placeholder={`Inserisci voci per ${anamTabs.find((t) => t.key === anamTab)?.label.toLowerCase()}, una per riga...`} />
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-500 mb-0.5">Additional notes (optional)</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">Note aggiuntive (opzionale)</label>
                         <textarea value={newAnamnesisNotes} onChange={(e) => setNewAnamnesisNotes(e.target.value)}
                           rows={2} className="w-full border rounded px-3 py-2 text-sm" />
                       </div>
-                      <button type="submit" className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700">Save Anamnesis</button>
+                      <button type="submit" className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700">Salva Anamnesi</button>
                     </form>
                   )}
                   {anamnesisMsg && <p className="text-xs text-green-600">{anamnesisMsg}</p>}
                   {anamnesis.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4">No anamnesis records yet</p>
+                    <p className="text-sm text-gray-500 text-center py-4">Nessuna anamnesi ancora</p>
                   ) : (
                     <div className="space-y-3 max-h-80 overflow-y-auto">
                       {anamnesis.map((a) => {
                         return (
                         <div key={a._id} className="border-l-2 border-purple-300 pl-3 py-1">
                           <p className="text-xs text-gray-400">
-                            Recorded: {new Date(a.recordedAt).toLocaleString()}
+                            Registrata: {new Date(a.recordedAt).toLocaleString()}
                           </p>
                           {anamTabs.map((s) => {
                             const section = (a as any)[s.key];
@@ -985,7 +990,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                           })}
                           {a.notes && (
                             <div className="mt-1">
-                              <p className="text-xs font-medium text-gray-600">Notes</p>
+                              <p className="text-xs font-medium text-gray-600">Note</p>
                               <p className="text-sm whitespace-pre-wrap">{a.notes}</p>
                             </div>
                           )}
@@ -998,7 +1003,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
               </div>
 
               <div className="bg-white rounded-lg shadow-sm border">
-                <div className="px-4 py-3 border-b font-medium text-sm">Clinical Notes</div>
+                <div className="px-4 py-3 border-b font-medium text-sm">Note Cliniche</div>
                 <div className="p-4 space-y-3">
                   <form onSubmit={async (e) => {
                     e.preventDefault(); if (!newNote.trim()) return;
@@ -1011,38 +1016,38 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                         anamnesisId: noteAnamnesisId || undefined,
                       });
                       setNewNote(''); setShareWithPatient(false); setNotifyViaEmail(false); setNoteAnamnesisId('');
-                      setNoteMsg('Note added'); loadNotes();
+                      setNoteMsg('Nota aggiunta'); loadNotes();
                     } catch {}
                   }} className="space-y-2">
                     <div className="flex gap-2">
                       <input value={newNote} onChange={(e) => setNewNote(e.target.value)}
-                        placeholder="Write a note..." className="flex-1 border rounded px-3 py-2 text-sm" />
-                      <button type="submit" className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700">Add</button>
+                        placeholder="Scrivi una nota..." className="flex-1 border rounded px-3 py-2 text-sm" />
+                      <button type="submit" className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700">Aggiungi</button>
                     </div>
                     <div className="flex items-center gap-4 text-xs flex-wrap">
                       <label className="flex items-center gap-1 cursor-pointer">
                         <input type="checkbox" checked={shareWithPatient}
                           onChange={(e) => { setShareWithPatient(e.target.checked); if (!e.target.checked) setNotifyViaEmail(false); }} />
-                        Show to patient
+                        Mostra al paziente
                       </label>
                       <label className={`flex items-center gap-1 cursor-pointer ${!shareWithPatient ? 'opacity-50' : ''}`}>
                         <input type="checkbox" checked={notifyViaEmail}
                           disabled={!shareWithPatient}
                           onChange={(e) => setNotifyViaEmail(e.target.checked)} />
-                        Send email notification
+                        Invia notifica email
                       </label>
                       {anamnesis.length > 0 && (
                         <label className="flex items-center gap-1 cursor-pointer">
                           <input type="checkbox" checked={!!noteAnamnesisId}
                             onChange={(e) => setNoteAnamnesisId(e.target.checked ? anamnesis[0]._id : '')} />
-                          Associate with latest anamnesis
+                          Associa all'ultima anamnesi
                         </label>
                       )}
                     </div>
                   </form>
                   {noteMsg && <p className="text-xs text-green-600">{noteMsg}</p>}
                   {notes.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4">No notes yet</p>
+                    <p className="text-sm text-gray-500 text-center py-4">Nessuna nota ancora</p>
                   ) : (
                     <div className="space-y-2 max-h-60 overflow-y-auto">
                       {notes.map((n) => (
@@ -1050,12 +1055,12 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                           <div className="flex items-start gap-2">
                             <p className="text-sm flex-1">{n.content}</p>
                             <div className="flex gap-1 shrink-0">
-                              {n.showToPatient && <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">Shared</span>}
-                              {n.patientNotified && <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">Emailed</span>}
-                              {n.anamnesisId && <span className="text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">Anamnesis</span>}
+                              {n.showToPatient && <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">Condivisa</span>}
+                              {n.patientNotified && <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">Notificata</span>}
+                              {n.anamnesisId && <span className="text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">Anamnesi</span>}
                             </div>
                           </div>
-                          <p className="text-xs text-gray-400 mt-1">{n.doctorName || 'Doctor'} · {new Date(n.createdAt).toLocaleString()}</p>
+                          <p className="text-xs text-gray-400 mt-1">{n.doctorName || 'Medico'} · {new Date(n.createdAt).toLocaleString()}</p>
                         </div>
                       ))}
                     </div>

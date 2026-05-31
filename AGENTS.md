@@ -313,6 +313,11 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - **FASE 4**: Frontend paziente: Register rimuove role patient, sezione "I miei Dottori" in Dashboard con confirm/reject, sezione GDPR in Profile con storico, toggle condivisione
 - **FASE 5**: Frontend dottore: Add Patient con 2 modalità (by email / create account con campi intake), badge pending/active/rejected, form anamnesi a 6 tabs, BMI card, modale richiesta condivisione tipi, view sharing settings
 
+### Italianizzazione Completa DoctorPatients.tsx
+- Bottone "Nuova Misurazione" aggiunto nel dettaglio paziente (collegamento a `/measurements/new?forPatient=<id>`)
+- Import `Link` da react-router-dom aggiunto
+- Tradotti in italiano: label filtri sesso/età/città/regione/paese, opzioni select (Maschio/Femmina/Altro, Tutti), label grafico (Tipo Misurazione, Raggruppamento Temporale, Aggregazione, Tipo Grafico, Linea/Area/Barre, Ora/Giorno/Settimana/Mese/Anno, Media/Minimo/Massimo), macrogruppi (Salute Generale/Cardiaco/Sangue/Gas/Profilo Lipidico/Funzione Renale), pulsanti (Aggiorna Grafico, Salva/Elimina configurazioni), form edit paziente (Data di Nascita, Sesso, Salva/Annulla), badge stato (Attivo/In attesa/Rifiutato/Inattivo, Attiva/Disattiva), sezione anamnesi (Nuova Voce/Annulla, una voce per riga, Salva Anamnesi, Note aggiuntive, nessuna anamnesi ancora), note cliniche (Note Cliniche, Mostra al paziente, Invia notifica email, Associa all'ultima anamnesi, Condivisa/Notificata/Anamnesi), messaggi conferma/errore, placeholder, dialog conferma rimozione
+
 ## Future Phases
 - **Phase 2**: Export CSV/JSON endpoint, advanced charts, Looker Studio Community Connector
 - **Phase 3**: BigQuery sync, device OAuth integrations (Fitbit, Google Fit), webhook endpoint

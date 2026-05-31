@@ -22,42 +22,42 @@ export function Navbar() {
               HealthBridge
             </Link>
             <Link to="/measurements" className="text-gray-600 hover:text-gray-900">
-              Measurements
+              Le Mie Misure
             </Link>
             {(user.role === 'doctor' || user.role === 'admin') && (
               <Link to="/measurements/import" className="text-gray-600 hover:text-gray-900">
-                Import
+                Importa
               </Link>
             )}
             {user.role === 'doctor' && (
               <>
                 <Link to="/doctor/patients" className="text-gray-600 hover:text-gray-900">
-                  My Patients
+                  I Miei Pazienti
                 </Link>
                 <Link to="/doctor/alerts" className="text-gray-600 hover:text-gray-900">
-                  Alerts
+                  Alert
                 </Link>
                 <Link to="/doctor/contract" className="text-gray-600 hover:text-gray-900">
-                  Contract
+                  Contratto
                 </Link>
               </>
             )}
             {user.role === 'admin' && (
               <>
                 <Link to="/admin/users" className="text-gray-600 hover:text-gray-900">
-                  Users
+                  Utenti
                 </Link>
                 <Link to="/admin/measurement-types" className="text-gray-600 hover:text-gray-900">
-                  Types
+                  Tipi
                 </Link>
                 <Link to="/admin/associations" className="text-gray-600 hover:text-gray-900">
-                  Associations
+                  Associazioni
                 </Link>
                 <Link to="/admin/alert-templates" className="text-gray-600 hover:text-gray-900">
-                  Alerts
+                  Alert
                 </Link>
                 <Link to="/admin/contracts" className="text-gray-600 hover:text-gray-900">
-                  Contracts
+                  Contratti
                 </Link>
                 <Link to="/admin/contracts/report" className="text-gray-600 hover:text-gray-900">
                   Report
@@ -74,13 +74,13 @@ export function Navbar() {
               {user.name} ({user.role})
             </span>
             <Link to="/profile" className="text-sm text-blue-600 hover:underline">
-              Profile
+              Profilo
             </Link>
             <button
               onClick={handleLogout}
               className="text-sm text-red-600 hover:underline"
             >
-              Logout
+              Esci
             </button>
           </div>
         </div>

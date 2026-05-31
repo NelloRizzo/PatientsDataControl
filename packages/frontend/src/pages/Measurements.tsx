@@ -32,15 +32,15 @@ export function Measurements() {
   }, [page, filterType]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this measurement?')) return;
+    if (!confirm('Eliminare questa misurazione?')) return;
     await deleteMeasurement(id);
     load();
   };
 
   const handleDeleteAll = async () => {
     const msg = filterType
-      ? `Delete ALL measurements of type "${types.find(t => t.key === filterType)?.name || filterType}"?`
-      : 'Delete ALL your measurements? This cannot be undone.';
+      ? `Eliminare TUTTE le misurazioni di tipo "${types.find(t => t.key === filterType)?.name || filterType}"?`
+      : 'Eliminare TUTTE le tue misurazioni? Operazione irreversibile.';
     if (!confirm(msg)) return;
     await apiClient.delete('/measurements/all', { params: filterType ? { type: filterType } : {} });
     setPage(1);
@@ -55,7 +55,7 @@ export function Measurements() {
       setImportResult(res.data);
       if (res.data.imported > 0) load();
     } catch (e: any) {
-      setImportResult({ imported: 0, errors: [{ row: 0, error: e.response?.data?.error || 'Import failed' }] });
+      setImportResult({ imported: 0, errors: [{ row: 0, error: e.response?.data?.error || 'Import fallito' }] });
     }
   };
 
@@ -72,36 +72,36 @@ export function Measurements() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Measurements</h1>
+        <h1 className="text-2xl font-bold">Le Mie Misure</h1>
         <div className="flex gap-2">
           <button onClick={() => { setShowImport(!showImport); setImportResult(null); setCsvText(''); }} className="bg-white border border-blue-600 text-blue-600 px-4 py-2 rounded hover:bg-blue-50">
-            {showImport ? 'Cancel' : 'Import CSV'}
+            {showImport ? 'Annulla' : 'Importa CSV'}
           </button>
-          <Link to="/measurements/new" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">New Measurement</Link>
+          <Link to="/measurements/new" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Nuova Misurazione</Link>
         </div>
       </div>
 
       {showImport && (
         <div className="bg-white p-4 rounded-lg shadow-sm border space-y-3">
-          <p className="text-sm text-gray-600">Paste CSV data. Each row = one measurement. Format:</p>
+          <p className="text-sm text-gray-600">Incolla dati CSV. Ogni riga = una misurazione. Formato:</p>
           <pre className="text-xs bg-gray-50 p-2 rounded border overflow-x-auto">
 {`type,fields,timestamp,notes
 blood_pressure,systolic=120|mmHg\,diastolic=80|mmHg,2026-05-21T10:00,
 glucose,value=95|mg/dL,2026-05-21T10:00,
-weight,value=75|kg,2026-05-21T10:00,optional note`}
+weight,value=75|kg,2026-05-21T10:00,nota opzionale`}
           </pre>
-          <textarea value={csvText} onChange={(e) => setCsvText(e.target.value)} rows={6} className="w-full border rounded px-3 py-2 text-sm font-mono" placeholder="Paste CSV here..." />
+          <textarea value={csvText} onChange={(e) => setCsvText(e.target.value)} rows={6} className="w-full border rounded px-3 py-2 text-sm font-mono" placeholder="Incolla CSV qui..." />
           <div className="flex gap-2 items-center">
-            <button onClick={handleImport} className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">Import</button>
+            <button onClick={handleImport} className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">Importa</button>
             {importResult && (
               <span className={`text-sm ${importResult.errors.length > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
-                {importResult.imported} imported{importResult.errors.length > 0 ? `, ${importResult.errors.length} errors` : ''}
+                {importResult.imported} importate{importResult.errors.length > 0 ? `, ${importResult.errors.length} errori` : ''}
               </span>
             )}
           </div>
           {importResult?.errors.length ? (
             <div className="text-xs text-red-600 space-y-0.5">
-              {importResult.errors.map((e, i) => <p key={i}>Row {e.row}: {e.error}</p>)}
+              {importResult.errors.map((e, i) => <p key={i}>Riga {e.row}: {e.error}</p>)}
             </div>
           ) : null}
         </div>
@@ -113,7 +113,7 @@ weight,value=75|kg,2026-05-21T10:00,optional note`}
           onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
           className="border rounded px-3 py-2"
         >
-          <option value="">All types</option>
+          <option value="">Tutti i tipi</option>
           {(() => {
             const groups: Record<string, typeof types> = {};
             for (const t of types) {
@@ -122,11 +122,11 @@ weight,value=75|kg,2026-05-21T10:00,optional note`}
               groups[g].push(t);
             }
             const labels: Record<string, string> = {
-              generalhealth: 'General Health',
-              cardiac: 'Cardiac',
-              blood_gas: 'Blood / Gas',
-              lipidemia: 'Lipid Profile',
-              renal: 'Renal Function',
+              generalhealth: 'Salute Generale',
+              cardiac: 'Cardiaco',
+              blood_gas: 'Sangue / Gas',
+              lipidemia: 'Profilo Lipidico',
+              renal: 'Funzione Renale',
             };
             return Object.entries(groups).map(([group, ts]) => (
               <optgroup key={group} label={labels[group] || group}>
@@ -138,7 +138,7 @@ weight,value=75|kg,2026-05-21T10:00,optional note`}
           })()}
         </select>
         <button onClick={handleDeleteAll} className="text-sm text-red-600 border border-red-300 px-3 py-2 rounded hover:bg-red-50">
-          Delete All
+          Elimina Tutto
         </button>
       </div>
 
@@ -146,11 +146,11 @@ weight,value=75|kg,2026-05-21T10:00,optional note`}
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Type</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Status</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Values</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Source</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Date</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Tipo</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Stato</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Valori</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Origine</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Data</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -165,8 +165,8 @@ weight,value=75|kg,2026-05-21T10:00,optional note`}
                     const worst = m.evaluation.reduce<'' | 'alert' | 'danger'>((w, e) =>
                       e.status === 'danger' ? 'danger' : e.status === 'alert' ? 'alert' : w, '');
                     if (!worst) return <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded">OK</span>;
-                    if (worst === 'alert') return <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded">ALERT</span>;
-                    return <span className="text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded">DANGER</span>;
+                    if (worst === 'alert') return <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded">ATTENZIONE</span>;
+                    return <span className="text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded">PERICOLO</span>;
                   })()}
                 </td>
                 <td className="px-4 py-3 text-sm">{formatValue(m)}</td>
@@ -179,13 +179,13 @@ weight,value=75|kg,2026-05-21T10:00,optional note`}
                     to={`/measurements/${m._id}`}
                     className="text-blue-600 hover:underline text-sm mr-2"
                   >
-                    Edit
+                    Modifica
                   </Link>
                   <button
                     onClick={() => handleDelete(m._id)}
                     className="text-red-600 hover:underline text-sm"
                   >
-                    Delete
+                    Elimina
                   </button>
                 </td>
               </tr>
@@ -193,7 +193,7 @@ weight,value=75|kg,2026-05-21T10:00,optional note`}
             {measurements.length === 0 && (
               <tr>
                 <td colSpan={6} className="text-center py-8 text-gray-500">
-                  No measurements found
+                  Nessuna misurazione trovata
                 </td>
               </tr>
             )}
@@ -208,15 +208,15 @@ weight,value=75|kg,2026-05-21T10:00,optional note`}
             onClick={() => setPage((p) => p - 1)}
             className="px-3 py-1 border rounded disabled:opacity-50"
           >
-            Previous
+            Precedente
           </button>
-          <span className="px-3 py-1 text-sm">Page {page} of {totalPages}</span>
+          <span className="px-3 py-1 text-sm">Pagina {page} di {totalPages}</span>
           <button
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
             className="px-3 py-1 border rounded disabled:opacity-50"
           >
-            Next
+            Successiva
           </button>
         </div>
       )}

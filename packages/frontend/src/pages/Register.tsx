@@ -19,7 +19,7 @@ export function Register() {
       await register(email, password, name, role);
       setSuccess(true);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed');
+      setError(err.response?.data?.error || 'Registrazione fallita');
     }
   };
 
@@ -28,13 +28,13 @@ export function Register() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
           <div className="text-green-500 text-5xl mb-4">&#10003;</div>
-          <h1 className="text-xl font-bold text-green-700 mb-2">Registration Successful!</h1>
+          <h1 className="text-xl font-bold text-green-700 mb-2">Registrazione completata!</h1>
           <p className="text-gray-600 mb-6">
-            Welcome to HealthBridge! We've sent a verification email to <strong>{email}</strong>.
-            Please check your inbox and verify your email address.
+            Benvenuto su HealthBridge! Ti abbiamo inviato una email di verifica a <strong>{email}</strong>.
+            Controlla la tua casella di posta e verifica il tuo indirizzo email.
           </p>
           <button onClick={() => navigate('/')} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-            Go to Dashboard
+            Vai alla Dashboard
           </button>
         </div>
       </div>
@@ -45,11 +45,11 @@ export function Register() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h1 className="text-2xl font-bold mb-6 text-center">HealthBridge</h1>
-        <h2 className="text-lg mb-4 text-center text-gray-600">Create account</h2>
+        <h2 className="text-lg mb-4 text-center text-gray-600">Crea account</h2>
         {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
+            <label className="block text-sm font-medium mb-1">Nome</label>
             <input
               type="text"
               value={name}
@@ -80,27 +80,27 @@ export function Register() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Role</label>
+            <label className="block text-sm font-medium mb-1">Ruolo</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as 'doctor' | 'analyst')}
                 className="w-full border rounded px-3 py-2"
               >
-              <option value="doctor">Doctor</option>
-              <option value="analyst">Analyst</option>
+              <option value="doctor">Medico</option>
+              <option value="analyst">Analista</option>
             </select>
           </div>
           <button
             type="submit"
             className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
           >
-            Register
+            Registrati
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-500">
-          Already have an account?{' '}
+          Hai già un account?{' '}
           <Link to="/login" className="text-blue-600 hover:underline">
-            Sign in
+            Accedi
           </Link>
         </p>
       </div>
