@@ -397,9 +397,9 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                   className="w-full border rounded px-2 py-1 text-xs" />
                 <div className="flex gap-1">
                   <input type="date" value={createBirthDate} onChange={(e) => setCreateBirthDate(e.target.value)} required
-                    className="flex-1 border rounded px-2 py-1 text-xs" />
+                    className="w-0 flex-1 min-w-0 border rounded px-1 py-1 text-xs" />
                   <select value={createSex} onChange={(e) => setCreateSex(e.target.value)} required
-                    className="flex-1 border rounded px-2 py-1 text-xs">
+                    className="w-0 flex-1 min-w-0 border rounded px-1 py-1 text-xs">
                     <option value="">Sex</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -410,9 +410,9 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                   className="w-full border rounded px-2 py-1 text-xs" />
                 <div className="flex gap-1">
                   <input type="number" step="0.1" value={createHeight} placeholder="Height (cm)" onChange={(e) => setCreateHeight(e.target.value)}
-                    className="flex-1 border rounded px-2 py-1 text-xs" />
+                    className="w-0 flex-1 min-w-0 border rounded px-1 py-1 text-xs" />
                   <input type="number" step="0.1" value={createWeight} placeholder="Weight (kg)" onChange={(e) => setCreateWeight(e.target.value)}
-                    className="flex-1 border rounded px-2 py-1 text-xs" />
+                    className="w-0 flex-1 min-w-0 border rounded px-1 py-1 text-xs" />
                 </div>
                 <details className="text-xs">
                   <summary className="cursor-pointer text-gray-500">Home address (optional)</summary>
