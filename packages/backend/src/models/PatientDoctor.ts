@@ -3,7 +3,8 @@ import mongoose from 'mongoose';
 export interface IPatientDoctorDocument extends mongoose.Document {
   patientId: mongoose.Types.ObjectId;
   doctorId: mongoose.Types.ObjectId;
-  status: 'active' | 'inactive';
+  status: 'pending' | 'active' | 'inactive' | 'rejected';
+  sharedMeasurementTypes: string[];
   notifyOnNewMeasurement: boolean;
   assignedBy: mongoose.Types.ObjectId;
   assignedAt: Date;
@@ -25,8 +26,12 @@ const patientDoctorSchema = new mongoose.Schema<IPatientDoctorDocument>(
     },
     status: {
       type: String,
-      enum: ['active', 'inactive'],
-      default: 'active',
+      enum: ['pending', 'active', 'inactive', 'rejected'],
+      default: 'pending',
+    },
+    sharedMeasurementTypes: {
+      type: [String],
+      default: ['*'],
     },
     assignedBy: {
       type: mongoose.Schema.Types.ObjectId,

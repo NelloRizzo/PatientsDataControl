@@ -3,14 +3,24 @@ import type { AuthRequest } from '../middleware/auth.js';
 import * as authService from '../services/authService.js';
 import { User } from '../models/User.js';
 import { AppError } from '../middleware/errorHandler.js';
-import { updateProfileSchema, verifyEmailSchema, resendVerificationSchema, changePasswordSchema } from '@healthbridge/shared';
+import { updateProfileSchema, verifyEmailSchema, resendVerificationSchema, changePasswordSchema, setPasswordSchema } from '@healthbridge/shared';
+
+export async function setPassword(
+  req: AuthRequest, res: Response, next: NextFunction
+): Promise<void> {
+  try {
+    const { token, password } = setPasswordSchema.parse(req.body);
+    const result = await authService.setPassword(token, password);
+    res.json(result);
+  } catch (error) { next(error); }
+}
 
 export async function register(
   req: AuthRequest, res: Response, next: NextFunction
 ): Promise<void> {
   try {
-    const { email, password, name } = req.body;
-    const result = await authService.registerUser(email, password, name);
+    const { email, password, name, role } = req.body;
+    const result = await authService.registerUser(email, password, name, role);
     res.status(201).json(result);
   } catch (error) { next(error); }
 }

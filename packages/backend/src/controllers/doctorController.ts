@@ -8,9 +8,11 @@ import { AlertLog } from '../models/AlertLog.js';
 import { AppError } from '../middleware/errorHandler.js';
 import * as measurementService from '../services/measurementService.js';
 import { resolvePatientIds } from '../services/filterUtils.js';
-import { updateProfileSchema, createNoteSchema } from '@healthbridge/shared';
+import { updateProfileSchema, createNoteSchema, doctorCreatePatientSchema, createMeasurementSchema, requestSharingSchema } from '@healthbridge/shared';
 import { DoctorContract } from '../models/DoctorContract.js';
 import { calculateConsumedSince } from '../services/contractHelper.js';
+import { generateVerificationToken } from '../services/authService.js';
+import { sendVerificationEmail } from '../services/emailService.js';
 
 async function verifyAssociation(doctorId: string, patientId: string) {
   const association = await PatientDoctor.findOne({
@@ -44,10 +46,12 @@ export async function myPatients(
         email: a.patientId.email,
         birthDate: a.patientId.birthDate?.toISOString?.() || null,
         sex: a.patientId.sex || null,
+        birthCity: a.patientId.birthCity || null,
         homeAddress: a.patientId.homeAddress || null,
         legalAddress: a.patientId.legalAddress || null,
         associationId: a._id.toString(),
         status: a.status,
+        sharedMeasurementTypes: a.sharedMeasurementTypes || ['*'],
         notifyOnNewMeasurement: a.notifyOnNewMeasurement,
         assignedAt: a.assignedAt?.toISOString?.() || '',
       }));
@@ -60,9 +64,23 @@ export async function myPatients(
     ]);
     const alertMap = new Map(alertCounts.map((a) => [a._id.toString(), a.count]));
 
+    // Batch check GDPR consent
+    const { GdprConsent } = await import('../models/GdprConsent.js');
+    const allConsents = await GdprConsent.find({
+      userId: { $in: patientIds },
+      type: 'privacy_policy',
+    }).sort({ grantedAt: -1 }).lean();
+    const consentMap = new Map<string, boolean>();
+    for (const c of allConsents) {
+      if (!consentMap.has(c.userId.toString())) {
+        consentMap.set(c.userId.toString(), c.granted);
+      }
+    }
+
     const data = patients.map((p) => ({
       ...p,
       hasAlerts: (alertMap.get(p._id) || 0) > 0,
+      gdprConsented: consentMap.get(p._id) ?? false,
     }));
 
     res.json({ data });
@@ -79,9 +97,18 @@ export async function patientLatestMeasurements(
   try {
     const { patientId } = req.params;
     await verifyAssociation(req.userId!, patientId);
+    await verifyGdprConsent(patientId);
+
+    const sharedTypes = await getSharedTypes(req.userId!, patientId);
+    if (!sharedTypes) { res.status(403).json({ error: 'No active association' }); return; }
+
+    const match: any = { userId: new mongoose.Types.ObjectId(patientId) };
+    if (sharedTypes[0] !== '*') {
+      match.type = { $in: sharedTypes };
+    }
 
     const docs = await Measurement.aggregate([
-      { $match: { userId: new mongoose.Types.ObjectId(patientId) } },
+      { $match: match },
       { $sort: { timestamp: -1 } },
       { $group: { _id: '$type', doc: { $first: '$$ROOT' } } },
       { $replaceRoot: { newRoot: '$doc' } },
@@ -100,46 +127,125 @@ export async function addPatient(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { email } = req.body;
+    const doctorId = req.userId!;
 
-    const patient = await User.findOne({ email, role: 'patient' });
-    if (!patient) throw new AppError(404, 'Patient not found with that email');
-
-    const existing = await PatientDoctor.findOne({
-      patientId: patient._id,
-      doctorId: req.userId,
-    });
-
-    if (existing) {
-      if (existing.status === 'active') {
-        throw new AppError(409, 'Patient already in your list');
+    // If only email provided, try to add existing patient by email
+    if (req.body.email && !req.body.name) {
+      const existingUser = await User.findOne({ email: req.body.email, role: 'patient' });
+      if (!existingUser) {
+        throw new AppError(404, 'Patient not found with this email. Use "Create Account" to register a new patient.');
       }
-      existing.status = 'active';
-      existing.assignedBy = req.userId as any;
-      existing.assignedAt = new Date();
-      await existing.save();
-      res.json({ message: 'Patient reactivated', associationId: existing._id.toString() });
+
+      const existingAssoc = await PatientDoctor.findOne({
+        doctorId,
+        patientId: existingUser._id,
+      });
+      if (existingAssoc) {
+        if (existingAssoc.status === 'rejected') {
+          throw new AppError(400, 'Patient rejected your association request previously');
+        }
+        throw new AppError(409, `Association already exists (status: ${existingAssoc.status})`);
+      }
+
+      // Check max patients
+      const doctor = await User.findById(doctorId).select('maxPatients');
+      if (doctor?.maxPatients != null) {
+        const activeCount = await PatientDoctor.countDocuments({
+          doctorId,
+          status: { $in: ['active', 'pending'] },
+        });
+        if (activeCount >= doctor.maxPatients) {
+          throw new AppError(403, `Maximum of ${doctor.maxPatients} patients reached. Contact admin.`);
+        }
+      }
+
+      const association = await PatientDoctor.create({
+        patientId: existingUser._id,
+        doctorId,
+        status: 'pending',
+        assignedBy: doctorId,
+        sharedMeasurementTypes: ['*'],
+      });
+
+      res.status(201).json({
+        message: 'Patient added (pending confirmation)',
+        user: existingUser.toJSON(),
+        associationId: association._id.toString(),
+        status: 'pending',
+      });
       return;
     }
 
+    // Full create account flow
+    const parsed = doctorCreatePatientSchema.parse(req.body);
+
+    const existingUser = await User.findOne({ email: parsed.email });
+    if (existingUser) throw new AppError(409, 'Email already in use');
+
     // Check max patients limit
-    const doctor = await User.findById(req.userId).select('maxPatients');
+    const doctor = await User.findById(doctorId).select('maxPatients');
     if (doctor?.maxPatients != null) {
       const activeCount = await PatientDoctor.countDocuments({
-        doctorId: req.userId,
-        status: 'active',
+        doctorId,
+        status: { $in: ['active', 'pending'] },
       });
       if (activeCount >= doctor.maxPatients) {
         throw new AppError(403, `Maximum of ${doctor.maxPatients} patients reached. Contact admin.`);
       }
     }
 
-    const association = await PatientDoctor.create({
-      patientId: patient._id,
-      doctorId: req.userId,
-      assignedBy: req.userId,
+    // Create user without password
+    const user = await User.create({
+      email: parsed.email,
+      name: parsed.name,
+      role: 'patient',
+      birthDate: new Date(parsed.birthDate),
+      sex: parsed.sex,
+      birthCity: parsed.birthCity,
+      homeAddress: parsed.homeAddress,
     });
-    res.status(201).json({ message: 'Patient added', associationId: association._id.toString() });
+
+    // Create height measurement if provided
+    if (parsed.height) {
+      await Measurement.create({
+        userId: user._id,
+        type: 'height',
+        values: { value: parsed.height },
+        units: { value: 'cm' },
+        source: 'manual',
+      });
+    }
+
+    // Create weight measurement if provided
+    if (parsed.weight) {
+      await Measurement.create({
+        userId: user._id,
+        type: 'weight',
+        values: { value: parsed.weight },
+        units: { value: 'kg' },
+        source: 'manual',
+      });
+    }
+
+    // Send verification email with set-password link
+    const token = await generateVerificationToken(user._id.toString());
+    await sendVerificationEmail(parsed.email, token);
+
+    // Create association (pending)
+    const association = await PatientDoctor.create({
+      patientId: user._id,
+      doctorId,
+      status: 'pending',
+      assignedBy: doctorId,
+      sharedMeasurementTypes: ['*'],
+    });
+
+    res.status(201).json({
+      message: 'Patient created and invitation sent',
+      user: user.toJSON(),
+      associationId: association._id.toString(),
+      status: 'pending',
+    });
   } catch (error) {
     next(error);
   }
@@ -395,7 +501,7 @@ export async function addPatientNote(
   }
 }
 
-export async function patientMeasurements(
+export async function createPatientMeasurement(
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -404,11 +510,117 @@ export async function patientMeasurements(
     const { patientId } = req.params;
     await verifyAssociation(req.userId!, patientId);
 
+    const parsed = createMeasurementSchema.parse(req.body);
+    const measurement = await Measurement.create({
+      ...parsed,
+      userId: patientId,
+      timestamp: parsed.timestamp ? new Date(parsed.timestamp) : new Date(),
+    });
+    res.status(201).json({ data: measurement });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function requestSharing(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { patientId } = req.params;
+    await verifyAssociation(req.userId!, patientId);
+
+    const { types } = requestSharingSchema.parse(req.body);
+
+    const { Notification } = await import('../models/Notification.js');
+    const doctor = await User.findById(req.userId).select('name').lean();
+
+    await Notification.create({
+      userId: patientId,
+      category: 'info',
+      title: 'Sharing request from your doctor',
+      body: `Dr. ${(doctor as any)?.name || 'Your doctor'} requests access to: ${types.join(', ')}`,
+      referenceId: patientId,
+      referenceModel: 'SharingRequest',
+    });
+
+    res.json({ message: 'Sharing request sent to patient' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getPatientSharing(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { patientId } = req.params;
+    const association = await PatientDoctor.findOne({
+      doctorId: req.userId,
+      patientId,
+    }).select('sharedMeasurementTypes status').lean();
+
+    if (!association) throw new AppError(404, 'Association not found');
+
+    res.json({
+      data: {
+        status: association.status,
+        sharedMeasurementTypes: association.sharedMeasurementTypes || ['*'],
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function verifyGdprConsent(patientId: string): Promise<void> {
+  const { GdprConsent } = await import('../models/GdprConsent.js');
+  const consent = await GdprConsent.findOne({
+    userId: patientId,
+    type: 'privacy_policy',
+  }).sort({ grantedAt: -1 }).lean();
+  if (!consent || !consent.granted) {
+    throw new AppError(403, 'Patient has not provided GDPR consent');
+  }
+}
+
+async function getSharedTypes(doctorId: string, patientId: string): Promise<string[] | null> {
+  const assoc = await PatientDoctor.findOne({ doctorId, patientId, status: 'active' })
+    .select('sharedMeasurementTypes')
+    .lean();
+  if (!assoc) return null;
+  return assoc.sharedMeasurementTypes || ['*'];
+}
+
+export async function patientMeasurements(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { patientId } = req.params;
+    await verifyAssociation(req.userId!, patientId);
+    await verifyGdprConsent(patientId);
+
+    const sharedTypes = await getSharedTypes(req.userId!, patientId);
+    if (!sharedTypes) { res.status(403).json({ error: 'No active association' }); return; }
+
     const { Measurement } = await import('../models/Measurement.js');
     const { type, from, to, page = '1', limit = '20' } = req.query as Record<string, string>;
 
     const filter: any = { userId: patientId };
-    if (type) filter.type = type;
+    if (type) {
+      if (sharedTypes[0] !== '*' && !sharedTypes.includes(type)) {
+        res.status(403).json({ error: 'This measurement type is not shared with you' });
+        return;
+      }
+      filter.type = type;
+    } else if (sharedTypes[0] !== '*') {
+      filter.type = { $in: sharedTypes };
+    }
     if (from || to) {
       filter.timestamp = {};
       if (from) filter.timestamp.$gte = new Date(from);
@@ -446,8 +658,16 @@ export async function deletePatientMeasurements(
   try {
     const { patientId } = req.params;
     await verifyAssociation(req.userId!, patientId);
+    await verifyGdprConsent(patientId);
 
+    const sharedTypes = await getSharedTypes(req.userId!, patientId);
+    if (!sharedTypes) { res.status(403).json({ error: 'No active association' }); return; }
     const { type } = req.query as Record<string, string>;
+    if (type && sharedTypes[0] !== '*' && !sharedTypes.includes(type)) {
+      res.status(403).json({ error: 'This measurement type is not shared with you' });
+      return;
+    }
+
     const deleted = await measurementService.deleteAllMeasurements(patientId, type);
     res.json({ deleted });
   } catch (error) {
@@ -463,9 +683,17 @@ export async function patientTimeseries(
   try {
     const { patientId } = req.params;
     await verifyAssociation(req.userId!, patientId);
+    await verifyGdprConsent(patientId);
+
+    const sharedTypes = await getSharedTypes(req.userId!, patientId);
+    if (!sharedTypes) { res.status(403).json({ error: 'No active association' }); return; }
 
     const { type, groupBy = 'day', fields, from, to, aggregation } = req.query as Record<string, string>;
     if (!type) { res.status(400).json({ error: 'Type query parameter is required' }); return; }
+    if (sharedTypes[0] !== '*' && !sharedTypes.includes(type)) {
+      res.status(403).json({ error: 'This measurement type is not shared with you' });
+      return;
+    }
 
     const fieldList = fields ? fields.split(',').map((f) => f.trim()).filter(Boolean) : [];
     const result = await measurementService.getTimeSeries(
@@ -485,9 +713,17 @@ export async function patientStats(
   try {
     const { patientId } = req.params;
     await verifyAssociation(req.userId!, patientId);
+    await verifyGdprConsent(patientId);
+
+    const sharedTypes = await getSharedTypes(req.userId!, patientId);
+    if (!sharedTypes) { res.status(403).json({ error: 'No active association' }); return; }
 
     const { type, from, to } = req.query as Record<string, string>;
     if (!type) { res.status(400).json({ error: 'Type query parameter is required' }); return; }
+    if (sharedTypes[0] !== '*' && !sharedTypes.includes(type)) {
+      res.status(403).json({ error: 'This measurement type is not shared with you' });
+      return;
+    }
 
     const result = await measurementService.getMeasurementStats(patientId, type, { from, to });
     res.json(result);

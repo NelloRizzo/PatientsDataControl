@@ -19,6 +19,7 @@ export interface IUserDocument extends mongoose.Document {
   specialty?: string;
   birthDate?: Date;
   sex?: 'male' | 'female' | 'other';
+  birthCity?: string;
   homeAddress?: Address;
   legalAddress?: Address;
   emailVerified: boolean;
@@ -33,13 +34,14 @@ export interface IUserDocument extends mongoose.Document {
 const userSchema = new mongoose.Schema<IUserDocument>(
   {
     email:             { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password:          { type: String, required: true, minlength: 8 },
+    password:          { type: String, minlength: 8 },
     name:              { type: String, required: true, trim: true },
     role:              { type: String, enum: ['patient','doctor','analyst','admin'], default: 'patient' },
     unitSystem:        { type: String, enum: ['metric','imperial'], default: 'metric' },
     specialty:         { type: String, trim: true },
     birthDate:         Date,
     sex:               { type: String, enum: ['male','female','other'] },
+    birthCity:         { type: String, trim: true },
     homeAddress:       { full: String, city: String, province: String, region: String, country: String, zip: String },
     legalAddress:      { full: String, city: String, province: String, region: String, country: String, zip: String },
     emailVerified:     { type: Boolean, default: false },

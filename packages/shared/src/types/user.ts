@@ -19,6 +19,7 @@ export interface IUser {
   specialty?: string;
   birthDate?: string;
   sex?: 'male' | 'female' | 'other';
+  birthCity?: string;
   homeAddress?: Address;
   legalAddress?: Address;
   maxPatients?: number;
@@ -35,6 +36,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   name: string;
+  role?: 'doctor' | 'analyst';
 }
 
 export interface AuthTokens {

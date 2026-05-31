@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../api/client';
 
@@ -25,6 +25,35 @@ export function Profile() {
   // Resend verification
   const [resending, setResending] = useState(false);
   const [resendMsg, setResendMsg] = useState('');
+
+  // GDPR
+  const [gdprHistory, setGdprHistory] = useState<any[]>([]);
+  const [gdprMsg, setGdprMsg] = useState('');
+
+  useEffect(() => {
+    if (user?.role === 'patient') {
+      apiClient.get('/patient/privacy-consent').then((res) => setGdprHistory(res.data.data)).catch(() => {});
+    }
+  }, [user]);
+
+  const handleGdprAccept = async () => {
+    setGdprMsg('');
+    try {
+      await apiClient.post('/patient/privacy-consent', { action: 'accept' });
+      setGdprMsg('Consent recorded');
+      apiClient.get('/patient/privacy-consent').then((res) => setGdprHistory(res.data.data)).catch(() => {});
+    } catch { setGdprMsg('Failed to record consent'); }
+  };
+
+  const handleGdprRevoke = async () => {
+    if (!confirm('Revoking consent will restrict data access. Continue?')) return;
+    setGdprMsg('');
+    try {
+      await apiClient.post('/patient/privacy-consent', { action: 'revoke' });
+      setGdprMsg('Consent revoked');
+      apiClient.get('/patient/privacy-consent').then((res) => setGdprHistory(res.data.data)).catch(() => {});
+    } catch { setGdprMsg('Failed to revoke consent'); }
+  };
 
   if (!user) return null;
 
@@ -204,6 +233,43 @@ export function Profile() {
           {cpErr && <p className="text-xs text-red-600">{cpErr}</p>}
         </form>
       </div>
+
+      {/* GDPR Privacy Consent */}
+      {user.role === 'patient' && (
+        <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border space-y-4">
+          <h2 className="text-lg font-semibold">Privacy & GDPR Consent</h2>
+          <p className="text-xs text-gray-500">
+            Your privacy consent allows doctors to access your measurement data.
+            You can revoke this at any time — data access will be restricted until you re-accept.
+          </p>
+          <div className="flex gap-2">
+            <button onClick={handleGdprAccept} className="bg-green-600 text-white px-4 py-1.5 rounded text-sm hover:bg-green-700">
+              Accept / Re-accept
+            </button>
+            <button onClick={handleGdprRevoke} className="bg-red-600 text-white px-4 py-1.5 rounded text-sm hover:bg-red-700">
+              Revoke Consent
+            </button>
+          </div>
+          {gdprMsg && <p className="text-xs text-green-600">{gdprMsg}</p>}
+          {gdprHistory.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-gray-600 mb-2">Consent History</p>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {gdprHistory.map((h: any) => (
+                  <div key={h._id} className="flex items-center justify-between text-xs border-b pb-1">
+                    <span className={h.granted ? 'text-green-600' : 'text-red-600'}>
+                      {h.granted ? 'Granted' : 'Revoked'}
+                    </span>
+                    <span className="text-gray-400">
+                      {new Date(h.grantedAt || h.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

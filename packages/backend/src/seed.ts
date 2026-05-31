@@ -7,6 +7,7 @@ import { PatientDoctor } from './models/PatientDoctor.js';
 import { ChartConfig } from './models/ChartConfig.js';
 import { AlertTemplate } from './models/AlertTemplate.js';
 import { DoctorContract } from './models/DoctorContract.js';
+import { GdprConsent } from './models/GdprConsent.js';
 
 async function seed() {
   console.log('Connecting to MongoDB...');
@@ -85,8 +86,8 @@ async function seed() {
       macrogroup: 'generalhealth',
       fields: [
         {
-          key: 'value', name: 'Weight', unit: 'kg', units: ['kg', 'lbs', 'stones'],
-          type: 'decimal', min: 1, max: 500,
+          key: 'value', name: 'Weight', unit: 'kg', units: ['kg'],
+          type: 'decimal', min: 0, max: 500,
         },
       ],
       active: true,
@@ -170,8 +171,8 @@ async function seed() {
       macrogroup: 'generalhealth',
       fields: [
         {
-          key: 'value', name: 'Height', unit: 'cm', units: ['cm', 'm', 'in'],
-          type: 'decimal', min: 20, max: 300,
+          key: 'value', name: 'Height', unit: 'cm', units: ['cm'],
+          type: 'decimal', min: 0, max: 300,
         },
       ],
       active: true,
@@ -243,11 +244,11 @@ async function seed() {
     { email: 'dr.smith@healthbridge.com', password: 'doctor1234', name: 'Dr. Alice Smith', role: 'doctor' as const, specialty: 'Cardiology', maxPatients: 2 },
     { email: 'dr.jones@healthbridge.com', password: 'doctor1234', name: 'Dr. Bob Jones', role: 'doctor' as const, specialty: 'Endocrinology', maxPatients: 2 },
     { email: 'analyst@healthbridge.com', password: 'analyst1234', name: 'Charlie Data', role: 'analyst' as const },
-    { email: 'patient1@example.com', password: 'patient1234', name: 'John Doe', role: 'patient' as const, birthDate: new Date('1985-06-15'), sex: 'male' as const, homeAddress: { full: '123 Main St, Milan, MI 20100, Italy', city: 'Milan', province: 'MI', region: 'Lombardy', country: 'Italy' }, legalAddress: { full: '123 Main St, Milan, MI 20100, Italy', city: 'Milan', province: 'MI', region: 'Lombardy', country: 'Italy' } },
-    { email: 'patient2@example.com', password: 'patient1234', name: 'Jane Roe', role: 'patient' as const, birthDate: new Date('1990-11-22'), sex: 'female' as const, homeAddress: { full: '456 Oak Ave, Rome, RM 00100, Italy', city: 'Rome', province: 'RM', region: 'Lazio', country: 'Italy' }, legalAddress: { full: '789 Pine Rd, Florence, FI 50100, Italy', city: 'Florence', province: 'FI', region: 'Tuscany', country: 'Italy' } },
-    { email: 'patient3@example.com', password: 'patient1234', name: 'Mike Brown', role: 'patient' as const, birthDate: new Date('1978-03-08'), sex: 'male' as const, homeAddress: { full: '321 Elm St, Turin, TO 10100, Italy', city: 'Turin', province: 'TO', region: 'Piedmont', country: 'Italy' }, legalAddress: { full: '321 Elm St, Turin, TO 10100, Italy', city: 'Turin', province: 'TO', region: 'Piedmont', country: 'Italy' } },
-    { email: 'patient4@example.com', password: 'patient1234', name: 'Sara White', role: 'patient' as const, birthDate: new Date('2000-07-30'), sex: 'female' as const, homeAddress: { full: '654 Beach Rd, Naples, NA 80100, Italy', city: 'Naples', province: 'NA', region: 'Campania', country: 'Italy' }, legalAddress: { full: '654 Beach Rd, Naples, NA 80100, Italy', city: 'Naples', province: 'NA', region: 'Campania', country: 'Italy' } },
-    { email: 'patient5@example.com', password: 'patient1234', name: 'Tom Gray', role: 'patient' as const, birthDate: new Date('1965-12-10'), sex: 'male' as const, homeAddress: { full: '987 Hill Rd, Bologna, BO 40100, Italy', city: 'Bologna', province: 'BO', region: 'Emilia-Romagna', country: 'Italy' }, legalAddress: { full: '987 Hill Rd, Bologna, BO 40100, Italy', city: 'Bologna', province: 'BO', region: 'Emilia-Romagna', country: 'Italy' } },
+    { email: 'patient1@example.com', password: 'patient1234', name: 'John Doe', role: 'patient' as const, birthDate: new Date('1985-06-15'), sex: 'male' as const, birthCity: 'Milan', homeAddress: { full: '123 Main St, Milan, MI 20100, Italy', city: 'Milan', province: 'MI', region: 'Lombardy', country: 'Italy' }, legalAddress: { full: '123 Main St, Milan, MI 20100, Italy', city: 'Milan', province: 'MI', region: 'Lombardy', country: 'Italy' } },
+    { email: 'patient2@example.com', password: 'patient1234', name: 'Jane Roe', role: 'patient' as const, birthDate: new Date('1990-11-22'), sex: 'female' as const, birthCity: 'Rome', homeAddress: { full: '456 Oak Ave, Rome, RM 00100, Italy', city: 'Rome', province: 'RM', region: 'Lazio', country: 'Italy' }, legalAddress: { full: '789 Pine Rd, Florence, FI 50100, Italy', city: 'Florence', province: 'FI', region: 'Tuscany', country: 'Italy' } },
+    { email: 'patient3@example.com', password: 'patient1234', name: 'Mike Brown', role: 'patient' as const, birthDate: new Date('1978-03-08'), sex: 'male' as const, birthCity: 'Turin', homeAddress: { full: '321 Elm St, Turin, TO 10100, Italy', city: 'Turin', province: 'TO', region: 'Piedmont', country: 'Italy' }, legalAddress: { full: '321 Elm St, Turin, TO 10100, Italy', city: 'Turin', province: 'TO', region: 'Piedmont', country: 'Italy' } },
+    { email: 'patient4@example.com', password: 'patient1234', name: 'Sara White', role: 'patient' as const, birthDate: new Date('2000-07-30'), sex: 'female' as const, birthCity: 'Naples', homeAddress: { full: '654 Beach Rd, Naples, NA 80100, Italy', city: 'Naples', province: 'NA', region: 'Campania', country: 'Italy' }, legalAddress: { full: '654 Beach Rd, Naples, NA 80100, Italy', city: 'Naples', province: 'NA', region: 'Campania', country: 'Italy' } },
+    { email: 'patient5@example.com', password: 'patient1234', name: 'Tom Gray', role: 'patient' as const, birthDate: new Date('1965-12-10'), sex: 'male' as const, birthCity: 'Bologna', homeAddress: { full: '987 Hill Rd, Bologna, BO 40100, Italy', city: 'Bologna', province: 'BO', region: 'Emilia-Romagna', country: 'Italy' }, legalAddress: { full: '987 Hill Rd, Bologna, BO 40100, Italy', city: 'Bologna', province: 'BO', region: 'Emilia-Romagna', country: 'Italy' } },
   ];
 
   const users = await User.create(usersRaw);
@@ -268,6 +269,18 @@ async function seed() {
     { patientId: patients[4]._id, doctorId: drJones._id, status: 'active', assignedBy: admin._id, assignedAt: new Date() },
   ]);
   console.log(`  Created ${associations.length} associations.`);
+
+  // ── GDPR Consent for seed patients ──
+  console.log('Creating GDPR consents...');
+  await GdprConsent.insertMany(
+    patients.map((p) => ({
+      userId: p._id,
+      type: 'privacy_policy' as const,
+      granted: true,
+      grantedAt: new Date(),
+    }))
+  );
+  console.log(`  Created ${patients.length} GDPR consents.`);
 
   // ── Sample Measurements ──
   console.log('Creating sample measurements...');

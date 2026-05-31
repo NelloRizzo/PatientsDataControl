@@ -10,7 +10,8 @@
     "start": "node dist/index.js",
     "lint": "tsc --noEmit",
     "seed": "tsx src/seed.ts",
-    "backfill:macrogroups": "tsx scripts/backfillMacrogroups.ts"
+    "backfill:macrogroups": "tsx scripts/backfillMacrogroups.ts",
+    "migrate:anamnesis": "tsx scripts/migrateAnamnesis.ts"
   },
   "dependencies": {
     "@healthbridge/shared": "*",

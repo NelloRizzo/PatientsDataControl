@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { registerSchema, loginSchema, verifyEmailSchema, resendVerificationSchema, changePasswordSchema } from '@healthbridge/shared';
+import { registerSchema, loginSchema, verifyEmailSchema, resendVerificationSchema, changePasswordSchema, setPasswordSchema } from '@healthbridge/shared';
 import * as authController from '../controllers/authController.js';
 
 const router = Router();
@@ -14,5 +14,6 @@ router.put('/profile', authenticate, authController.updateProfile);
 router.post('/verify-email', validate(verifyEmailSchema), authController.verifyEmail);
 router.post('/resend-verification', validate(resendVerificationSchema), authController.resendVerification);
 router.post('/change-password', authenticate, validate(changePasswordSchema), authController.changePassword);
+router.post('/set-password', validate(setPasswordSchema), authController.setPassword);
 
 export default router;

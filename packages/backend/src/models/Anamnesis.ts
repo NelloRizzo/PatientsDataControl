@@ -1,10 +1,18 @@
 import mongoose from 'mongoose';
 
+const sectionSchema = new mongoose.Schema({
+  entries: [String],
+}, { _id: false });
+
 export interface IAnamnesisDocument extends mongoose.Document {
   patientId: mongoose.Types.ObjectId;
   recordedAt: Date;
-  pathologies: string;
-  therapies: string;
+  fisiologica?: { entries: string[] };
+  familiare?: { entries: string[] };
+  farmacologica?: { entries: string[] };
+  patologicaRemota?: { entries: string[] };
+  patologicaProssima?: { entries: string[] };
+  sociale?: { entries: string[] };
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -23,16 +31,12 @@ const anamnesisSchema = new mongoose.Schema<IAnamnesisDocument>(
       required: true,
       default: Date.now,
     },
-    pathologies: {
-      type: String,
-      required: true,
-      maxlength: 5000,
-    },
-    therapies: {
-      type: String,
-      required: true,
-      maxlength: 5000,
-    },
+    fisiologica: { type: sectionSchema },
+    familiare: { type: sectionSchema },
+    farmacologica: { type: sectionSchema },
+    patologicaRemota: { type: sectionSchema },
+    patologicaProssima: { type: sectionSchema },
+    sociale: { type: sectionSchema },
     notes: {
       type: String,
       maxlength: 2000,

@@ -21,14 +21,23 @@ export function generateTokens(userId: string): AuthTokens {
 export async function registerUser(
   email: string,
   password: string,
-  name: string
+  name: string,
+  role?: 'doctor' | 'analyst'
 ) {
   const existing = await User.findOne({ email });
   if (existing) {
     throw new AppError(409, 'Email already registered');
   }
 
-  const user = await User.create({ email, password, name });
+  if (role && !['doctor', 'analyst'].includes(role)) {
+    throw new AppError(400, 'Invalid role for self-registration');
+  }
+  const userRole = role || 'patient';
+  if (userRole === 'patient') {
+    throw new AppError(400, 'Patient registration is not available. Contact your doctor.');
+  }
+
+  const user = await User.create({ email, password, name, role: userRole });
   const tokens = generateTokens(user._id.toString());
 
   const token = await generateVerificationToken(user._id.toString());
@@ -107,6 +116,25 @@ export async function resendVerification(email: string) {
   await sendVerificationEmail(email, token);
 
   return { message: 'Verification email sent' };
+}
+
+export async function setPassword(token: string, newPassword: string) {
+  const user = await User.findOne({
+    verificationToken: token,
+    verificationExpires: { $gt: new Date() },
+  });
+
+  if (!user) {
+    throw new AppError(400, 'Invalid or expired token');
+  }
+
+  user.password = newPassword;
+  user.emailVerified = true;
+  user.verificationToken = undefined;
+  user.verificationExpires = undefined;
+  await user.save();
+
+  return { message: 'Password set successfully' };
 }
 
 export async function changePassword(userId: string, oldPassword: string, newPassword: string) {

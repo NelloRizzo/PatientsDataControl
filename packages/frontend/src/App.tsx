@@ -22,6 +22,7 @@ import { DoctorAlerts } from './pages/DoctorAlerts';
 import { DoctorContractStatus } from './pages/DoctorContractStatus';
 import { Notifications } from './pages/Notifications';
 import { VerifyEmail } from './pages/VerifyEmail';
+import { Privacy } from './pages/Privacy';
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ export function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="/" element={<RootRedirect />} />
               <Route path="/notifications" element={<Notifications />} />

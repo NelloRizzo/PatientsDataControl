@@ -6,6 +6,7 @@ export function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'doctor' | 'analyst'>('doctor');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const { register } = useAuth();
@@ -15,7 +16,7 @@ export function Register() {
     e.preventDefault();
     setError('');
     try {
-      await register(email, password, name);
+      await register(email, password, name, role);
       setSuccess(true);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed');
@@ -77,6 +78,17 @@ export function Register() {
               required
               minLength={8}
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Role</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as 'doctor' | 'analyst')}
+                className="w-full border rounded px-3 py-2"
+              >
+              <option value="doctor">Doctor</option>
+              <option value="analyst">Analyst</option>
+            </select>
           </div>
           <button
             type="submit"

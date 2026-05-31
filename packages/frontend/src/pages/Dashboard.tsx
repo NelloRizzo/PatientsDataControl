@@ -6,7 +6,8 @@ import {
 import { getMeasurementTypes } from '../api/measurementTypes';
 import { getTimeSeries } from '../api/measurements';
 import { useAuth } from '../context/AuthContext';
-import type { IMeasurementTypeConfig, TimeSeriesPoint, TimeGroupBy, ChartType, AggregationFunction, IPatientNote, IAnamnesis } from '@healthbridge/shared';
+import apiClient from '../api/client';
+import type { IMeasurementTypeConfig, TimeSeriesPoint, TimeGroupBy, ChartType, AggregationFunction, IPatientNote, IAnamnesis, UserRole } from '@healthbridge/shared';
 
 function formatDate(value: string) {
   try {
@@ -27,6 +28,12 @@ export function Dashboard() {
   const [notes, setNotes] = useState<IPatientNote[]>([]);
   const [anamnesis, setAnamnesis] = useState<IAnamnesis[]>([]);
 
+  // My doctors
+  const [myDoctors, setMyDoctors] = useState<any[]>([]);
+  const [sharingDoctorId, setSharingDoctorId] = useState<string | null>(null);
+  const [sharingTypes, setSharingTypes] = useState<string[]>([]);
+  const [sharingMsg, setSharingMsg] = useState('');
+
   useEffect(() => {
     getMeasurementTypes().then(setTypes).catch(() => {});
   }, []);
@@ -35,8 +42,53 @@ export function Dashboard() {
     if (user?.role === 'patient') {
       import('../api/note').then((mod) => mod.getMyNotes().then(setNotes).catch(() => {}));
       import('../api/anamnesis').then((mod) => mod.getMyAnamnesis().then(setAnamnesis).catch(() => {}));
+      apiClient.get('/patient/doctors').then((res) => setMyDoctors(res.data.data)).catch(() => {});
     }
   }, [user?.role]);
+
+  const handleConfirmDoctor = async (doctorId: string) => {
+    try {
+      await apiClient.post(`/patient/doctors/${doctorId}/confirm`);
+      setMyDoctors((prev) =>
+        prev.map((d) => (d._id === doctorId ? { ...d, status: 'active' } : d))
+      );
+    } catch {}
+  };
+
+  const handleRejectDoctor = async (doctorId: string) => {
+    try {
+      await apiClient.delete(`/patient/doctors/${doctorId}/reject`);
+      setMyDoctors((prev) => prev.filter((d) => d._id !== doctorId));
+    } catch {}
+  };
+
+  const openSharing = async (doctorId: string) => {
+    setSharingMsg('');
+    try {
+      const res = await apiClient.get(`/patient/doctors/${doctorId}/sharing`);
+      setSharingTypes(res.data.data?.types || ['*']);
+      setSharingDoctorId(doctorId);
+    } catch { setSharingDoctorId(doctorId); setSharingTypes(['*']); }
+  };
+
+  const toggleSharingType = (key: string) => {
+    setSharingTypes((prev) => {
+      if (prev.includes('*')) return [key];
+      if (prev.includes(key)) return prev.filter((t) => t !== key);
+      return [...prev, key];
+    });
+  };
+
+  const saveSharing = async () => {
+    if (!sharingDoctorId) return;
+    setSharingMsg('');
+    try {
+      await apiClient.put(`/patient/doctors/${sharingDoctorId}/sharing`, { types: sharingTypes });
+      setSharingMsg('Sharing updated');
+    } catch (err: any) {
+      setSharingMsg(err.response?.data?.error || 'Failed to update');
+    }
+  };
 
   useEffect(() => {
     if (!selectedType) return;
@@ -211,29 +263,130 @@ export function Dashboard() {
         )}
       </div>
 
-      {anamnesis.length > 0 && (
+      {myDoctors.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border">
-          <div className="px-4 py-3 border-b font-medium text-sm">Your Anamnesis (Medical History)</div>
+          <div className="px-4 py-3 border-b font-medium text-sm">My Doctors</div>
           <div className="divide-y">
-            {anamnesis.map((a) => (
-              <div key={a._id} className="px-4 py-3 border-l-2 border-purple-300 ml-4 mr-4 my-2">
-                <p className="text-xs text-gray-400">Recorded: {new Date(a.recordedAt).toLocaleString()}</p>
-                <div className="mt-1">
-                  <p className="text-xs font-medium text-gray-600">Pathologies</p>
-                  <p className="text-sm whitespace-pre-wrap">{a.pathologies}</p>
+            {myDoctors.map((d: any) => (
+              <div key={d._id}>
+                <div className="px-4 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{d.name}</p>
+                    <p className="text-xs text-gray-500">{d.email}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      d.status === 'active' ? 'bg-green-100 text-green-700' :
+                      d.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>{d.status}</span>
+                    {d.status === 'active' && (
+                      <button onClick={() => openSharing(d._id)}
+                        className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded hover:bg-purple-700">
+                        Sharing
+                      </button>
+                    )}
+                    {d.status === 'pending' && (
+                      <>
+                        <button onClick={() => handleConfirmDoctor(d._id)}
+                          className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700">
+                          Confirm
+                        </button>
+                        <button onClick={() => handleRejectDoctor(d._id)}
+                          className="text-xs bg-red-600 text-white px-2 py-0.5 rounded hover:bg-red-700">
+                          Reject
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="mt-1">
-                  <p className="text-xs font-medium text-gray-600">Therapies</p>
-                  <p className="text-sm whitespace-pre-wrap">{a.therapies}</p>
-                </div>
-                {a.notes && (
-                  <div className="mt-1">
-                    <p className="text-xs font-medium text-gray-600">Notes</p>
-                    <p className="text-sm whitespace-pre-wrap">{a.notes}</p>
+                {/* Sharing modal inline */}
+                {sharingDoctorId === d._id && (
+                  <div className="px-4 pb-3 border-t pt-2 space-y-2">
+                    <p className="text-xs font-medium text-gray-600">
+                      Measurement types shared with {d.name}:
+                    </p>
+                    {sharingTypes.includes('*') ? (
+                      <p className="text-xs text-green-600">All types currently visible</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {sharingTypes.map((t: string) => (
+                          <span key={t} className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{t}</span>
+                        ))}
+                      </div>
+                    )}
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-gray-500 hover:text-gray-700">Toggle types</summary>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {types.map((t) => (
+                          <label key={t.key} className="flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={sharingTypes.includes('*') || sharingTypes.includes(t.key)}
+                              disabled={sharingTypes.includes('*')}
+                              onChange={() => toggleSharingType(t.key)}
+                            />
+                            <span>{t.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </details>
+                    <div className="flex gap-2 items-center">
+                      <button onClick={saveSharing}
+                        className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs hover:bg-blue-700">
+                        Save
+                      </button>
+                      <button onClick={() => setSharingDoctorId(null)}
+                        className="bg-gray-300 text-gray-700 px-2 py-0.5 rounded text-xs hover:bg-gray-400">
+                        Close
+                      </button>
+                      {sharingMsg && <span className="text-xs text-green-600">{sharingMsg}</span>}
+                    </div>
                   </div>
                 )}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {anamnesis.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border">
+          <div className="px-4 py-3 border-b font-medium text-sm">Your Anamnesis (Medical History)</div>
+          <div className="divide-y">
+              {anamnesis.map((a) => {
+                const sections = [
+                  { key: 'fisiologica', label: 'Fisiologica', color: 'border-blue-300' },
+                  { key: 'familiare', label: 'Familiare', color: 'border-green-300' },
+                  { key: 'farmacologica', label: 'Farmacologica', color: 'border-purple-300' },
+                  { key: 'patologicaRemota', label: 'Patologica Remota', color: 'border-orange-300' },
+                  { key: 'patologicaProssima', label: 'Patologica Prossima', color: 'border-red-300' },
+                  { key: 'sociale', label: 'Sociale', color: 'border-teal-300' },
+                ];
+                return (
+                <div key={a._id} className="px-4 py-3 border-l-2 border-purple-300 ml-4 mr-4 my-2">
+                  <p className="text-xs text-gray-400">Recorded: {new Date(a.recordedAt).toLocaleString()}</p>
+                  {sections.map((s) => {
+                    const section = (a as any)[s.key];
+                    if (!section?.entries?.length) return null;
+                    return (
+                      <div key={s.key} className={`mt-2 border-l-2 ${s.color} pl-2`}>
+                        <p className="text-xs font-semibold text-gray-600">{s.label}</p>
+                        {section.entries.map((entry: string, i: number) => (
+                          <p key={i} className="text-sm whitespace-pre-wrap">• {entry}</p>
+                        ))}
+                      </div>
+                    );
+                  })}
+                  {a.notes && (
+                    <div className="mt-1">
+                      <p className="text-xs font-medium text-gray-600">Notes</p>
+                      <p className="text-sm whitespace-pre-wrap">{a.notes}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

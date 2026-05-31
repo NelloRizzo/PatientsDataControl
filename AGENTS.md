@@ -248,6 +248,9 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - Export CSV/JSON endpoint
 - Advanced charts / Looker Studio connector
 - BigQuery sync, device OAuth (Fitbit, Google Fit), webhook endpoint
+- Export storico BMI (grafico BMI nel tempo)
+- Notifiche push per richieste condivisione e conferma presa in carico
+- Guida dottore (pagine help/FAQ/tutorial)
 
 ## Completed Features (Current Session)
 
@@ -303,6 +306,16 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - Ogni card espandibile con due modalità: Manual (input numerico + unità) e Upload (drag & drop file CSV/immagine)
 - Bottone Save/Upload individuale per card con feedback visivo
 
+### Anamnesi Strutturata, GDPR, Sharing & Presa in Carico (Fase 1-5 completa)
+- **FASE 1 (Modelli & Schemi)**: shared types (IUser, IAnamnesis, IPatientDoctor, IGdprConsent), Zod schemas (doctorCreatePatientSchema, updateSharingSchema, requestSharingSchema, setPasswordSchema, privacyConsentSchema, createAnamnesisSchema), Mongoose models (User con birthCity/NO password required, Anamnesis 6 sezioni, PatientDoctor con sharedMeasurementTypes, GdprConsent con storico)
+- **FASE 2 (Backend Endpoints)**: auth (POST /api/auth/set-password, register non permette paziente), dottore (POST /api/doctor/patients con 2 modalità: add by email + crea account, createPatientMeasurement, requestSharing, getPatientSharing), paziente (myDoctors, confirmDoctor, rejectDoctor, getDoctorSharing, updateDoctorSharing, privacyConsent, getPrivacyConsentHistory, getBmi), filtro sharedMeasurementTypes su tutti i GET measurements, verifica GDPR su accesso dati
+- **FASE 3**: Seed con GdprConsent e height/weight metric-only; `scripts/migrateAnamnesis.ts`; endpoint BMI (`GET /api/patient/bmi`)
+- **FASE 4**: Frontend paziente: Register rimuove role patient, sezione "I miei Dottori" in Dashboard con confirm/reject, sezione GDPR in Profile con storico, toggle condivisione
+- **FASE 5**: Frontend dottore: Add Patient con 2 modalità (by email / create account con campi intake), badge pending/active/rejected, form anamnesi a 6 tabs, BMI card, modale richiesta condivisione tipi, view sharing settings
+
 ## Future Phases
 - **Phase 2**: Export CSV/JSON endpoint, advanced charts, Looker Studio Community Connector
 - **Phase 3**: BigQuery sync, device OAuth integrations (Fitbit, Google Fit), webhook endpoint
+- **Guida dottore**: Help pages, FAQ, tutorial interattivo per l'utilizzo della piattaforma
+- **Export storico BMI**: grafico BMI nel tempo
+- **Notifiche push**: per richieste di condivisione e conferma presa in carico

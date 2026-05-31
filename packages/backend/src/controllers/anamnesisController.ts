@@ -27,12 +27,16 @@ export async function listAnamnesis(
       .sort({ recordedAt: -1 })
       .lean();
 
-    const data = anamneses.map((a) => ({
+    const data = anamneses.map((a: any) => ({
       _id: a._id.toString(),
       patientId: a.patientId.toString(),
       recordedAt: a.recordedAt?.toISOString?.(),
-      pathologies: a.pathologies,
-      therapies: a.therapies,
+      fisiologica: a.fisiologica || { entries: [] },
+      familiare: a.familiare || { entries: [] },
+      farmacologica: a.farmacologica || { entries: [] },
+      patologicaRemota: a.patologicaRemota || { entries: [] },
+      patologicaProssima: a.patologicaProssima || { entries: [] },
+      sociale: a.sociale || { entries: [] },
       notes: a.notes,
       createdAt: a.createdAt?.toISOString?.(),
       updatedAt: a.updatedAt?.toISOString?.(),
@@ -52,22 +56,30 @@ export async function createAnamnesis(
     const { patientId } = req.params;
     await verifyAssociation(req.userId!, patientId);
 
-    const { pathologies, therapies, notes, recordedAt } = createAnamnesisSchema.parse(req.body);
+    const parsed = createAnamnesisSchema.parse(req.body);
 
     const anamnesis = await Anamnesis.create({
       patientId,
-      pathologies,
-      therapies,
-      notes,
-      recordedAt: recordedAt ? new Date(recordedAt) : new Date(),
+      fisiologica: parsed.fisiologica || { entries: [] },
+      familiare: parsed.familiare || { entries: [] },
+      farmacologica: parsed.farmacologica || { entries: [] },
+      patologicaRemota: parsed.patologicaRemota || { entries: [] },
+      patologicaProssima: parsed.patologicaProssima || { entries: [] },
+      sociale: parsed.sociale || { entries: [] },
+      notes: parsed.notes,
+      recordedAt: parsed.recordedAt ? new Date(parsed.recordedAt) : new Date(),
     });
 
     const responseData = {
       _id: anamnesis._id.toString(),
       patientId: anamnesis.patientId.toString(),
       recordedAt: anamnesis.recordedAt?.toISOString?.(),
-      pathologies: anamnesis.pathologies,
-      therapies: anamnesis.therapies,
+      fisiologica: anamnesis.fisiologica || { entries: [] },
+      familiare: anamnesis.familiare || { entries: [] },
+      farmacologica: anamnesis.farmacologica || { entries: [] },
+      patologicaRemota: anamnesis.patologicaRemota || { entries: [] },
+      patologicaProssima: anamnesis.patologicaProssima || { entries: [] },
+      sociale: anamnesis.sociale || { entries: [] },
       notes: anamnesis.notes,
       createdAt: anamnesis.createdAt?.toISOString?.(),
       updatedAt: anamnesis.updatedAt?.toISOString?.(),

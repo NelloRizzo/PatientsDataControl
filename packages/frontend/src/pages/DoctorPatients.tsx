@@ -32,10 +32,31 @@ export function DoctorPatients() {
   const [chartData, setChartData] = useState<TimeSeriesPoint[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Add patient
+  // Add patient — two modes
+  const [addMode, setAddMode] = useState<'email' | 'create'>('email');
   const [addEmail, setAddEmail] = useState('');
   const [addMsg, setAddMsg] = useState('');
   const [addError, setAddError] = useState('');
+  const [createName, setCreateName] = useState('');
+  const [createEmail, setCreateEmail] = useState('');
+  const [createBirthDate, setCreateBirthDate] = useState('');
+  const [createSex, setCreateSex] = useState('');
+  const [createBirthCity, setCreateBirthCity] = useState('');
+  const [createHeight, setCreateHeight] = useState('');
+  const [createWeight, setCreateWeight] = useState('');
+  const [createHomeFull, setCreateHomeFull] = useState('');
+  const [createHomeCity, setCreateHomeCity] = useState('');
+  const [createHomeProvince, setCreateHomeProvince] = useState('');
+  const [createHomeRegion, setCreateHomeRegion] = useState('');
+  const [createHomeCountry, setCreateHomeCountry] = useState('');
+  const [createHomeZip, setCreateHomeZip] = useState('');
+  const [createMsg, setCreateMsg] = useState('');
+  const [createErr, setCreateErr] = useState('');
+  // Sharing request
+  const [showRequestSharing, setShowRequestSharing] = useState(false);
+  const [requestTypes, setRequestTypes] = useState<string[]>([]);
+  const [patientSharing, setPatientSharing] = useState<string[]>([]);
+  const [sharingMsg, setSharingMsg] = useState('');
 
   // Recent activity
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
@@ -62,13 +83,33 @@ export function DoctorPatients() {
   // Anamnesis
   const [anamnesis, setAnamnesis] = useState<IAnamnesis[]>([]);
   const [showAnamnesisForm, setShowAnamnesisForm] = useState(false);
-  const [newPathologies, setNewPathologies] = useState('');
-  const [newTherapies, setNewTherapies] = useState('');
+  const [anamTab, setAnamTab] = useState('fisiologica');
+  const [anamEntries, setAnamEntries] = useState<Record<string, string>>({
+    fisiologica: '',
+    familiare: '',
+    farmacologica: '',
+    patologicaRemota: '',
+    patologicaProssima: '',
+    sociale: '',
+  });
   const [newAnamnesisNotes, setNewAnamnesisNotes] = useState('');
   const [anamnesisMsg, setAnamnesisMsg] = useState('');
+  const anamTabs = [
+    { key: 'fisiologica', label: 'Fisiologica', color: 'border-blue-300' },
+    { key: 'familiare', label: 'Familiare', color: 'border-green-300' },
+    { key: 'farmacologica', label: 'Farmacologica', color: 'border-purple-300' },
+    { key: 'patologicaRemota', label: 'Pat. Remota', color: 'border-orange-300' },
+    { key: 'patologicaProssima', label: 'Pat. Prossima', color: 'border-red-300' },
+    { key: 'sociale', label: 'Sociale', color: 'border-teal-300' },
+  ];
+
+  // BMI
+  const [bmi, setBmi] = useState<any>(null);
+  const [bmiLoading, setBmiLoading] = useState(false);
 
   // Saved chart configs
   const [savedConfigs, setSavedConfigs] = useState<IChartConfig[]>([]);
+const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
   const [selectedConfigId, setSelectedConfigId] = useState('');
   const [configName, setConfigName] = useState('');
   const [configMsg, setConfigMsg] = useState('');
@@ -128,7 +169,7 @@ export function DoctorPatients() {
     getChartConfigs().then(setSavedConfigs).catch(() => {});
   }, []);
 
-  useEffect(() => { loadSavedConfigs(); }, [loadSavedConfigs]);
+  useEffect(() => { if (!savedConfigsLoaded) { loadSavedConfigs(); setSavedConfigsLoaded(true); } }, [loadSavedConfigs, savedConfigsLoaded]);
 
   const handleSaveConfig = async () => {
     if (!configName.trim() || !selectedType) {
@@ -224,6 +265,15 @@ export function DoctorPatients() {
     );
   }, [selectedPatient, viewMode]);
 
+  const loadBmi = useCallback(() => {
+    if (!selectedPatient || viewMode !== 'individual') return;
+    setBmiLoading(true);
+    apiClient.get(`/patient/bmi?userId=${selectedPatient}`)
+      .then((res) => setBmi(res.data.data))
+      .catch(() => setBmi(null))
+      .finally(() => setBmiLoading(false));
+  }, [selectedPatient, viewMode]);
+
   useEffect(() => {
     if (!selectedPatient || viewMode !== 'individual') return;
     apiClient.get(`/doctor/patients/${selectedPatient}/latest-measurements`)
@@ -231,7 +281,8 @@ export function DoctorPatients() {
       .catch(() => setMeasurements([]));
     loadNotes();
     loadAnamnesis();
-  }, [selectedPatient, viewMode, loadNotes, loadAnamnesis]);
+    loadBmi();
+  }, [selectedPatient, viewMode, loadNotes, loadAnamnesis, loadBmi]);
 
   const toggleField = (key: string) => {
     setSelectedFields((prev) =>
@@ -289,23 +340,104 @@ export function DoctorPatients() {
         <div className="w-64 shrink-0 space-y-1">
           {patients.length === 0 && <p className="text-sm text-gray-500">No patients assigned</p>}
 
-          {/* Add patient */}
+          {/* Add Patient */}
           <div className="bg-white border rounded p-2 mb-2">
             <p className="text-xs font-medium text-gray-600 mb-1">Add Patient</p>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              setAddMsg(''); setAddError('');
-              apiClient.post('/doctor/patients', { email: addEmail })
-                .then(() => { setAddEmail(''); setAddMsg('Patient added'); loadPatients(); })
-                .catch((err) => setAddError(err.response?.data?.error || 'Failed to add patient'));
-            }} className="flex gap-1">
-              <input
-                type="email" value={addEmail} placeholder="patient@email.com"
-                onChange={(e) => setAddEmail(e.target.value)} required
-                className="flex-1 border rounded px-2 py-1 text-xs"
-              />
-              <button type="submit" className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">Add</button>
-            </form>
+            <div className="flex gap-1 mb-2">
+              <button onClick={() => setAddMode('email')}
+                className={`text-xs px-2 py-0.5 rounded ${addMode === 'email' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                By Email
+              </button>
+              <button onClick={() => setAddMode('create')}
+                className={`text-xs px-2 py-0.5 rounded ${addMode === 'create' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                Create Account
+              </button>
+            </div>
+            {addMode === 'email' ? (
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                setAddMsg(''); setAddError('');
+                apiClient.post('/doctor/patients', { email: addEmail })
+                  .then(() => { setAddEmail(''); setAddMsg('Patient added (pending confirmation)'); loadPatients(); })
+                  .catch((err) => setAddError(err.response?.data?.error || 'Failed to add patient'));
+              }} className="flex gap-1">
+                <input type="email" value={addEmail} placeholder="patient@email.com"
+                  onChange={(e) => setAddEmail(e.target.value)} required
+                  className="flex-1 border rounded px-2 py-1 text-xs" />
+                <button type="submit" className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">Add</button>
+              </form>
+            ) : (
+              <form onSubmit={async (e) => {
+                e.preventDefault(); setCreateMsg(''); setCreateErr('');
+                try {
+                  const body: any = {
+                    name: createName, email: createEmail, birthDate: createBirthDate, sex: createSex,
+                  };
+                  if (createBirthCity) body.birthCity = createBirthCity;
+                  if (createHeight) body.height = parseFloat(createHeight);
+                  if (createWeight) body.weight = parseFloat(createWeight);
+                  if (createHomeFull || createHomeCity) body.homeAddress = {
+                    full: createHomeFull, city: createHomeCity, province: createHomeProvince,
+                    region: createHomeRegion, country: createHomeCountry, zip: createHomeZip,
+                  };
+                  await apiClient.post('/doctor/patients', body);
+                  setCreateName(''); setCreateEmail(''); setCreateBirthDate(''); setCreateSex('');
+                  setCreateBirthCity(''); setCreateHeight(''); setCreateWeight('');
+                  setCreateHomeFull(''); setCreateHomeCity(''); setCreateHomeProvince('');
+                  setCreateHomeRegion(''); setCreateHomeCountry(''); setCreateHomeZip('');
+                  setCreateMsg('Patient account created (email sent for password set).');
+                  loadPatients();
+                } catch (err: any) {
+                  setCreateErr(err.response?.data?.error || 'Failed to create patient');
+                }
+              }} className="space-y-1.5">
+                <input value={createName} placeholder="Full name" onChange={(e) => setCreateName(e.target.value)} required
+                  className="w-full border rounded px-2 py-1 text-xs" />
+                <input type="email" value={createEmail} placeholder="Email" onChange={(e) => setCreateEmail(e.target.value)} required
+                  className="w-full border rounded px-2 py-1 text-xs" />
+                <div className="flex gap-1">
+                  <input type="date" value={createBirthDate} onChange={(e) => setCreateBirthDate(e.target.value)} required
+                    className="flex-1 border rounded px-2 py-1 text-xs" />
+                  <select value={createSex} onChange={(e) => setCreateSex(e.target.value)} required
+                    className="flex-1 border rounded px-2 py-1 text-xs">
+                    <option value="">Sex</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <input value={createBirthCity} placeholder="Birth city (optional)" onChange={(e) => setCreateBirthCity(e.target.value)}
+                  className="w-full border rounded px-2 py-1 text-xs" />
+                <div className="flex gap-1">
+                  <input type="number" step="0.1" value={createHeight} placeholder="Height (cm)" onChange={(e) => setCreateHeight(e.target.value)}
+                    className="flex-1 border rounded px-2 py-1 text-xs" />
+                  <input type="number" step="0.1" value={createWeight} placeholder="Weight (kg)" onChange={(e) => setCreateWeight(e.target.value)}
+                    className="flex-1 border rounded px-2 py-1 text-xs" />
+                </div>
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-gray-500">Home address (optional)</summary>
+                  <div className="mt-1 space-y-1">
+                    <input value={createHomeFull} placeholder="Full address" onChange={(e) => setCreateHomeFull(e.target.value)}
+                      className="w-full border rounded px-2 py-1 text-xs" />
+                    <input value={createHomeCity} placeholder="City" onChange={(e) => setCreateHomeCity(e.target.value)}
+                      className="w-full border rounded px-2 py-1 text-xs" />
+                    <input value={createHomeProvince} placeholder="Province" onChange={(e) => setCreateHomeProvince(e.target.value)}
+                      className="w-full border rounded px-2 py-1 text-xs" />
+                    <input value={createHomeRegion} placeholder="Region" onChange={(e) => setCreateHomeRegion(e.target.value)}
+                      className="w-full border rounded px-2 py-1 text-xs" />
+                    <input value={createHomeCountry} placeholder="Country" onChange={(e) => setCreateHomeCountry(e.target.value)}
+                      className="w-full border rounded px-2 py-1 text-xs" />
+                    <input value={createHomeZip} placeholder="ZIP" onChange={(e) => setCreateHomeZip(e.target.value)}
+                      className="w-full border rounded px-2 py-1 text-xs" />
+                  </div>
+                </details>
+                <button type="submit" className="w-full bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                  Create Patient Account
+                </button>
+                {createMsg && <p className="text-xs text-green-600">{createMsg}</p>}
+                {createErr && <p className="text-xs text-red-600">{createErr}</p>}
+              </form>
+            )}
             {addMsg && <p className="text-xs text-green-600 mt-1">{addMsg}</p>}
             {addError && <p className="text-xs text-red-600 mt-1">{addError}</p>}
           </div>
@@ -338,8 +470,13 @@ export function DoctorPatients() {
                   >
                     {p.notifyOnNewMeasurement ? 'ON' : 'OFF'}
                   </button>
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${p.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {p.status === 'active' ? 'active' : 'inactive'}
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+                    p.status === 'active' ? 'bg-green-100 text-green-700' :
+                    p.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                    p.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                    'bg-gray-100 text-gray-500'
+                  }`}>
+                    {p.status || 'inactive'}
                   </span>
                 </div>
               </div>
@@ -559,8 +696,16 @@ export function DoctorPatients() {
             <>
               <div className="flex gap-2 items-center bg-white px-4 py-2 rounded-lg shadow-sm border flex-wrap">
                 <span className="text-sm font-medium">{selectedPatientData?.name}</span>
-                {selectedPatientData?.status === 'inactive' && (
-                  <button onClick={() => apiClient.patch(`/doctor/patients/${selectedPatient}`, { status: 'active' }).then(loadPatients)} className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700">Reactivate</button>
+                <span className={`text-xs px-1.5 py-0.5 rounded ${
+                  selectedPatientData?.status === 'active' ? 'bg-green-100 text-green-700' :
+                  selectedPatientData?.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                  selectedPatientData?.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                  'bg-gray-100 text-gray-500'
+                }`}>
+                  {selectedPatientData?.status || 'inactive'}
+                </span>
+                {selectedPatientData?.status !== 'active' && selectedPatientData?.status !== 'rejected' && (
+                  <button onClick={() => apiClient.patch(`/doctor/patients/${selectedPatient}`, { status: 'active' }).then(loadPatients)} className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700">Activate</button>
                 )}
                 {selectedPatientData?.status === 'active' && (
                   <button onClick={() => apiClient.patch(`/doctor/patients/${selectedPatient}`, { status: 'inactive' }).then(loadPatients)} className="text-xs bg-yellow-600 text-white px-2 py-0.5 rounded hover:bg-yellow-700">Deactivate</button>
@@ -574,12 +719,100 @@ export function DoctorPatients() {
                   setShowEditPatient(true);
                 }} className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded hover:bg-blue-700">Edit</button>
                 <button onClick={async () => {
+                  setSharingMsg('');
+                  try {
+                    const res = await apiClient.get(`/doctor/patients/${selectedPatient}/sharing`);
+                    setPatientSharing(res.data.data?.types || []);
+                    setShowRequestSharing(true);
+                  } catch { setPatientSharing([]); setShowRequestSharing(true); }
+                }} className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded hover:bg-purple-700">Sharing</button>
+                <button onClick={async () => {
                   if (!window.confirm('Remove this patient from your list?')) return;
                   await apiClient.delete(`/doctor/patients/${selectedPatient}`);
                   setSelectedPatient(null);
                   loadPatients();
                 }} className="text-xs bg-red-600 text-white px-2 py-0.5 rounded hover:bg-red-700 ml-auto">Remove</button>
               </div>
+
+              {/* BMI Card */}
+              {!bmiLoading && bmi && (
+                <div className="bg-white rounded-lg shadow-sm border p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500">BMI</p>
+                      <p className={`text-2xl font-bold ${bmi.color || 'text-gray-900'}`}>
+                        {bmi.bmi}
+                      </p>
+                      <p className={`text-xs font-medium ${bmi.color || 'text-gray-500'}`}>
+                        {bmi.level}
+                      </p>
+                    </div>
+                    <div className="text-right text-xs text-gray-400">
+                      <p>{bmi.heightCm} cm</p>
+                      <p>{bmi.weightKg} kg</p>
+                      <p>{bmi.measuredAt ? new Date(bmi.measuredAt).toLocaleDateString() : ''}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {bmiLoading && <p className="text-xs text-gray-400">Loading BMI...</p>}
+
+              {/* Request Sharing Modal */}
+              {showRequestSharing && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                  <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 space-y-4">
+                    <h3 className="text-sm font-semibold">Sharing Settings — {selectedPatientData?.name}</h3>
+                    {patientSharing.length === 0 ? (
+                      <p className="text-xs text-gray-500">Loading sharing info...</p>
+                    ) : patientSharing.includes('*') ? (
+                      <p className="text-xs text-green-600">All measurement types are currently shared.</p>
+                    ) : (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Currently shared types:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {patientSharing.map((t: string) => (
+                            <span key={t} className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{t}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="border-t pt-3">
+                      <p className="text-xs font-medium mb-1">Request access to specific types:</p>
+                      <div className="flex flex-wrap gap-2 mb-3 max-h-32 overflow-y-auto">
+                        {types.filter((t) => !patientSharing.includes('*') && !patientSharing.includes(t.key)).map((t) => (
+                          <label key={t.key} className="flex items-center gap-1 text-xs">
+                            <input type="checkbox" checked={requestTypes.includes(t.key)}
+                              onChange={() => setRequestTypes((prev) =>
+                                prev.includes(t.key) ? prev.filter((k) => k !== t.key) : [...prev, t.key]
+                              )} />
+                            {t.name}
+                          </label>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={async () => {
+                          if (requestTypes.length === 0) return;
+                          try {
+                            await apiClient.post(`/doctor/patients/${selectedPatient}/request-sharing`, { types: requestTypes });
+                            setSharingMsg('Request sent to patient');
+                            setRequestTypes([]);
+                          } catch (err: any) {
+                            setSharingMsg(err.response?.data?.error || 'Failed to request');
+                          }
+                        }} disabled={requestTypes.length === 0}
+                          className="bg-purple-600 text-white px-3 py-1 rounded text-xs hover:bg-purple-700 disabled:opacity-50">
+                          Request Selected
+                        </button>
+                        <button onClick={() => { setShowRequestSharing(false); setSharingMsg(''); }}
+                          className="bg-gray-300 text-gray-700 px-3 py-1 rounded text-xs hover:bg-gray-400">
+                          Close
+                        </button>
+                      </div>
+                      {sharingMsg && <p className="text-xs text-green-600 mt-1">{sharingMsg}</p>}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {showEditPatient && (
                 <form onSubmit={async (e) => {
@@ -672,7 +905,7 @@ export function DoctorPatients() {
               <div className="bg-white rounded-lg shadow-sm border">
                 <div className="px-4 py-3 border-b font-medium text-sm flex items-center justify-between">
                   <span>Anamnesis</span>
-                  <button onClick={() => { setShowAnamnesisForm(!showAnamnesisForm); setAnamnesisMsg(''); }}
+                  <button onClick={() => { setShowAnamnesisForm(!showAnamnesisForm); setAnamnesisMsg(''); setAnamTab('fisiologica'); }}
                     className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded hover:bg-blue-700">
                     {showAnamnesisForm ? 'Cancel' : 'New Entry'}
                   </button>
@@ -681,16 +914,21 @@ export function DoctorPatients() {
                   {showAnamnesisForm && (
                     <form onSubmit={async (e) => {
                       e.preventDefault();
-                      if (!newPathologies.trim() || !newTherapies.trim()) return;
+                      const hasAnyEntry = Object.values(anamEntries).some((v) => v.trim());
+                      if (!hasAnyEntry) return;
                       setAnamnesisMsg('');
                       try {
                         const { createPatientAnamnesis } = await import('../api/anamnesis');
-                        await createPatientAnamnesis(selectedPatient!, {
-                          pathologies: newPathologies,
-                          therapies: newTherapies,
-                          notes: newAnamnesisNotes || undefined,
-                        });
-                        setNewPathologies(''); setNewTherapies(''); setNewAnamnesisNotes('');
+                        const body: any = {};
+                        for (const [key, val] of Object.entries(anamEntries)) {
+                          if (val.trim()) {
+                            body[key] = { entries: val.split('\n').map((l) => l.trim()).filter(Boolean) };
+                          }
+                        }
+                        if (newAnamnesisNotes.trim()) body.notes = newAnamnesisNotes.trim();
+                        await apiClient.post(`/doctor/patients/${selectedPatient}/anamnesis`, body);
+                        setAnamEntries({ fisiologica: '', familiare: '', farmacologica: '', patologicaRemota: '', patologicaProssima: '', sociale: '' });
+                        setNewAnamnesisNotes('');
                         setShowAnamnesisForm(false);
                         setAnamnesisMsg('Anamnesis saved');
                         loadAnamnesis();
@@ -698,15 +936,21 @@ export function DoctorPatients() {
                         setAnamnesisMsg(err.response?.data?.error || 'Failed to save');
                       }
                     }} className="space-y-2 border-b pb-4">
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-0.5">Pathologies / Concomitant conditions</label>
-                        <textarea value={newPathologies} onChange={(e) => setNewPathologies(e.target.value)}
-                          rows={3} className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. Hypertension, Type 2 Diabetes..." required />
+                      <div className="flex gap-1 flex-wrap">
+                        {anamTabs.map((t) => (
+                          <button key={t.key} type="button" onClick={() => setAnamTab(t.key)}
+                            className={`text-xs px-2 py-0.5 rounded ${anamTab === t.key ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                            {t.label}
+                          </button>
+                        ))}
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-500 mb-0.5">Current pharmacological therapies</label>
-                        <textarea value={newTherapies} onChange={(e) => setNewTherapies(e.target.value)}
-                          rows={3} className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. Metformin 500mg, Lisinopril 10mg..." required />
+                        <label className="block text-xs text-gray-500 mb-0.5">
+                          {anamTabs.find((t) => t.key === anamTab)?.label} — one entry per line
+                        </label>
+                        <textarea value={anamEntries[anamTab]} onChange={(e) => setAnamEntries((prev) => ({ ...prev, [anamTab]: e.target.value }))}
+                          rows={4} className="w-full border rounded px-3 py-2 text-sm"
+                          placeholder={`Enter ${anamTabs.find((t) => t.key === anamTab)?.label.toLowerCase()} entries, one per line...`} />
                       </div>
                       <div>
                         <label className="block text-xs text-gray-500 mb-0.5">Additional notes (optional)</label>
@@ -721,19 +965,24 @@ export function DoctorPatients() {
                     <p className="text-sm text-gray-500 text-center py-4">No anamnesis records yet</p>
                   ) : (
                     <div className="space-y-3 max-h-80 overflow-y-auto">
-                      {anamnesis.map((a) => (
+                      {anamnesis.map((a) => {
+                        return (
                         <div key={a._id} className="border-l-2 border-purple-300 pl-3 py-1">
                           <p className="text-xs text-gray-400">
                             Recorded: {new Date(a.recordedAt).toLocaleString()}
                           </p>
-                          <div className="mt-1">
-                            <p className="text-xs font-medium text-gray-600">Pathologies</p>
-                            <p className="text-sm whitespace-pre-wrap">{a.pathologies}</p>
-                          </div>
-                          <div className="mt-1">
-                            <p className="text-xs font-medium text-gray-600">Therapies</p>
-                            <p className="text-sm whitespace-pre-wrap">{a.therapies}</p>
-                          </div>
+                          {anamTabs.map((s) => {
+                            const section = (a as any)[s.key];
+                            if (!section?.entries?.length) return null;
+                            return (
+                              <div key={s.key} className={`mt-1 border-l-2 ${s.color} pl-2`}>
+                                <p className="text-xs font-semibold text-gray-600">{s.label}</p>
+                                {section.entries.map((entry: string, i: number) => (
+                                  <p key={i} className="text-sm whitespace-pre-wrap">• {entry}</p>
+                                ))}
+                              </div>
+                            );
+                          })}
                           {a.notes && (
                             <div className="mt-1">
                               <p className="text-xs font-medium text-gray-600">Notes</p>
@@ -741,7 +990,8 @@ export function DoctorPatients() {
                             </div>
                           )}
                         </div>
-                      ))}
+                      );
+                      })}
                     </div>
                   )}
                 </div>

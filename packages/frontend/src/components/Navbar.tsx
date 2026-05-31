@@ -66,6 +66,9 @@ export function Navbar() {
             )}
           </div>
           <div className="flex items-center gap-4">
+            <Link to="/privacy" className="text-xs text-gray-500 hover:text-gray-700">
+              Privacy
+            </Link>
             <NotificationBell />
             <span className="text-sm text-gray-500">
               {user.name} ({user.role})

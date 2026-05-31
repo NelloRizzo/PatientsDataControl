@@ -99,6 +99,7 @@ export const createUserSchema = z.object({
   role: z.enum(['patient', 'doctor', 'analyst', 'admin']),
   birthDate: z.string().optional(),
   sex: z.enum(['male', 'female', 'other']).optional(),
+  birthCity: z.string().max(100).optional(),
   homeAddress: addressSchema.optional(),
   legalAddress: addressSchema.optional(),
   maxPatients: z.number().int().positive().optional(),
@@ -111,6 +112,7 @@ export const updateUserSchema = z.object({
   role: z.enum(['patient', 'doctor', 'analyst', 'admin']).optional(),
   birthDate: z.string().optional().nullable(),
   sex: z.enum(['male', 'female', 'other']).optional().nullable(),
+  birthCity: z.string().max(100).optional().nullable(),
   homeAddress: addressSchema.optional().nullable(),
   legalAddress: addressSchema.optional().nullable(),
   maxPatients: z.number().int().positive().optional().nullable(),
@@ -120,12 +122,24 @@ export const addPatientSchema = z.object({
   email: z.string().email('Invalid email'),
 });
 
+export const doctorCreatePatientSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100),
+  email: z.string().email('Invalid email'),
+  birthDate: z.string().min(1, 'Birth date is required'),
+  sex: z.enum(['male', 'female', 'other']),
+  birthCity: z.string().max(100).optional(),
+  homeAddress: addressSchema.optional(),
+  height: z.number().positive('Height must be positive').optional(),
+  weight: z.number().positive('Weight must be positive').optional(),
+});
+
 export const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   email: z.string().email().optional(),
   password: z.string().min(8).optional(),
   birthDate: z.string().optional().nullable(),
   sex: z.enum(['male', 'female', 'other']).optional().nullable(),
+  birthCity: z.string().max(100).optional().nullable(),
   homeAddress: addressSchema.optional().nullable(),
   legalAddress: addressSchema.optional().nullable(),
 });
@@ -150,11 +164,36 @@ export const createNoteSchema = z.object({
   anamnesisId: z.string().optional(),
 });
 
+const anamnesisSectionSchema = z.object({
+  entries: z.array(z.string()).default([]),
+});
+
 export const createAnamnesisSchema = z.object({
-  pathologies: z.string().min(1, 'Pathologies is required').max(5000),
-  therapies: z.string().min(1, 'Therapies is required').max(5000),
+  fisiologica: anamnesisSectionSchema.optional(),
+  familiare: anamnesisSectionSchema.optional(),
+  farmacologica: anamnesisSectionSchema.optional(),
+  patologicaRemota: anamnesisSectionSchema.optional(),
+  patologicaProssima: anamnesisSectionSchema.optional(),
+  sociale: anamnesisSectionSchema.optional(),
   notes: z.string().max(2000).optional(),
   recordedAt: z.string().datetime().optional(),
+});
+
+export const updateSharingSchema = z.object({
+  types: z.array(z.string()).default([]),
+});
+
+export const requestSharingSchema = z.object({
+  types: z.array(z.string().min(1)).min(1, 'At least one type is required'),
+});
+
+export const setPasswordSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+export const privacyConsentSchema = z.object({
+  action: z.enum(['accept', 'revoke']),
 });
 
 const channelConfigSchema = z.object({
