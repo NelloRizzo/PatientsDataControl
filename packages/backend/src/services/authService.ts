@@ -24,7 +24,7 @@ export async function registerUser(
   name: string,
   role?: 'doctor' | 'analyst'
 ) {
-  const existing = await User.findOne({ email });
+  const existing = await User.findOne({ email: email.toLowerCase() });
   if (existing) {
     throw new AppError(409, 'Email already registered');
   }
@@ -47,7 +47,7 @@ export async function registerUser(
 }
 
 export async function loginUser(email: string, password: string) {
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) {
     throw new AppError(401, 'Invalid email or password');
   }
@@ -103,7 +103,7 @@ export async function verifyEmailToken(token: string) {
 }
 
 export async function resendVerification(email: string) {
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) {
     throw new AppError(404, 'User not found with that email');
   }

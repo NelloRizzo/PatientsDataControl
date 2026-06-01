@@ -11,6 +11,10 @@ import type { IMeasurementTypeConfig, TimeSeriesPoint, TimeGroupBy, ChartType, A
 
 function formatDate(value: string) {
   try {
+    const hasTime = value.includes('T');
+    if (!hasTime) {
+      return new Date(value + 'T12:00:00Z').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    }
     return new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch { return value; }
 }

@@ -72,16 +72,19 @@ export function NewMeasurement() {
   const [globalResults, setGlobalResults] = useState<ExtractionResult[] | null>(null);
   const [globalError, setGlobalError] = useState('');
   const globalFileRef = useRef<HTMLInputElement | null>(null);
+  const [selectedExtractions, setSelectedExtractions] = useState<boolean[]>([]);
 
   useEffect(() => {
     getMeasurementTypes().then(setTypes).catch(() => {});
-    if (forPatient) {
-      apiClient.get(`/doctor/patients/${forPatient}/measurements`, { params: { limit: '1' } })
-        .then(() => setPatientName(`Paziente #${forPatient.slice(-4)}`))
-        .catch(() => {});
-    }
-    if (user?.role === 'doctor' && !forPatient) {
-      apiClient.get('/doctor/patients').then((res) => setPatients(res.data.data)).catch(() => {});
+    if (user?.role === 'doctor') {
+      apiClient.get('/doctor/patients').then((res) => {
+        const list = res.data.data;
+        setPatients(list);
+        if (forPatient) {
+          const p = list.find((p: any) => p._id === forPatient);
+          if (p) setPatientName(p.name);
+        }
+      }).catch(() => {});
     }
   }, [user?.role, forPatient]);
 
@@ -231,6 +234,7 @@ export function NewMeasurement() {
         setGlobalError('L\'IA non ha identificato misurazioni in questo documento.');
       } else {
         setGlobalResults(results);
+        setSelectedExtractions(results.map(() => true));
       }
     } catch (err: any) {
       setGlobalError(err.response?.data?.error || 'Estrazione IA fallita');
@@ -238,12 +242,14 @@ export function NewMeasurement() {
     setGlobalExtracting(false);
   };
 
-  const handleGlobalSaveAll = async () => {
+  const handleGlobalSaveSelected = async () => {
     if (!globalResults) return;
+    const toSave = globalResults.filter((_, i) => selectedExtractions[i]);
+    if (toSave.length === 0) return;
     setGlobalExtracting(true);
     let saved = 0;
     let failed = 0;
-    for (const result of globalResults) {
+    for (const result of toSave) {
       try {
         const values: Record<string, number> = {};
         const units: Record<string, string> = {};
@@ -259,9 +265,23 @@ export function NewMeasurement() {
     }
     setGlobalResults(null);
     setGlobalFile(null);
+    setSelectedExtractions([]);
     setGlobalExtracting(false);
     setGlobalMsg(`Salvate ${saved} misurazione(i)${failed > 0 ? `, ${failed} fallite` : ''}`);
     setTimeout(() => setGlobalMsg(''), 3000);
+  };
+
+  const toggleAllExtractions = (value: boolean) => {
+    if (!globalResults) return;
+    setSelectedExtractions(globalResults.map(() => value));
+  };
+
+  const toggleExtraction = (index: number) => {
+    setSelectedExtractions((prev) => {
+      const next = [...prev];
+      next[index] = !next[index];
+      return next;
+    });
   };
 
   const updateGlobalField = (typeIndex: number, fieldIndex: number, value: number) => {
@@ -369,20 +389,37 @@ export function NewMeasurement() {
 
       {/* Multi-type preview modal */}
       {globalResults && !globalExtracting && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => { setGlobalResults(null); setGlobalFile(null); }}>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => { setGlobalResults(null); setGlobalFile(null); setSelectedExtractions([]); }}>
           <div className="bg-white rounded-xl p-6 shadow-xl max-w-2xl w-full mx-4 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">Misurazioni Estratte</h2>
               <span className="text-xs text-gray-400">{globalResults.length} tipo(i) trovati</span>
             </div>
 
-            {globalResults.map((result, ti) => (
-              <div key={result.type} className="border rounded-lg mb-4 overflow-hidden">
+            <div className="flex gap-2 mb-3">
+              <button onClick={() => toggleAllExtractions(true)} className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded border border-blue-300 hover:bg-blue-50">
+                Seleziona tutti
+              </button>
+              <button onClick={() => toggleAllExtractions(false)} className="text-xs text-gray-600 hover:text-gray-800 px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">
+                Deseleziona tutti
+              </button>
+            </div>
+
+            {globalResults.map((result, ti) => {
+              const selected = selectedExtractions[ti] ?? true;
+              return (
+              <div key={result.type} className={`border rounded-lg mb-4 overflow-hidden transition-opacity ${selected ? '' : 'opacity-50'}`}>
                 <div className="bg-gray-50 px-4 py-2 flex items-center justify-between border-b">
-                  <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer flex-1">
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => toggleExtraction(ti)}
+                      className="w-4 h-4"
+                    />
                     <span className="text-lg">{getIcon(result.type)}</span>
                     <span className="font-medium text-sm">{result.typeName}</span>
-                  </div>
+                  </label>
                   <ConfidenceBadge value={result.overallConfidence} />
                 </div>
 
@@ -409,7 +446,8 @@ export function NewMeasurement() {
                           step={f.value % 1 === 0 ? 1 : 0.01}
                           value={f.value}
                           onChange={(e) => updateGlobalField(ti, fi, parseFloat(e.target.value) || 0)}
-                          className="flex-1 border rounded px-3 py-1.5 text-sm"
+                          disabled={!selected}
+                          className={`flex-1 border rounded px-3 py-1.5 text-sm ${selected ? '' : 'bg-gray-100 text-gray-400'}`}
                         />
                         <span className="text-sm text-gray-500 w-12">{f.unit}</span>
                       </div>
@@ -417,17 +455,23 @@ export function NewMeasurement() {
                   ))}
                 </div>
               </div>
-            ))}
+              );
+            })}
 
             <div className="flex gap-2 sticky bottom-0 bg-white pt-3 border-t">
               <button
-                onClick={handleGlobalSaveAll}
-                className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700"
+                onClick={handleGlobalSaveSelected}
+                disabled={selectedExtractions.filter(Boolean).length === 0}
+                className={`flex-1 py-2 rounded-lg text-sm ${
+                  selectedExtractions.filter(Boolean).length === 0
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               >
-                Salva Tutto ({globalResults.length} misurazione{globalResults.length > 1 ? 'i' : ''})
+                Salva ({selectedExtractions.filter(Boolean).length} di {globalResults.length} selezionate)
               </button>
               <button
-                onClick={() => { setGlobalResults(null); setGlobalFile(null); }}
+                onClick={() => { setGlobalResults(null); setGlobalFile(null); setSelectedExtractions([]); }}
                 className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg text-sm hover:bg-gray-300"
               >
                 Annulla

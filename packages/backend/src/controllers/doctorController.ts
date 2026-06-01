@@ -107,15 +107,54 @@ export async function patientLatestMeasurements(
       match.type = { $in: sharedTypes };
     }
 
-    const docs = await Measurement.aggregate([
+    const grouped = await Measurement.aggregate([
       { $match: match },
       { $sort: { timestamp: -1 } },
-      { $group: { _id: '$type', doc: { $first: '$$ROOT' } } },
-      { $replaceRoot: { newRoot: '$doc' } },
-      { $sort: { timestamp: -1 } },
+      { $group: { _id: '$type', docs: { $push: '$$ROOT' } } },
+      {
+        $project: {
+          latest: { $arrayElemAt: ['$docs', 0] },
+          previous: { $ifNull: [{ $arrayElemAt: ['$docs', 1] }, null] },
+        },
+      },
     ]);
 
-    res.json({ data: docs });
+    const data = grouped.map((g: any) => {
+      const latest = g.latest;
+      const previous = g.previous;
+
+      const prevValues = previous?.values || null;
+      const trends: Record<string, 'up' | 'down' | 'stable'> = {};
+
+      if (prevValues && latest.values) {
+        for (const [key, val] of Object.entries(latest.values) as [string, number][]) {
+          const prevVal = (prevValues as Record<string, number>)?.[key];
+          if (prevVal != null) {
+            trends[key] = val > prevVal ? 'up' : val < prevVal ? 'down' : 'stable';
+          }
+        }
+      }
+
+      return {
+        _id: latest._id.toString(),
+        userId: latest.userId.toString(),
+        type: latest.type,
+        values: latest.values,
+        units: latest.units,
+        source: latest.source,
+        timestamp: latest.timestamp,
+        notes: latest.notes,
+        tags: latest.tags,
+        deviceId: latest.deviceId,
+        evaluation: latest.evaluation,
+        createdAt: latest.createdAt,
+        updatedAt: latest.updatedAt,
+        previousValues: prevValues,
+        trends,
+      };
+    });
+
+    res.json({ data });
   } catch (error) {
     next(error);
   }
@@ -131,7 +170,7 @@ export async function addPatient(
 
     // If only email provided, try to add existing patient by email
     if (req.body.email && !req.body.name) {
-      const existingUser = await User.findOne({ email: req.body.email, role: 'patient' });
+      const existingUser = await User.findOne({ email: req.body.email.toLowerCase(), role: 'patient' });
       if (!existingUser) {
         throw new AppError(404, 'Patient not found with this email. Use "Create Account" to register a new patient.');
       }
@@ -180,7 +219,7 @@ export async function addPatient(
       // Full create account flow
       const parsed = doctorCreatePatientSchema.parse(req.body);
 
-    const existingUser = await User.findOne({ email: parsed.email });
+    const existingUser = await User.findOne({ email: parsed.email.toLowerCase() });
     if (existingUser) throw new AppError(409, 'Email already in use');
 
     // Check max patients limit
@@ -380,7 +419,7 @@ export async function updatePatientProfile(
     const parsed = updateProfileSchema.parse(req.body);
 
     if (parsed.email) {
-      const existing = await User.findOne({ email: parsed.email, _id: { $ne: patientId } });
+      const existing = await User.findOne({ email: parsed.email.toLowerCase(), _id: { $ne: patientId } });
       if (existing) throw new AppError(409, 'Email already in use');
     }
 

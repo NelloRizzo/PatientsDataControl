@@ -15,6 +15,10 @@ type ViewMode = 'individual' | 'aggregated';
 
 function formatDate(value: string) {
   try {
+    const hasTime = value.includes('T');
+    if (!hasTime) {
+      return new Date(value + 'T12:00:00Z').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    }
     return new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch { return value; }
 }
@@ -23,7 +27,7 @@ export function DoctorPatients() {
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('individual');
-  const [measurements, setMeasurements] = useState<IMeasurement[]>([]);
+  const [measurements, setMeasurements] = useState<any[]>([]);
   const [types, setTypes] = useState<IMeasurementTypeConfig[]>([]);
   const [selectedType, setSelectedType] = useState('');
   const [groupBy, setGroupBy] = useState<TimeGroupBy>('day');
@@ -719,7 +723,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                 </div>
               </div>
 
-              <div className="bg-white p-4 rounded-lg shadow-sm border">
+              <div id="chart-section" className="bg-white p-4 rounded-lg shadow-sm border">
                 {renderChart()}
               </div>
             </>
@@ -917,18 +921,32 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
                     {measurements.map((m) => {
                       const typeCfg = types.find((t) => t.key === m.type);
+                      const trends = m.trends as Record<string, 'up' | 'down' | 'stable'> | undefined;
                       return (
-                        <div key={m._id} className="border rounded-lg p-3 hover:shadow-sm transition-shadow">
+                        <div
+                          key={m._id}
+                          onClick={() => {
+                            setSelectedType(m.type);
+                            const cfg = types.find((t) => t.key === m.type);
+                            if (cfg) setSelectedFields(cfg.fields.map((f) => f.key));
+                            document.getElementById('chart-section')?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="border rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow"
+                        >
                           <p className="text-xs font-medium text-blue-600 mb-1">{typeCfg?.name || m.type}</p>
                           <div className="space-y-0.5">
                             {Object.entries(m.values as Record<string, number>).map(([k, v]) => {
                               const field = typeCfg?.fields.find((f) => f.key === k);
                               const unit = (m.units as Record<string, string>)?.[k] || field?.unit || '';
+                              const trend = trends?.[k];
+                              const trendIcon = trend === 'up' ? '↑' : trend === 'down' ? '↓' : trend === 'stable' ? '→' : '';
+                              const trendColor = trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-gray-400';
                               return (
                                 <p key={k} className="text-sm">
                                   <span className="text-gray-500">{field?.name || k}: </span>
                                   <span className="font-medium">{v}</span>
                                   {unit && <span className="text-gray-400 text-xs ml-0.5">{unit}</span>}
+                                  {trendIcon && <span className={`ml-1 text-xs ${trendColor}`}>{trendIcon}</span>}
                                 </p>
                               );
                             })}
