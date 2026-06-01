@@ -434,17 +434,17 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                 <details className="text-xs">
                   <summary className="cursor-pointer text-gray-500">Indirizzo di casa (opzionale)</summary>
                   <div className="mt-1 space-y-1">
-                    <input value={createHomeFull} placeholder="Indirizzo completo" onChange={(e) => setCreateHomeFull(e.target.value)}
+                    <input autoComplete="off" value={createHomeFull} placeholder="Indirizzo completo" onChange={(e) => setCreateHomeFull(e.target.value)}
                       className="w-full border rounded px-2 py-1 text-xs" />
-                    <input value={createHomeCity} placeholder="Città" onChange={(e) => setCreateHomeCity(e.target.value)}
+                    <input autoComplete="off" value={createHomeCity} placeholder="Città" onChange={(e) => setCreateHomeCity(e.target.value)}
                       className="w-full border rounded px-2 py-1 text-xs" />
-                    <input value={createHomeProvince} placeholder="Provincia" onChange={(e) => setCreateHomeProvince(e.target.value)}
+                    <input autoComplete="off" value={createHomeProvince} placeholder="Provincia" onChange={(e) => setCreateHomeProvince(e.target.value)}
                       className="w-full border rounded px-2 py-1 text-xs" />
-                    <input value={createHomeRegion} placeholder="Regione" onChange={(e) => setCreateHomeRegion(e.target.value)}
+                    <input autoComplete="off" value={createHomeRegion} placeholder="Regione" onChange={(e) => setCreateHomeRegion(e.target.value)}
                       className="w-full border rounded px-2 py-1 text-xs" />
-                    <input value={createHomeCountry} placeholder="Paese" onChange={(e) => setCreateHomeCountry(e.target.value)}
+                    <input autoComplete="off" value={createHomeCountry} placeholder="Paese" onChange={(e) => setCreateHomeCountry(e.target.value)}
                       className="w-full border rounded px-2 py-1 text-xs" />
-                    <input value={createHomeZip} placeholder="CAP" onChange={(e) => setCreateHomeZip(e.target.value)}
+                    <input autoComplete="off" value={createHomeZip} placeholder="CAP" onChange={(e) => setCreateHomeZip(e.target.value)}
                       className="w-full border rounded px-2 py-1 text-xs" />
                   </div>
                 </details>

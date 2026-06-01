@@ -88,27 +88,27 @@ export function Profile() {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         <div className="col-span-2">
           <label className="block text-xs text-gray-400">Full address</label>
-          <input value={fields.full} onChange={(e) => setter({ ...fields, full: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" disabled={!editing} />
+          <input autoComplete="off" value={fields.full} onChange={(e) => setter({ ...fields, full: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" disabled={!editing} />
         </div>
         <div>
           <label className="block text-xs text-gray-400">City</label>
-          <input value={fields.city} onChange={(e) => setter({ ...fields, city: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" disabled={!editing} />
+          <input autoComplete="off" value={fields.city} onChange={(e) => setter({ ...fields, city: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" disabled={!editing} />
         </div>
         <div>
           <label className="block text-xs text-gray-400">Province</label>
-          <input value={fields.province} onChange={(e) => setter({ ...fields, province: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" disabled={!editing} />
+          <input autoComplete="off" value={fields.province} onChange={(e) => setter({ ...fields, province: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" disabled={!editing} />
         </div>
         <div>
           <label className="block text-xs text-gray-400">Region</label>
-          <input value={fields.region} onChange={(e) => setter({ ...fields, region: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" disabled={!editing} />
+          <input autoComplete="off" value={fields.region} onChange={(e) => setter({ ...fields, region: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" disabled={!editing} />
         </div>
         <div>
           <label className="block text-xs text-gray-400">Country</label>
-          <input value={fields.country} onChange={(e) => setter({ ...fields, country: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" disabled={!editing} />
+          <input autoComplete="off" value={fields.country} onChange={(e) => setter({ ...fields, country: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" disabled={!editing} />
         </div>
         <div>
           <label className="block text-xs text-gray-400">ZIP</label>
-          <input value={fields.zip} onChange={(e) => setter({ ...fields, zip: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" disabled={!editing} />
+          <input autoComplete="off" value={fields.zip} onChange={(e) => setter({ ...fields, zip: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" disabled={!editing} />
         </div>
       </div>
     </div>
