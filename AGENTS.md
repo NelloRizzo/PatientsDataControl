@@ -339,6 +339,49 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - `doctorController.ts` `addPatient`: passa `sharedMeasurementTypes` dalla request al `PatientDoctor.create()`, default `['*']` se non fornito
 - `DoctorPatients.tsx`: multi-select checkboxes nel form "Crea Account" per scegliere tipi (se nessuno selezionato, default tutti)
 
+### Fix Privacy.tsx — Layout + Testo
+- `App.tsx`: spostato `/privacy` dentro `<Route element={<Layout />}>` così ha Navbar e struttura di navigazione (accessibile anche senza auth)
+- `Privacy.tsx` sezione 8: "Profile → Privacy & GDPR Consent" → "Profilo → Consenso GDPR"
+
+### Fix Admin Crea Utente (role 'patient' bug)
+- `AdminUsers.tsx`: `resetForm()` resettava `newRole` a `'patient'` → cambiato a `'doctor'`
+- `AdminUsers.tsx`: `useState('patient')` → `useState('doctor')`
+- `schemas.ts` `updateUserSchema`: riaggiunto `'patient'` all'enum (serve per modificare utenti pazienti esistenti)
+- `AdminUsers.tsx`: tradotti in italiano i select ruolo (filtro, crea, modifica)
+- Error handling migliorato: mostra messaggio specifico per 409 (email già registrata)
+
+### Address Fields Autocomplete Off
+- `AdminUsers.tsx`, `Profile.tsx`, `DoctorPatients.tsx`: aggiunto `autoComplete="off"` a tutti i campi indirizzo (full, city, province, region, country, zip) per evitare che il browser suggerisca email
+
+### Password Visibility Toggle
+- `AdminUsers.tsx`: icona occhio SVG nel campo password del form creazione utente, toggle tra `type="password"` e `type="text"`
+
+### Password Temporanea per Paziente (Dottore Crea Account)
+- **`User.ts`**: aggiunto campo `mustChangePassword: Boolean` (default false)
+- **`doctorCreatePatientSchema`**: aggiunto campo `password: z.string().min(8)` (obbligatorio)
+- **`doctorController.ts` `addPatient`**: ora usa la password fornita dal dottore, setta `mustChangePassword: true`, `emailVerified: true`, invia email notifica (non più link set-password)
+- **`authService.ts`**: `loginUser` restituisce `mustChangePassword`; `changePassword` azzera il flag
+- **`DoctorPatients.tsx`**: campo "Password temporanea" nel form Crea Account; `loadPatients` reso `async/await` (la lista si aggiorna subito)
+- **`Login.tsx`**: dopo login, se `mustChangePassword: true` → reindirizza a `/profile?mustChangePassword=1`
+- **`Profile.tsx`**: banner giallo password temporanea + `useSearchParams` per gestire il flag; dopo cambio password OK pulisce il parametro
+- **`AuthContext.tsx`**: `login()` restituisce `IUser` invece di `void`
+
+### Profile.tsx Tradotto in Italiano
+- Titolo "Profile" → "Profilo"
+- Label form (Name/Nome, Birth Date/Data di Nascita, Sex/Sesso, Role/Ruolo, Not specified/Non specificato, Male/Female/Other → Maschio/Femmina/Altro)
+- Pulsanti (Edit/Modifica, Cancel/Annulla, Save Changes/Salva Modifiche, Change Password/Cambia Password, Accept/Re-accept/Revoke → Accetta/Riaccetta/Revoca Consenso)
+- Sezione GDPR: "Privacy & GDPR Consent" → "Consenso GDPR", storico "Granted/Revoked" → "Concesso/Revocato", "Consent History" → "Storico Consenso"
+- Email verification: "Verified/Not verified" → "Verificata/Non verificata", "Resend..." → "Invia email di verifica"
+- Indirizzi: "Home Address/Legal Address" → "Indirizzo di Casa/Indirizzo Legale"
+- Ruolo utente: mostra label italiano (Paziente/Medico/Analista/Admin)
+
+### Comportamento Atteso: CSV Import → Grafici Vuoti per Dottore
+- Il dottore importa CSV (salva dati) ma non vede i grafici perché `verifyGdprConsent` (`doctorController.ts:581`) blocca la lettura finché il paziente non:
+  1. Fa login (con password temporanea)
+  2. Cambia password (forzato dal banner)
+  3. Concede il Consenso GDPR (Profilo → Consenso GDPR)
+  4. Conferma il dottore (Dashboard → I Miei Dottori)
+
 ## Future Phases
 - **Phase 2**: Export CSV/JSON endpoint, advanced charts, Looker Studio Community Connector
 - **Phase 3**: BigQuery sync, device OAuth integrations (Fitbit, Google Fit), webhook endpoint

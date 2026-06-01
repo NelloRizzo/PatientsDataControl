@@ -61,12 +61,16 @@ export function AdminUsers() {
       if (Object.values(newLegal).some(Boolean)) body.legalAddress = newLegal;
 
       await apiClient.post('/admin/users', body);
+      setCreateMsg('Utente creato con successo');
       resetForm();
       setShowCreate(false);
-      setCreateMsg('User created');
       loadUsers();
     } catch (err: any) {
-      setCreateErr(err.response?.data?.error || 'Failed to create user');
+      if (err.response?.status === 409) {
+        setCreateErr('Email già registrata');
+      } else {
+        setCreateErr(err.response?.data?.error || err.message || 'Errore durante la creazione');
+      }
     }
   };
 
@@ -226,10 +230,10 @@ export function AdminUsers() {
           {addrInput('Legal Address', newLegal, setNewLegal)}
 
           <button type="submit" className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">Create</button>
-          {createMsg && <p className="text-xs text-green-600">{createMsg}</p>}
           {createErr && <p className="text-xs text-red-600">{createErr}</p>}
         </form>
       )}
+      {createMsg && <p className="text-xs text-green-600 mt-2">{createMsg}</p>}
 
       <div className="flex gap-2">
         <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="border rounded px-3 py-2">

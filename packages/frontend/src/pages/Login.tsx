@@ -13,8 +13,8 @@ export function Login() {
     e.preventDefault();
     setError('');
     try {
-      await login(email, password);
-      navigate('/');
+      const user = await login(email, password);
+      navigate(user.mustChangePassword ? '/profile?mustChangePassword=1' : '/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login fallito');
     }

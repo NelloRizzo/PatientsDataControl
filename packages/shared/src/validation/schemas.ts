@@ -125,6 +125,7 @@ export const addPatientSchema = z.object({
 export const doctorCreatePatientSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   email: z.string().email('Invalid email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   birthDate: z.string().min(1, 'Birth date is required'),
   sex: z.enum(['male', 'female', 'other']),
   birthCity: z.string().max(100).optional(),

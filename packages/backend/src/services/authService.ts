@@ -58,7 +58,7 @@ export async function loginUser(email: string, password: string) {
   }
 
   const tokens = generateTokens(user._id.toString());
-  return { user, tokens };
+  return { user, tokens, mustChangePassword: user.mustChangePassword };
 }
 
 export async function refreshTokens(refreshToken: string) {
@@ -149,6 +149,7 @@ export async function changePassword(userId: string, oldPassword: string, newPas
   }
 
   user.password = newPassword;
+  user.mustChangePassword = false;
   await user.save();
 
   return { message: 'Password changed successfully' };

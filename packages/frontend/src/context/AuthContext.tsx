@@ -5,7 +5,7 @@ import * as authApi from '../api/auth';
 interface AuthContextType {
   user: IUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<IUser>;
   register: (email: string, password: string, name: string, role?: 'doctor' | 'analyst') => Promise<void>;
   logout: () => void;
 }
@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('accessToken', result.tokens.accessToken);
     localStorage.setItem('refreshToken', result.tokens.refreshToken);
     setUser(result.user);
+    return result.user;
   };
 
   const register = async (email: string, password: string, name: string, role?: 'doctor' | 'analyst') => {

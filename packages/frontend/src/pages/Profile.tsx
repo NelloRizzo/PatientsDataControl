@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../api/client';
 
@@ -6,6 +7,7 @@ const emptyAddr = { full: '', city: '', province: '', region: '', country: '', z
 
 export function Profile() {
   const { user, login } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
@@ -77,6 +79,7 @@ export function Profile() {
       setCpMsg('Password changed successfully');
       setCpOld('');
       setCpNew('');
+      setSearchParams({});
     } catch (err: any) {
       setCpErr(err.response?.data?.error || 'Failed to change password');
     }
@@ -134,22 +137,22 @@ export function Profile() {
 
       await apiClient.put('/auth/profile', body);
       const me = await apiClient.get('/auth/me');
-      setMsg('Profile updated');
+      setMsg('Profilo aggiornato');
       setEditing(false);
       window.location.reload();
     } catch (err: any) {
-      setErr(err.response?.data?.error || 'Update failed');
+      setErr(err.response?.data?.error || 'Aggiornamento fallito');
     }
   };
 
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Profile</h1>
+        <h1 className="text-2xl font-bold">Profilo</h1>
         {!editing ? (
-          <button onClick={() => setEditing(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700">Edit</button>
+          <button onClick={() => setEditing(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700">Modifica</button>
         ) : (
-          <button onClick={() => setEditing(false)} className="bg-gray-300 text-gray-700 px-3 py-1.5 rounded text-sm hover:bg-gray-400">Cancel</button>
+          <button onClick={() => setEditing(false)} className="bg-gray-300 text-gray-700 px-3 py-1.5 rounded text-sm hover:bg-gray-400">Annulla</button>
         )}
       </div>
 
@@ -159,12 +162,12 @@ export function Profile() {
           user.emailVerified ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
         }`}>
           <span className={user.emailVerified ? 'text-green-700' : 'text-yellow-800'}>
-            Email: {user.email} — {user.emailVerified ? 'Verified' : 'Not verified'}
+            Email: {user.email} — {user.emailVerified ? 'Verificata' : 'Non verificata'}
           </span>
           {!user.emailVerified && (
             <button onClick={handleResend} disabled={resending}
               className="text-yellow-700 underline hover:text-yellow-900 disabled:opacity-50 text-xs">
-              {resending ? 'Sending...' : 'Resend verification email'}
+              {resending ? 'Invio...' : 'Invia email di verifica'}
             </button>
           )}
           {resendMsg && <span className="text-xs text-green-700">{resendMsg}</span>}
@@ -174,7 +177,7 @@ export function Profile() {
       <form onSubmit={handleSave} className="bg-white p-6 rounded-lg shadow-sm border space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Name</label>
+            <label className="block text-xs text-gray-500 mb-1">Nome</label>
             <input value={name} onChange={(e) => setName(e.target.value)} required className="w-full border rounded px-2 py-1.5 text-sm" disabled={!editing} />
           </div>
           <div>
@@ -182,52 +185,59 @@ export function Profile() {
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full border rounded px-2 py-1.5 text-sm" disabled={!editing} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Birth Date</label>
+            <label className="block text-xs text-gray-500 mb-1">Data di Nascita</label>
             <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="w-full border rounded px-2 py-1.5 text-sm" disabled={!editing} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Sex</label>
+            <label className="block text-xs text-gray-500 mb-1">Sesso</label>
             <select value={sex} onChange={(e) => setSex(e.target.value)} className="w-full border rounded px-2 py-1.5 text-sm" disabled={!editing}>
-              <option value="">Not specified</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
+              <option value="">Non specificato</option>
+              <option value="male">Maschio</option>
+              <option value="female">Femmina</option>
+              <option value="other">Altro</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Role</label>
-            <input value={user.role} disabled className="w-full border rounded px-2 py-1.5 text-sm bg-gray-50" />
+            <label className="block text-xs text-gray-500 mb-1">Ruolo</label>
+            <input value={user.role === 'patient' ? 'Paziente' : user.role === 'doctor' ? 'Medico' : user.role === 'analyst' ? 'Analista' : 'Admin'} disabled className="w-full border rounded px-2 py-1.5 text-sm bg-gray-50" />
           </div>
         </div>
 
-        {addrInput('Home Address', home, setHome)}
-        {addrInput('Legal Address', legal, setLegal)}
+        {addrInput('Indirizzo di Casa', home, setHome)}
+        {addrInput('Indirizzo Legale', legal, setLegal)}
 
         {editing && (
-          <button type="submit" className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">Save Changes</button>
+          <button type="submit" className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">Salva Modifiche</button>
         )}
         {msg && <p className="text-xs text-green-600">{msg}</p>}
         {err && <p className="text-xs text-red-600">{err}</p>}
       </form>
 
+      {/* Must change password banner */}
+      {searchParams.get('mustChangePassword') === '1' && (
+        <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-3 rounded-lg text-sm">
+          <strong>Password temporanea.</strong> Devi cambiare la password prima di proseguire.
+        </div>
+      )}
+
       {/* Change Password Section */}
       <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border space-y-4">
-        <h2 className="text-lg font-semibold">Change Password</h2>
+        <h2 className="text-lg font-semibold">Cambia Password</h2>
         <form onSubmit={handleChangePassword} className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Current Password</label>
+              <label className="block text-xs text-gray-500 mb-1">Password Attuale</label>
               <input type="password" value={cpOld} onChange={(e) => setCpOld(e.target.value)} required
                 className="w-full border rounded px-2 py-1.5 text-sm" />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">New Password</label>
+              <label className="block text-xs text-gray-500 mb-1">Nuova Password</label>
               <input type="password" value={cpNew} onChange={(e) => setCpNew(e.target.value)} required minLength={8}
                 className="w-full border rounded px-2 py-1.5 text-sm" />
             </div>
           </div>
           <button type="submit" className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">
-            Change Password
+            Cambia Password
           </button>
           {cpMsg && <p className="text-xs text-green-600">{cpMsg}</p>}
           {cpErr && <p className="text-xs text-red-600">{cpErr}</p>}
@@ -237,28 +247,28 @@ export function Profile() {
       {/* GDPR Privacy Consent */}
       {user.role === 'patient' && (
         <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border space-y-4">
-          <h2 className="text-lg font-semibold">Privacy & GDPR Consent</h2>
+          <h2 className="text-lg font-semibold">Consenso GDPR</h2>
           <p className="text-xs text-gray-500">
-            Your privacy consent allows doctors to access your measurement data.
-            You can revoke this at any time — data access will be restricted until you re-accept.
+            Il consenso alla privacy consente ai medici di accedere ai tuoi dati.
+            Puoi revocarlo in qualsiasi momento — l'accesso ai dati verrà bloccato fino a una nuova accettazione.
           </p>
           <div className="flex gap-2">
             <button onClick={handleGdprAccept} className="bg-green-600 text-white px-4 py-1.5 rounded text-sm hover:bg-green-700">
-              Accept / Re-accept
+              Accetta / Riaccetta
             </button>
             <button onClick={handleGdprRevoke} className="bg-red-600 text-white px-4 py-1.5 rounded text-sm hover:bg-red-700">
-              Revoke Consent
+              Revoca Consenso
             </button>
           </div>
           {gdprMsg && <p className="text-xs text-green-600">{gdprMsg}</p>}
           {gdprHistory.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-gray-600 mb-2">Consent History</p>
+              <p className="text-xs font-medium text-gray-600 mb-2">Storico Consenso</p>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {gdprHistory.map((h: any) => (
                   <div key={h._id} className="flex items-center justify-between text-xs border-b pb-1">
                     <span className={h.granted ? 'text-green-600' : 'text-red-600'}>
-                      {h.granted ? 'Granted' : 'Revoked'}
+                      {h.granted ? 'Concesso' : 'Revocato'}
                     </span>
                     <span className="text-gray-400">
                       {new Date(h.grantedAt || h.createdAt).toLocaleString()}

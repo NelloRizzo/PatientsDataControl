@@ -25,7 +25,7 @@ export async function extractMeasurements(
       const { PDFParse }: any = await import('pdf-parse');
       const parser = new PDFParse({ data: file.buffer });
       await parser.load();
-      const textResult = await parser.getText(1);
+      const textResult = await parser.getText();
       parser.destroy();
       const text = textResult?.text || '';
       if (!text || text.trim().length < 10) {

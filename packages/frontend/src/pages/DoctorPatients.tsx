@@ -45,6 +45,7 @@ export function DoctorPatients() {
   const [createBirthCity, setCreateBirthCity] = useState('');
   const [createHeight, setCreateHeight] = useState('');
   const [createWeight, setCreateWeight] = useState('');
+  const [createPassword, setCreatePassword] = useState('');
   const [createHomeFull, setCreateHomeFull] = useState('');
   const [createHomeCity, setCreateHomeCity] = useState('');
   const [createHomeProvince, setCreateHomeProvince] = useState('');
@@ -128,8 +129,11 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
   const [filterHomeRegion, setFilterHomeRegion] = useState('');
   const [filterHomeCountry, setFilterHomeCountry] = useState('');
 
-  const loadPatients = useCallback(() => {
-    apiClient.get('/doctor/patients').then((res) => setPatients(res.data.data));
+  const loadPatients = useCallback(async () => {
+    try {
+      const res = await apiClient.get('/doctor/patients');
+      setPatients(res.data.data);
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -373,7 +377,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                 e.preventDefault(); setCreateMsg(''); setCreateErr('');
                 try {
                   const body: any = {
-                    name: createName, email: createEmail, birthDate: createBirthDate, sex: createSex,
+                    name: createName, email: createEmail, password: createPassword, birthDate: createBirthDate, sex: createSex,
                   };
                   if (createBirthCity) body.birthCity = createBirthCity;
                   if (createHeight) body.height = parseFloat(createHeight);
@@ -384,12 +388,12 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                     region: createHomeRegion, country: createHomeCountry, zip: createHomeZip,
                   };
                   await apiClient.post('/doctor/patients', body);
-                  setCreateName(''); setCreateEmail(''); setCreateBirthDate(''); setCreateSex('');
+                  setCreateName(''); setCreateEmail(''); setCreatePassword(''); setCreateBirthDate(''); setCreateSex('');
                   setCreateBirthCity(''); setCreateHeight(''); setCreateWeight(''); setCreateSharedTypes([]);
                   setCreateHomeFull(''); setCreateHomeCity(''); setCreateHomeProvince('');
                   setCreateHomeRegion(''); setCreateHomeCountry(''); setCreateHomeZip('');
-                  setCreateMsg('Account paziente creato (email inviata per impostare password).');
-                  loadPatients();
+                  setCreateMsg('Account paziente creato. Comunica la password temporanea al paziente — dovrà cambiarla al primo accesso.');
+                  await loadPatients();
                 } catch (err: any) {
                   setCreateErr(err.response?.data?.error || 'Impossibile creare paziente');
                 }
@@ -397,6 +401,8 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                 <input value={createName} placeholder="Nome completo" onChange={(e) => setCreateName(e.target.value)} required
                   className="w-full border rounded px-2 py-1 text-xs" />
                 <input type="email" value={createEmail} placeholder="Email" onChange={(e) => setCreateEmail(e.target.value)} required
+                  className="w-full border rounded px-2 py-1 text-xs" />
+                <input type="password" value={createPassword} placeholder="Password temporanea" onChange={(e) => setCreatePassword(e.target.value)} required minLength={8}
                   className="w-full border rounded px-2 py-1 text-xs" />
                 <div className="flex gap-1">
                   <input type="date" value={createBirthDate} onChange={(e) => setCreateBirthDate(e.target.value)} required

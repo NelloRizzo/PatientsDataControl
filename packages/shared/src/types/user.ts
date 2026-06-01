@@ -23,6 +23,7 @@ export interface IUser {
   homeAddress?: Address;
   legalAddress?: Address;
   maxPatients?: number;
+  mustChangePassword?: boolean;
   createdAt: string;
   updatedAt: string;
 }

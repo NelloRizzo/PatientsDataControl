@@ -11,8 +11,8 @@ import { resolvePatientIds } from '../services/filterUtils.js';
 import { updateProfileSchema, createNoteSchema, doctorCreatePatientSchema, createMeasurementSchema, requestSharingSchema } from '@healthbridge/shared';
 import { DoctorContract } from '../models/DoctorContract.js';
 import { calculateConsumedSince } from '../services/contractHelper.js';
-import { generateVerificationToken } from '../services/authService.js';
-import { sendVerificationEmail } from '../services/emailService.js';
+import { sendEmail } from '../services/emailService.js';
+import { env } from '../config/env.js';
 
 async function verifyAssociation(doctorId: string, patientId: string) {
   const association = await PatientDoctor.findOne({
@@ -195,15 +195,18 @@ export async function addPatient(
       }
     }
 
-    // Create user without password
+    // Create user with temporary password
     const user = await User.create({
       email: parsed.email,
+      password: parsed.password,
       name: parsed.name,
       role: 'patient',
       birthDate: new Date(parsed.birthDate),
       sex: parsed.sex,
       birthCity: parsed.birthCity,
       homeAddress: parsed.homeAddress,
+      mustChangePassword: true,
+      emailVerified: true,
     });
 
     // Create height measurement if provided
@@ -228,9 +231,10 @@ export async function addPatient(
       });
     }
 
-    // Send verification email with set-password link
-    const token = await generateVerificationToken(user._id.toString());
-    await sendVerificationEmail(parsed.email, token);
+    // Send notification email
+    sendEmail(parsed.email, 'Benvenuto su HealthBridge',
+      `Ciao ${parsed.name},\n\nIl tuo account è stato creato dal dottore. La password temporanea ti è stata comunicata dal tuo medico.\n\nAl primo accesso ti verrà richiesto di cambiare la password.\n\nAccedi qui: ${env.appUrl}/login`
+    ).catch(() => {});
 
     // Create association (pending)
     const assocTypes = parsed.sharedMeasurementTypes || ['*'];
@@ -243,7 +247,7 @@ export async function addPatient(
     });
 
     res.status(201).json({
-      message: 'Patient created and invitation sent',
+      message: 'Account paziente creato',
       user: user.toJSON(),
       associationId: association._id.toString(),
       status: 'pending',
