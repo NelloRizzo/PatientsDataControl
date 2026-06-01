@@ -173,9 +173,8 @@ export function AdminUsers() {
             <div>
               <label className="block text-xs text-gray-500 mb-1">Role *</label>
               <select value={newRole} onChange={(e) => setNewRole(e.target.value)} className="w-full border rounded px-2 py-1.5 text-sm">
-                <option value="patient">Patient</option>
-                <option value="doctor">Doctor</option>
-                <option value="analyst">Analyst</option>
+                <option value="doctor">Medico</option>
+                <option value="analyst">Analista</option>
                 <option value="admin">Admin</option>
               </select>
             </div>

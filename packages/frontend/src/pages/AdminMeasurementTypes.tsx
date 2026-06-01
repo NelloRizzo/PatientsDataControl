@@ -151,12 +151,12 @@ export function AdminMeasurementTypes() {
                   onChange={(e) => setEditing({ ...editing, macrogroup: e.target.value })}
                   className="w-full border rounded px-3 py-2"
                 >
-                  <option value="">Select macrogroup...</option>
-                  <option value="generalhealth">General Health</option>
-                  <option value="cardiac">Cardiac</option>
-                  <option value="blood_gas">Blood / Gas</option>
-                  <option value="lipidemia">Lipid Profile</option>
-                  <option value="renal">Renal Function</option>
+                  <option value="">Seleziona macrogruppo...</option>
+                  <option value="generalhealth">Salute Generale</option>
+                  <option value="cardiac">Cardiaco</option>
+                  <option value="blood_gas">Sangue / Gas</option>
+                  <option value="lipidemia">Profilo Lipidico</option>
+                  <option value="renal">Funzione Renale</option>
                 </select>
               </div>
               <div>

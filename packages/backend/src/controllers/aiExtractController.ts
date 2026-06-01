@@ -23,10 +23,11 @@ export async function extractMeasurements(
       result = await extractFromImage(file.buffer, mime);
     } else if (mime === PDF_MIME) {
       const { PDFParse }: any = await import('pdf-parse');
-      const parser = new PDFParse({});
-      await parser.load(file.buffer);
-      const text = await parser.getText(1);
+      const parser = new PDFParse({ data: file.buffer });
+      await parser.load();
+      const textResult = await parser.getText(1);
       parser.destroy();
+      const text = textResult?.text || '';
       if (!text || text.trim().length < 10) {
         throw new AppError(400, 'Il PDF non contiene testo estraibile. Prova a caricare uno screenshot delle pagine.');
       }

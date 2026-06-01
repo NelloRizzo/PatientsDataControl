@@ -96,7 +96,7 @@ export const createUserSchema = z.object({
   email: z.string().email('Invalid email'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(1, 'Name is required').max(100),
-  role: z.enum(['patient', 'doctor', 'analyst', 'admin']),
+  role: z.enum(['doctor', 'analyst', 'admin']),
   birthDate: z.string().optional(),
   sex: z.enum(['male', 'female', 'other']).optional(),
   birthCity: z.string().max(100).optional(),
@@ -109,7 +109,7 @@ export const updateUserSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   email: z.string().email().optional(),
   password: z.string().min(8, 'Password must be at least 8 characters').optional(),
-  role: z.enum(['patient', 'doctor', 'analyst', 'admin']).optional(),
+  role: z.enum(['doctor', 'analyst', 'admin']).optional(),
   birthDate: z.string().optional().nullable(),
   sex: z.enum(['male', 'female', 'other']).optional().nullable(),
   birthCity: z.string().max(100).optional().nullable(),
@@ -131,6 +131,7 @@ export const doctorCreatePatientSchema = z.object({
   homeAddress: addressSchema.optional(),
   height: z.number().positive('Height must be positive').optional(),
   weight: z.number().positive('Weight must be positive').optional(),
+  sharedMeasurementTypes: z.array(z.string()).optional(),
 });
 
 export const updateProfileSchema = z.object({

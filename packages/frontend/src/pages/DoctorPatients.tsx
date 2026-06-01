@@ -53,6 +53,7 @@ export function DoctorPatients() {
   const [createHomeZip, setCreateHomeZip] = useState('');
   const [createMsg, setCreateMsg] = useState('');
   const [createErr, setCreateErr] = useState('');
+  const [createSharedTypes, setCreateSharedTypes] = useState<string[]>([]);
   // Sharing request
   const [showRequestSharing, setShowRequestSharing] = useState(false);
   const [requestTypes, setRequestTypes] = useState<string[]>([]);
@@ -377,13 +378,14 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                   if (createBirthCity) body.birthCity = createBirthCity;
                   if (createHeight) body.height = parseFloat(createHeight);
                   if (createWeight) body.weight = parseFloat(createWeight);
+                  if (createSharedTypes.length > 0) body.sharedMeasurementTypes = createSharedTypes;
                   if (createHomeFull || createHomeCity) body.homeAddress = {
                     full: createHomeFull, city: createHomeCity, province: createHomeProvince,
                     region: createHomeRegion, country: createHomeCountry, zip: createHomeZip,
                   };
                   await apiClient.post('/doctor/patients', body);
                   setCreateName(''); setCreateEmail(''); setCreateBirthDate(''); setCreateSex('');
-                  setCreateBirthCity(''); setCreateHeight(''); setCreateWeight('');
+                  setCreateBirthCity(''); setCreateHeight(''); setCreateWeight(''); setCreateSharedTypes([]);
                   setCreateHomeFull(''); setCreateHomeCity(''); setCreateHomeProvince('');
                   setCreateHomeRegion(''); setCreateHomeCountry(''); setCreateHomeZip('');
                   setCreateMsg('Account paziente creato (email inviata per impostare password).');
@@ -415,6 +417,20 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                   <input type="number" step="0.1" value={createWeight} placeholder="Peso (kg)" onChange={(e) => setCreateWeight(e.target.value)}
                     className="w-0 flex-1 min-w-0 border rounded px-1 py-1 text-xs" />
                 </div>
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-gray-500">Tipi misurazione da monitorare (opzionale, default tutti)</summary>
+                  <div className="mt-1 flex flex-wrap gap-2 max-h-28 overflow-y-auto border rounded p-1">
+                    {types.map((t) => (
+                      <label key={t.key} className="flex items-center gap-1 text-xs cursor-pointer hover:bg-gray-50 px-1 py-0.5 rounded">
+                        <input type="checkbox" checked={createSharedTypes.includes(t.key)}
+                          onChange={() => setCreateSharedTypes((prev) =>
+                            prev.includes(t.key) ? prev.filter((k) => k !== t.key) : [...prev, t.key]
+                          )} />
+                        {t.name}
+                      </label>
+                    ))}
+                  </div>
+                </details>
                 <details className="text-xs">
                   <summary className="cursor-pointer text-gray-500">Indirizzo di casa (opzionale)</summary>
                   <div className="mt-1 space-y-1">

@@ -176,11 +176,11 @@ export function Dashboard() {
                   groups[g].push(t);
                 }
                 const labels: Record<string, string> = {
-                  generalhealth: 'General Health',
-                  cardiac: 'Cardiac',
-                  blood_gas: 'Blood / Gas',
-                  lipidemia: 'Lipid Profile',
-                  renal: 'Renal Function',
+                  generalhealth: 'Salute Generale',
+                  cardiac: 'Cardiaco',
+                  blood_gas: 'Sangue / Gas',
+                  lipidemia: 'Profilo Lipidico',
+                  renal: 'Funzione Renale',
                 };
                 return Object.entries(groups).map(([group, ts]) => (
                   <optgroup key={group} label={labels[group] || group}>

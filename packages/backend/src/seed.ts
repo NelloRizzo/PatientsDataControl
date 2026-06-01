@@ -10,38 +10,51 @@ import { DoctorContract } from './models/DoctorContract.js';
 import { GdprConsent } from './models/GdprConsent.js';
 
 async function seed() {
+  const cleanArg = process.argv.includes('--clean');
+
   console.log('Connecting to MongoDB...');
   await mongoose.connect(env.mongoUri);
   console.log('Connected.');
 
-  // ── Clear existing data ──
-  console.log('Clearing existing data...');
-  await Promise.all([
-    User.deleteMany({}),
-    Measurement.deleteMany({}),
-    MeasurementTypeConfig.deleteMany({}),
-    PatientDoctor.deleteMany({}),
-    ChartConfig.deleteMany({}),
-  ]);
-  console.log('Cleared.');
+  if (!cleanArg) {
+    const existing = await User.countDocuments();
+    if (existing > 0) {
+      console.log(`Database already has ${existing} users. Use --clean to drop all data and re-seed.`);
+      await mongoose.disconnect();
+      process.exit(0);
+    }
+  } else {
+    console.log('Cleaning existing data...');
+    await Promise.all([
+      User.deleteMany({}),
+      Measurement.deleteMany({}),
+      MeasurementTypeConfig.deleteMany({}),
+      PatientDoctor.deleteMany({}),
+      ChartConfig.deleteMany({}),
+      AlertTemplate.deleteMany({}),
+      DoctorContract.deleteMany({}),
+      GdprConsent.deleteMany({}),
+    ]);
+    console.log('Cleaned.');
+  }
 
   // ── Measurement Type Configs ──
   console.log('Creating measurement types...');
   const typeConfigs = await MeasurementTypeConfig.insertMany([
     {
       key: 'blood_pressure',
-      name: 'Blood Pressure',
+      name: 'Pressione Sanguigna',
       category: 'vital',
       macrogroup: 'cardiac',
       fields: [
         {
-          key: 'systolic', name: 'Systolic', unit: 'mmHg', units: ['mmHg'],
+          key: 'systolic', name: 'Sistolica', unit: 'mmHg', units: ['mmHg'],
           type: 'integer', min: 30, max: 300,
           alertMin: 90, alertMax: 140,
           dangerMin: 60, dangerMax: 180,
         },
         {
-          key: 'diastolic', name: 'Diastolic', unit: 'mmHg', units: ['mmHg'],
+          key: 'diastolic', name: 'Diastolica', unit: 'mmHg', units: ['mmHg'],
           type: 'integer', min: 20, max: 200,
           alertMin: 60, alertMax: 90,
           dangerMin: 40, dangerMax: 120,
@@ -51,12 +64,12 @@ async function seed() {
     },
     {
       key: 'glucose',
-      name: 'Glucose',
+      name: 'Glicemia',
       category: 'lab',
       macrogroup: 'blood_gas',
       fields: [
         {
-          key: 'value', name: 'Glucose Level', unit: 'mg/dL', units: ['mg/dL', 'mmol/L'],
+          key: 'value', name: 'Livello Glicemia', unit: 'mg/dL', units: ['mg/dL', 'mmol/L'],
           type: 'decimal', min: 0, max: 1000,
           alertMin: 70, alertMax: 180,
           dangerMin: 40, dangerMax: 500,
@@ -66,7 +79,7 @@ async function seed() {
     },
     {
       key: 'heart_rate',
-      name: 'Heart Rate',
+      name: 'Frequenza Cardiaca',
       category: 'vital',
       macrogroup: 'cardiac',
       fields: [
@@ -81,12 +94,12 @@ async function seed() {
     },
     {
       key: 'weight',
-      name: 'Weight',
+      name: 'Peso',
       category: 'body',
       macrogroup: 'generalhealth',
       fields: [
         {
-          key: 'value', name: 'Weight', unit: 'kg', units: ['kg'],
+          key: 'value', name: 'Peso', unit: 'kg', units: ['kg'],
           type: 'decimal', min: 0, max: 500,
         },
       ],
@@ -94,12 +107,12 @@ async function seed() {
     },
     {
       key: 'temperature',
-      name: 'Temperature',
+      name: 'Temperatura Corporea',
       category: 'vital',
       macrogroup: 'generalhealth',
       fields: [
         {
-          key: 'value', name: 'Temperature', unit: '°C', units: ['°C', '°F'],
+          key: 'value', name: 'Temperatura', unit: '°C', units: ['°C', '°F'],
           type: 'decimal', min: 30, max: 45,
           alertMin: 36, alertMax: 38,
           dangerMin: 35, dangerMax: 40,
@@ -109,7 +122,7 @@ async function seed() {
     },
     {
       key: 'spo2',
-      name: 'Oxygen Saturation (SpO₂)',
+      name: 'Saturazione Ossigeno (SpO₂)',
       category: 'vital',
       macrogroup: 'blood_gas',
       fields: [
@@ -124,12 +137,12 @@ async function seed() {
     },
     {
       key: 'respiratory_rate',
-      name: 'Respiratory Rate',
+      name: 'Frequenza Respiratoria',
       category: 'vital',
       macrogroup: 'blood_gas',
       fields: [
         {
-          key: 'value', name: 'Breaths/min', unit: 'bpm', units: ['bpm'],
+          key: 'value', name: 'Atti/min', unit: 'bpm', units: ['bpm'],
           type: 'integer', min: 0, max: 100,
           alertMin: 12, alertMax: 20,
           dangerMin: 8, dangerMax: 30,
@@ -139,12 +152,12 @@ async function seed() {
     },
     {
       key: 'cholesterol',
-      name: 'Cholesterol',
+      name: 'Colesterolo',
       category: 'lab',
       macrogroup: 'lipidemia',
       fields: [
         {
-          key: 'total', name: 'Total', unit: 'mg/dL', units: ['mg/dL', 'mmol/L'],
+          key: 'total', name: 'Totale', unit: 'mg/dL', units: ['mg/dL', 'mmol/L'],
           type: 'integer', min: 0, max: 500,
           alertMax: 200,
           dangerMax: 240,
@@ -166,12 +179,12 @@ async function seed() {
     },
     {
       key: 'height',
-      name: 'Height',
+      name: 'Altezza',
       category: 'body',
       macrogroup: 'generalhealth',
       fields: [
         {
-          key: 'value', name: 'Height', unit: 'cm', units: ['cm'],
+          key: 'value', name: 'Altezza', unit: 'cm', units: ['cm'],
           type: 'decimal', min: 0, max: 300,
         },
       ],
@@ -179,29 +192,29 @@ async function seed() {
     },
     {
       key: 'body_composition',
-      name: 'Body Composition',
-      description: 'Bioimpedance analysis',
+      name: 'Composizione Corporea',
+      description: 'Analisi bioimpedenziometrica',
       category: 'body',
       macrogroup: 'generalhealth',
       fields: [
         {
-          key: 'body_fat_pct', name: 'Body Fat', unit: '%', units: ['%'],
+          key: 'body_fat_pct', name: 'Grasso Corporeo', unit: '%', units: ['%'],
           type: 'decimal', min: 0, max: 100,
         },
         {
-          key: 'muscle_mass_kg', name: 'Muscle Mass', unit: 'kg', units: ['kg'],
+          key: 'muscle_mass_kg', name: 'Massa Muscolare', unit: 'kg', units: ['kg'],
           type: 'decimal', min: 0, max: 300,
         },
         {
-          key: 'bone_mass_kg', name: 'Bone Mass', unit: 'kg', units: ['kg'],
+          key: 'bone_mass_kg', name: 'Massa Ossea', unit: 'kg', units: ['kg'],
           type: 'decimal', min: 0, max: 50,
         },
         {
-          key: 'water_pct', name: 'Body Water', unit: '%', units: ['%'],
+          key: 'water_pct', name: 'Acqua Corporea', unit: '%', units: ['%'],
           type: 'decimal', min: 0, max: 100,
         },
         {
-          key: 'visceral_fat', name: 'Visceral Fat', unit: 'index', units: ['index'],
+          key: 'visceral_fat', name: 'Grasso Viscerale', unit: 'index', units: ['index'],
           type: 'integer', min: 1, max: 59,
         },
         {
@@ -209,7 +222,7 @@ async function seed() {
           type: 'integer', min: 500, max: 5000,
         },
         {
-          key: 'metabolic_age', name: 'Metabolic Age', unit: 'years', units: ['years'],
+          key: 'metabolic_age', name: 'Età Metabolica', unit: 'years', units: ['years'],
           type: 'integer', min: 10, max: 120,
         },
       ],
@@ -217,20 +230,20 @@ async function seed() {
     },
     {
       key: 'body_circumferences',
-      name: 'Body Circumferences',
-      description: 'Tape measurements',
+      name: 'Circonferenze Corporee',
+      description: 'Misure con metro a nastro',
       category: 'body',
       macrogroup: 'generalhealth',
       fields: [
-        { key: 'neck', name: 'Neck', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
-        { key: 'chest', name: 'Chest', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
-        { key: 'waist', name: 'Waist', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
-        { key: 'hip', name: 'Hip', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
-        { key: 'abdomen', name: 'Abdomen', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
-        { key: 'arm', name: 'Arm', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
-        { key: 'forearm', name: 'Forearm', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
-        { key: 'thigh', name: 'Thigh', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
-        { key: 'calf', name: 'Calf', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'neck', name: 'Collo', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'chest', name: 'Torace', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'waist', name: 'Vita', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'hip', name: 'Fianchi', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'abdomen', name: 'Addome', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'arm', name: 'Braccio', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'forearm', name: 'Avambraccio', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'thigh', name: 'Coscia', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
+        { key: 'calf', name: 'Polpaccio', unit: 'cm', units: ['cm', 'in'], type: 'decimal', min: 1, max: 300 },
       ],
       active: true,
     },
@@ -292,7 +305,6 @@ async function seed() {
       const date = new Date(now);
       date.setDate(date.getDate() - dayOffset);
 
-      // Blood pressure (with occasional alert values)
       const systolic = 110 + Math.floor(Math.random() * 30);
       const diastolic = 70 + Math.floor(Math.random() * 20);
       measurementDocs.push({
@@ -304,7 +316,6 @@ async function seed() {
         timestamp: date,
       });
 
-      // Glucose
       const glucose = 85 + Math.floor(Math.random() * 40);
       measurementDocs.push({
         userId: patient._id,
@@ -315,7 +326,6 @@ async function seed() {
         timestamp: date,
       });
 
-      // Heart rate
       const hr = 65 + Math.floor(Math.random() * 25);
       measurementDocs.push({
         userId: patient._id,
@@ -326,7 +336,6 @@ async function seed() {
         timestamp: date,
       });
 
-      // Weight (weekly)
       if (dayOffset % 7 === 0) {
         const baseWeight = [78, 65, 92, 55, 83];
         measurementDocs.push({
@@ -339,7 +348,6 @@ async function seed() {
         });
       }
 
-      // SpO₂ (always normal)
       if (dayOffset % 2 === 0) {
         measurementDocs.push({
           userId: patient._id,
@@ -351,7 +359,6 @@ async function seed() {
         });
       }
 
-      // Temperature (with occasional fever)
       const temp = 36.5 + Math.random() * 0.8;
       measurementDocs.push({
         userId: patient._id,
@@ -374,7 +381,7 @@ async function seed() {
 
   const alertTemplates: any[] = [];
   for (const t of typeKeys) {
-    if (t.key === 'weight') continue; // no thresholds
+    if (t.key === 'weight') continue;
 
     alertTemplates.push({
       measurementType: t.key,
@@ -395,7 +402,6 @@ async function seed() {
     });
   }
 
-  // Info templates (one per type, for "new measurement" notifications)
   for (const t of typeKeys) {
     alertTemplates.push({
       measurementType: t.key,
@@ -407,7 +413,6 @@ async function seed() {
     });
   }
 
-  await AlertTemplate.deleteMany({});
   await AlertTemplate.insertMany(alertTemplates);
   console.log(`  Created ${alertTemplates.length} alert templates.`);
 
@@ -442,7 +447,7 @@ async function seed() {
   console.log(`  Created ${contracts.length} contracts.`);
 
   console.log('\n✅ Seed complete!');
-  console.log('── Login credentials ──');
+  console.log('── Credenziali di accesso ──');
   console.log('  Admin:   admin@healthbridge.com / admin1234');
   console.log('  Doctor:  dr.smith@healthbridge.com / doctor1234');
   console.log('  Doctor:  dr.jones@healthbridge.com / doctor1234');
@@ -454,6 +459,6 @@ async function seed() {
 }
 
 seed().catch((err) => {
-  console.error('Seed failed:', err);
+  console.error('Seed fallito:', err);
   process.exit(1);
 });

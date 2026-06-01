@@ -318,6 +318,27 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - Import `Link` da react-router-dom aggiunto
 - Tradotti in italiano: label filtri sesso/età/città/regione/paese, opzioni select (Maschio/Femmina/Altro, Tutti), label grafico (Tipo Misurazione, Raggruppamento Temporale, Aggregazione, Tipo Grafico, Linea/Area/Barre, Ora/Giorno/Settimana/Mese/Anno, Media/Minimo/Massimo), macrogruppi (Salute Generale/Cardiaco/Sangue/Gas/Profilo Lipidico/Funzione Renale), pulsanti (Aggiorna Grafico, Salva/Elimina configurazioni), form edit paziente (Data di Nascita, Sesso, Salva/Annulla), badge stato (Attivo/In attesa/Rifiutato/Inattivo, Attiva/Disattiva), sezione anamnesi (Nuova Voce/Annulla, una voce per riga, Salva Anamnesi, Note aggiuntive, nessuna anamnesi ancora), note cliniche (Note Cliniche, Mostra al paziente, Invia notifica email, Associa all'ultima anamnesi, Condivisa/Notificata/Anamnesi), messaggi conferma/errore, placeholder, dialog conferma rimozione
 
+### Nomi Misurazioni in Italiano + Seed --clean
+- Seed aggiornato con nomi italiani per tutti i tipi e campi misurazione (es. `blood_pressure` → `Pressione Sanguigna`, `Systolic` → `Sistolica`, ecc.)
+- Aggiunto parametro `--clean` al seed: cancella tutti i dati e re-seed da zero; senza `--clean` esce se già popolato
+- `Dashboard.tsx`: macrogruppi tradotti in italiano (Salute Generale, Cardiaco, Sangue/Gas, Profilo Lipidico, Funzione Renale)
+- `AdminMeasurementTypes.tsx`: macrogruppi tradotti in italiano
+- `index.html`: `lang="it"`
+
+### Fix Produzione: pdfjs-dist
+- `aiExtractController.ts`: passato `{ data: file.buffer }` al costruttore `PDFParse` invece di `{}` — risolve l'errore `getDocument - no 'url' parameter provided` in produzione su Render
+- `load()` ora non riceve argomenti (usa `this.options` impostati dal costruttore)
+- `getText(1)` restituisce `TextResult` con `.text`
+
+### Admin non crea più pazienti
+- `createUserSchema` e `updateUserSchema`: rimosso `'patient'` dai ruoli ammessi (solo doctor/analyst/admin)
+- `AdminUsers.tsx`: rimosso "Patient" dal select ruolo, opzioni tradotte in italiano (Medico/Analista/Admin)
+
+### Dottore sceglie tipi misurazione alla creazione paziente
+- `doctorCreatePatientSchema`: aggiunto campo opzionale `sharedMeasurementTypes: z.array(z.string())`
+- `doctorController.ts` `addPatient`: passa `sharedMeasurementTypes` dalla request al `PatientDoctor.create()`, default `['*']` se non fornito
+- `DoctorPatients.tsx`: multi-select checkboxes nel form "Crea Account" per scegliere tipi (se nessuno selezionato, default tutti)
+
 ## Future Phases
 - **Phase 2**: Export CSV/JSON endpoint, advanced charts, Looker Studio Community Connector
 - **Phase 3**: BigQuery sync, device OAuth integrations (Fitbit, Google Fit), webhook endpoint

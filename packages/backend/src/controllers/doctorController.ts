@@ -159,25 +159,26 @@ export async function addPatient(
         }
       }
 
-      const association = await PatientDoctor.create({
-        patientId: existingUser._id,
-        doctorId,
-        status: 'pending',
-        assignedBy: doctorId,
-        sharedMeasurementTypes: ['*'],
-      });
+        const assocTypes = req.body.sharedMeasurementTypes || ['*'];
+        const association = await PatientDoctor.create({
+          patientId: existingUser._id,
+          doctorId,
+          status: 'pending',
+          assignedBy: doctorId,
+          sharedMeasurementTypes: assocTypes,
+        });
 
-      res.status(201).json({
-        message: 'Patient added (pending confirmation)',
-        user: existingUser.toJSON(),
-        associationId: association._id.toString(),
-        status: 'pending',
-      });
-      return;
-    }
+        res.status(201).json({
+          message: 'Patient added (pending confirmation)',
+          user: existingUser.toJSON(),
+          associationId: association._id.toString(),
+          status: 'pending',
+        });
+        return;
+      }
 
-    // Full create account flow
-    const parsed = doctorCreatePatientSchema.parse(req.body);
+      // Full create account flow
+      const parsed = doctorCreatePatientSchema.parse(req.body);
 
     const existingUser = await User.findOne({ email: parsed.email });
     if (existingUser) throw new AppError(409, 'Email already in use');
@@ -232,12 +233,13 @@ export async function addPatient(
     await sendVerificationEmail(parsed.email, token);
 
     // Create association (pending)
+    const assocTypes = parsed.sharedMeasurementTypes || ['*'];
     const association = await PatientDoctor.create({
       patientId: user._id,
       doctorId,
       status: 'pending',
       assignedBy: doctorId,
-      sharedMeasurementTypes: ['*'],
+      sharedMeasurementTypes: assocTypes,
     });
 
     res.status(201).json({
