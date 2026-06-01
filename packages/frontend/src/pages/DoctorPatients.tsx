@@ -61,6 +61,9 @@ export function DoctorPatients() {
   const [patientSharing, setPatientSharing] = useState<string[]>([]);
   const [sharingMsg, setSharingMsg] = useState('');
 
+  // GDPR consent blocked
+  const [gdprBlocked, setGdprBlocked] = useState(false);
+
   // Recent activity
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [activitySince] = useState(() => new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
@@ -239,6 +242,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
       if (viewMode === 'individual' && selectedPatient) {
         const res = await apiClient.get(`/doctor/patients/${selectedPatient}/timeseries`, { params });
         setChartData(res.data.data);
+        setGdprBlocked(false);
       } else {
         const filterParams: Record<string, string> = { ...params };
         if (filterSex) filterParams.sex = filterSex;
@@ -250,7 +254,12 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
         const res = await apiClient.get('/doctor/timeseries', { params: filterParams });
         setChartData(res.data.data);
       }
-    } catch { setChartData([]); }
+    } catch (err: any) {
+      if (err?.response?.status === 403 && err?.response?.data?.error?.includes('GDPR')) {
+        setGdprBlocked(true);
+      }
+      setChartData([]);
+    }
     finally { setLoading(false); }
   }, [selectedType, groupBy, aggregation, selectedFields, selectedPatient, viewMode,
       filterSex, filterAgeFrom, filterAgeTo, filterHomeCity, filterHomeRegion, filterHomeCountry]);
@@ -283,8 +292,8 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
   useEffect(() => {
     if (!selectedPatient || viewMode !== 'individual') return;
     apiClient.get(`/doctor/patients/${selectedPatient}/latest-measurements`)
-      .then((res) => setMeasurements(res.data.data))
-      .catch(() => setMeasurements([]));
+      .then((res) => { setMeasurements(res.data.data); setGdprBlocked(false); })
+      .catch((err) => { if (err?.response?.status === 403 && err?.response?.data?.error?.includes('GDPR')) setGdprBlocked(true); setMeasurements([]); });
     loadNotes();
     loadAnamnesis();
     loadBmi();
@@ -297,8 +306,9 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
   };
 
   const renderChart = () => {
-    if (loading) return <p className="text-gray-500 text-center py-12">Loading chart...</p>;
-    if (!chartData.length) return <p className="text-gray-500 text-center py-12">No data available</p>;
+    if (loading) return <p className="text-gray-500 text-center py-12">Caricamento grafico...</p>;
+    if (gdprBlocked) return <p className="text-red-600 text-center py-12">Consenso GDPR non concesso dal paziente. I dati non sono accessibili.</p>;
+    if (!chartData.length) return <p className="text-gray-500 text-center py-12">Nessun dato disponibile</p>;
 
     const commonProps = { data: chartData, margin: { top: 5, right: 30, left: 20, bottom: 5 } };
     const colors = ['#2563eb', '#dc2626', '#16a34a', '#ca8a04', '#9333ea', '#0891b2'];
@@ -480,7 +490,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                 selectedPatient === p._id && viewMode === 'individual'
                   ? 'bg-blue-50 text-blue-700 font-medium' : ''
               }`}>
-                <div className="flex-1 truncate cursor-pointer flex items-center gap-1.5" onClick={() => { setSelectedPatient(p._id); setViewMode('individual'); setSelectedFields([]); setChartData([]); }}>
+                <div className="flex-1 truncate cursor-pointer flex items-center gap-1.5" onClick={() => { setSelectedPatient(p._id); setViewMode('individual'); setSelectedFields([]); setChartData([]); setGdprBlocked(false); }}>
                   {p.hasAlerts && <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" title="Has active alerts" />}
                   <span className="font-medium truncate">{p.name}</span>
                   {p.sex && <span className="text-xs text-gray-400 shrink-0">({p.sex})</span>}
@@ -900,7 +910,9 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                   </div>
                 </div>
                 {measurements.length === 0 ? (
-                  <p className="text-center py-6 text-sm text-gray-500">No measurements yet</p>
+                  <p className={`text-center py-6 text-sm ${gdprBlocked ? 'text-red-600' : 'text-gray-500'}`}>
+                    {gdprBlocked ? 'Consenso GDPR non concesso dal paziente. I dati non sono accessibili.' : 'Nessuna misurazione ancora'}
+                  </p>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
                     {measurements.map((m) => {

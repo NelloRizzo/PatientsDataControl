@@ -382,6 +382,19 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
   3. Concede il Consenso GDPR (Profilo → Consenso GDPR)
   4. Conferma il dottore (Dashboard → I Miei Dottori)
 
+### Sezione GDPR Visibile a Tutti gli Utenti
+- `Profile.tsx`: rimossa la condizione `user.role === 'patient'` dal gate della sezione GDPR (errore `riga 248` → `riga 246`); ora visibile per tutti i ruoli (dottore, analista, admin, paziente)
+- Testo adattato: "Il consenso alla privacy consente ai medici di accedere ai tuoi dati" → "Il consenso GDPR autorizza la piattaforma a trattare i tuoi dati personali"
+- Confirm dialog revoca: tradotto in italiano "La revoca del consenso limiterà il trattamento dei tuoi dati. Continuare?"
+- Backend endpoint `POST/GET /patient/privacy-consent` già generico (usa `req.userId`), nessuna modifica necessaria
+
+### Messaggio Blocco GDPR nella Vista Dottore
+- `DoctorPatients.tsx`: aggiunto stato `gdprBlocked`, resettato al cambio paziente
+- `loadChart` e `latest-measurements` fetch: catch dell'errore 403 `'Patient has not provided GDPR consent'` → setta `gdprBlocked: true`
+- Render grafico: mostra messaggio rosso "Consenso GDPR non concesso dal paziente. I dati non sono accessibili." al posto di "Nessun dato disponibile"
+- Card ultime misurazioni: mostra stesso messaggio rosso al posto di "Nessuna misurazione ancora"
+- Tutti i messaggi tradotti in italiano (Caricamento grafico, Nessun dato disponibile, ecc.)
+
 ## Future Phases
 - **Phase 2**: Export CSV/JSON endpoint, advanced charts, Looker Studio Community Connector
 - **Phase 3**: BigQuery sync, device OAuth integrations (Fitbit, Google Fit), webhook endpoint

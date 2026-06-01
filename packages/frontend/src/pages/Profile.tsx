@@ -33,9 +33,7 @@ export function Profile() {
   const [gdprMsg, setGdprMsg] = useState('');
 
   useEffect(() => {
-    if (user?.role === 'patient') {
-      apiClient.get('/patient/privacy-consent').then((res) => setGdprHistory(res.data.data)).catch(() => {});
-    }
+    apiClient.get('/patient/privacy-consent').then((res) => setGdprHistory(res.data.data)).catch(() => {});
   }, [user]);
 
   const handleGdprAccept = async () => {
@@ -48,7 +46,7 @@ export function Profile() {
   };
 
   const handleGdprRevoke = async () => {
-    if (!confirm('Revoking consent will restrict data access. Continue?')) return;
+    if (!confirm('La revoca del consenso limiterà il trattamento dei tuoi dati. Continuare?')) return;
     setGdprMsg('');
     try {
       await apiClient.post('/patient/privacy-consent', { action: 'revoke' });
@@ -245,13 +243,12 @@ export function Profile() {
       </div>
 
       {/* GDPR Privacy Consent */}
-      {user.role === 'patient' && (
-        <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border space-y-4">
-          <h2 className="text-lg font-semibold">Consenso GDPR</h2>
-          <p className="text-xs text-gray-500">
-            Il consenso alla privacy consente ai medici di accedere ai tuoi dati.
-            Puoi revocarlo in qualsiasi momento — l'accesso ai dati verrà bloccato fino a una nuova accettazione.
-          </p>
+      <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border space-y-4">
+        <h2 className="text-lg font-semibold">Consenso GDPR</h2>
+        <p className="text-xs text-gray-500">
+          Il consenso GDPR autorizza la piattaforma a trattare i tuoi dati personali.
+          Puoi revocarlo in qualsiasi momento — il trattamento verrà sospeso fino a una nuova accettazione.
+        </p>
           <div className="flex gap-2">
             <button onClick={handleGdprAccept} className="bg-green-600 text-white px-4 py-1.5 rounded text-sm hover:bg-green-700">
               Accetta / Riaccetta
@@ -279,7 +276,6 @@ export function Profile() {
             </div>
           )}
         </div>
-      )}
     </div>
   );
 }
