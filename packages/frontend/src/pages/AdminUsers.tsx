@@ -43,7 +43,7 @@ export function AdminUsers() {
   useEffect(() => { loadUsers(); }, [roleFilter]);
 
   const resetForm = () => {
-    setNewName(''); setNewEmail(''); setNewPassword(''); setNewRole('patient');
+    setNewName(''); setNewEmail(''); setNewPassword(''); setNewRole('doctor');
     setNewBirthDate(''); setNewSex(''); setNewMaxPatients('');
     setNewHome({ ...emptyAddress }); setNewLegal({ ...emptyAddress });
   };
