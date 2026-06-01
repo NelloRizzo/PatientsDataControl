@@ -12,7 +12,7 @@ export function AdminUsers() {
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [newRole, setNewRole] = useState('patient');
+  const [newRole, setNewRole] = useState('doctor');
   const [newBirthDate, setNewBirthDate] = useState('');
   const [newSex, setNewSex] = useState('');
   const [newMaxPatients, setNewMaxPatients] = useState('');
@@ -218,10 +218,10 @@ export function AdminUsers() {
 
       <div className="flex gap-2">
         <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="border rounded px-3 py-2">
-          <option value="">All roles</option>
-          <option value="patient">Patient</option>
-          <option value="doctor">Doctor</option>
-          <option value="analyst">Analyst</option>
+          <option value="">Tutti</option>
+          <option value="patient">Paziente</option>
+          <option value="doctor">Medico</option>
+          <option value="analyst">Analista</option>
           <option value="admin">Admin</option>
         </select>
       </div>
@@ -288,9 +288,9 @@ export function AdminUsers() {
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Role</label>
                   <select value={editRole} onChange={(e) => setEditRole(e.target.value)} className="w-full border rounded px-2 py-1 text-sm bg-white">
-                    <option value="patient">Patient</option>
-                    <option value="doctor">Doctor</option>
-                    <option value="analyst">Analyst</option>
+                    <option value="patient">Paziente</option>
+                    <option value="doctor">Medico</option>
+                    <option value="analyst">Analista</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -42,51 +42,26 @@ export function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route path="/" element={<RootRedirect />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/measurements" element={<Measurements />} />
-              <Route path="/measurements/new" element={<NewMeasurement />} />
-              <Route path="/measurements/import" element={<ImportMeasurements />} />
-              <Route path="/measurements/:id" element={<MeasurementDetail />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route
-                path="/admin/measurement-types"
-                element={<ProtectedRoute roles={['admin']}><AdminMeasurementTypes /></ProtectedRoute>}
-              />
-              <Route
-                path="/admin/users"
-                element={<ProtectedRoute roles={['admin']}><AdminUsers /></ProtectedRoute>}
-              />
-              <Route
-                path="/admin/alert-templates"
-                element={<ProtectedRoute roles={['admin']}><AdminAlertTemplates /></ProtectedRoute>}
-              />
-              <Route
-                path="/admin/associations"
-                element={<ProtectedRoute roles={['admin']}><AdminAssociations /></ProtectedRoute>}
-              />
-              <Route
-                path="/admin/contracts"
-                element={<ProtectedRoute roles={['admin']}><AdminContracts /></ProtectedRoute>}
-              />
-              <Route
-                path="/admin/contracts/report"
-                element={<ProtectedRoute roles={['admin']}><AdminContractReport /></ProtectedRoute>}
-              />
-              <Route
-                path="/doctor/patients"
-                element={<ProtectedRoute roles={['doctor']}><DoctorPatients /></ProtectedRoute>}
-              />
-              <Route
-                path="/doctor/alerts"
-                element={<ProtectedRoute roles={['doctor']}><DoctorAlerts /></ProtectedRoute>}
-              />
-              <Route
-                path="/doctor/contract"
-                element={<ProtectedRoute roles={['doctor']}><DoctorContractStatus /></ProtectedRoute>}
-              />
+            <Route element={<Layout />}>
+              <Route path="/privacy" element={<Privacy />} />
+              <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+                <Route path="/" element={<RootRedirect />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/measurements" element={<Measurements />} />
+                <Route path="/measurements/new" element={<NewMeasurement />} />
+                <Route path="/measurements/import" element={<ImportMeasurements />} />
+                <Route path="/measurements/:id" element={<MeasurementDetail />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/admin/measurement-types" element={<ProtectedRoute roles={['admin']}><AdminMeasurementTypes /></ProtectedRoute>} />
+                <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><AdminUsers /></ProtectedRoute>} />
+                <Route path="/admin/alert-templates" element={<ProtectedRoute roles={['admin']}><AdminAlertTemplates /></ProtectedRoute>} />
+                <Route path="/admin/associations" element={<ProtectedRoute roles={['admin']}><AdminAssociations /></ProtectedRoute>} />
+                <Route path="/admin/contracts" element={<ProtectedRoute roles={['admin']}><AdminContracts /></ProtectedRoute>} />
+                <Route path="/admin/contracts/report" element={<ProtectedRoute roles={['admin']}><AdminContractReport /></ProtectedRoute>} />
+                <Route path="/doctor/patients" element={<ProtectedRoute roles={['doctor']}><DoctorPatients /></ProtectedRoute>} />
+                <Route path="/doctor/alerts" element={<ProtectedRoute roles={['doctor']}><DoctorAlerts /></ProtectedRoute>} />
+                <Route path="/doctor/contract" element={<ProtectedRoute roles={['doctor']}><DoctorContractStatus /></ProtectedRoute>} />
+              </Route>
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

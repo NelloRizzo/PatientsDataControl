@@ -109,7 +109,7 @@ export const updateUserSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   email: z.string().email().optional(),
   password: z.string().min(8, 'Password must be at least 8 characters').optional(),
-  role: z.enum(['doctor', 'analyst', 'admin']).optional(),
+  role: z.enum(['patient', 'doctor', 'analyst', 'admin']).optional(),
   birthDate: z.string().optional().nullable(),
   sex: z.enum(['male', 'female', 'other']).optional().nullable(),
   birthCity: z.string().max(100).optional().nullable(),
