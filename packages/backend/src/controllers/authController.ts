@@ -113,7 +113,7 @@ export async function updateProfile(
     const parsed = updateProfileSchema.parse(req.body);
 
     if (parsed.email) {
-      const existing = await User.findOne({ email: parsed.email.toLowerCase(), _id: { $ne: req.userId } });
+      const existing = await User.findOne({ email: parsed.email.toLowerCase().trim(), _id: { $ne: req.userId } });
       if (existing) throw new AppError(409, 'Email already in use');
     }
 

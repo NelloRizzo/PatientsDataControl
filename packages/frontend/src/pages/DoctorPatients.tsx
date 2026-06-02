@@ -37,6 +37,14 @@ export function DoctorPatients() {
   const [chartData, setChartData] = useState<TimeSeriesPoint[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Measurement history on card click
+  const [historyType, setHistoryType] = useState<string | null>(null);
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyMonth, setHistoryMonth] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d; });
+
   // Add patient — two modes
   const [addMode, setAddMode] = useState<'email' | 'create'>('email');
   const [addEmail, setAddEmail] = useState('');
@@ -302,6 +310,46 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
     loadAnamnesis();
     loadBmi();
   }, [selectedPatient, viewMode, loadNotes, loadAnamnesis, loadBmi]);
+
+  // Measurement history
+  useEffect(() => {
+    if (!historyType || !selectedPatient) return;
+    setHistoryLoading(true);
+    const from = new Date(historyMonth);
+    const to = new Date(historyMonth);
+    to.setMonth(to.getMonth() + 1);
+    apiClient.get(`/doctor/patients/${selectedPatient}/measurements`, {
+      params: { type: historyType, from: from.toISOString(), to: to.toISOString(), page: historyPage, limit: 20 },
+    })
+      .then((res) => { setHistoryData(res.data.data); setHistoryTotal(res.data.pagination.total); })
+      .catch(() => setHistoryData([]))
+      .finally(() => setHistoryLoading(false));
+  }, [historyType, historyMonth, historyPage, selectedPatient]);
+
+  const prevMonth = () => {
+    const d = new Date(historyMonth);
+    d.setMonth(d.getMonth() - 1, 1);
+    d.setHours(0, 0, 0, 0);
+    setHistoryMonth(d);
+    setHistoryPage(1);
+  };
+
+  const nextMonth = () => {
+    const d = new Date(historyMonth);
+    d.setMonth(d.getMonth() + 1, 1);
+    d.setHours(0, 0, 0, 0);
+    const now = new Date();
+    if (d <= now) {
+      setHistoryMonth(d);
+      setHistoryPage(1);
+    }
+  };
+
+  const closeHistory = () => {
+    setHistoryType(null);
+    setHistoryData([]);
+    setHistoryPage(1);
+  };
 
   const toggleField = (key: string) => {
     setSelectedFields((prev) =>
@@ -731,6 +779,75 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
 
           {viewMode === 'individual' && selectedPatient && (
             <>
+              {historyType && (
+                <div className="bg-white rounded-lg shadow-sm border mb-4">
+                  <div className="px-4 py-3 border-b flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button onClick={closeHistory} className="text-gray-500 hover:text-gray-700 text-sm">&larr; Torna</button>
+                      <span className="font-medium text-sm">Cronologia: {types.find(t => t.key === historyType)?.name || historyType}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <button onClick={prevMonth} className="px-2 py-1 border rounded hover:bg-gray-50 text-xs">&larr; Prec</button>
+                      <span className="font-medium min-w-[120px] text-center text-xs">
+                        {historyMonth.toLocaleString('it-IT', { month: 'long', year: 'numeric' })}
+                      </span>
+                      <button onClick={nextMonth} disabled={historyMonth.getMonth() >= new Date().getMonth() && historyMonth.getFullYear() >= new Date().getFullYear()}
+                        className="px-2 py-1 border rounded hover:bg-gray-50 text-xs disabled:opacity-30">Succ &rarr;</button>
+                    </div>
+                  </div>
+                  {historyLoading ? (
+                    <p className="text-center text-gray-500 py-8 text-sm">Caricamento...</p>
+                  ) : historyData.length === 0 ? (
+                    <p className="text-center text-gray-500 py-8 text-sm">Nessuna misurazione in questo periodo</p>
+                  ) : (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-gray-50 text-left text-xs text-gray-500">
+                              <th className="px-4 py-2 whitespace-nowrap">Data/Ora</th>
+                              {(() => {
+                                const cfg = types.find(t => t.key === historyType);
+                                return cfg?.fields.map(f => (
+                                  <th key={f.key} className="px-4 py-2 whitespace-nowrap">{f.name} ({f.unit})</th>
+                                ));
+                              })()}
+                              <th className="px-4 py-2">Fonte</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {historyData.map((m: any) => (
+                              <tr key={m._id} className="hover:bg-gray-50">
+                                <td className="px-4 py-2 whitespace-nowrap text-xs">{new Date(m.timestamp).toLocaleString()}</td>
+                                {(() => {
+                                  const cfg = types.find(t => t.key === historyType);
+                                  return cfg?.fields.map(f => (
+                                    <td key={f.key} className="px-4 py-2 font-medium text-sm">
+                                      {(m.values as Record<string, number>)?.[f.key] ?? '-'}
+                                    </td>
+                                  ));
+                                })()}
+                                <td className="px-4 py-2 text-xs text-gray-400">{m.source}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {historyTotal > 20 && (
+                        <div className="px-4 py-3 border-t flex items-center justify-between text-sm text-gray-500">
+                          <span className="text-xs">{historyTotal} totale</span>
+                          <div className="flex gap-2">
+                            <button disabled={historyPage <= 1} onClick={() => setHistoryPage(p => p - 1)}
+                              className="px-2 py-1 border rounded hover:bg-gray-50 text-xs disabled:opacity-30">&larr; Prec</button>
+                            <button disabled={historyPage * 20 >= historyTotal} onClick={() => setHistoryPage(p => p + 1)}
+                              className="px-2 py-1 border rounded hover:bg-gray-50 text-xs disabled:opacity-30">Succ &rarr;</button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
               <div className="flex gap-2 items-center bg-white px-4 py-2 rounded-lg shadow-sm border flex-wrap">
                 <span className="text-sm font-medium">{selectedPatientData?.name}</span>
                 <span className={`text-xs px-1.5 py-0.5 rounded ${
@@ -927,6 +1044,10 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                           key={m._id}
                           onClick={() => {
                             setSelectedType(m.type);
+                            setHistoryType(m.type);
+                            const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0);
+                            setHistoryMonth(d);
+                            setHistoryPage(1);
                             const cfg = types.find((t) => t.key === m.type);
                             if (cfg) setSelectedFields(cfg.fields.map((f) => f.key));
                             document.getElementById('chart-section')?.scrollIntoView({ behavior: 'smooth' });

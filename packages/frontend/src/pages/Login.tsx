@@ -6,17 +6,21 @@ export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSubmitting(true);
     try {
-      const user = await login(email, password);
+      const user = await login(email.trim(), password);
       navigate(user.mustChangePassword ? '/profile?mustChangePassword=1' : '/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login fallito');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -33,6 +37,8 @@ export function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              inputMode="email"
               className="w-full border rounded px-3 py-2"
               required
             />
@@ -43,14 +49,19 @@ export function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
               className="w-full border rounded px-3 py-2"
               required
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+            disabled={submitting}
+            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
+            {submitting && (
+              <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+            )}
             Accedi
           </button>
         </form>

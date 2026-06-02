@@ -90,7 +90,7 @@ export async function createUser(
 ): Promise<void> {
   try {
     const parsed = createUserSchema.parse(req.body);
-    const existing = await User.findOne({ email: parsed.email.toLowerCase() });
+    const existing = await User.findOne({ email: parsed.email.toLowerCase().trim() });
     if (existing) throw new AppError(409, 'Email already registered');
 
     const user = await User.create(parsed);
@@ -112,7 +112,7 @@ export async function updateUser(
     const { id } = req.params;
 
     if (parsed.email) {
-      const existing = await User.findOne({ email: parsed.email.toLowerCase(), _id: { $ne: id } });
+      const existing = await User.findOne({ email: parsed.email.toLowerCase().trim(), _id: { $ne: id } });
       if (existing) throw new AppError(409, 'Email already in use');
     }
 

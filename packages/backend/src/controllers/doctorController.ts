@@ -170,7 +170,7 @@ export async function addPatient(
 
     // If only email provided, try to add existing patient by email
     if (req.body.email && !req.body.name) {
-      const existingUser = await User.findOne({ email: req.body.email.toLowerCase(), role: 'patient' });
+      const existingUser = await User.findOne({ email: req.body.email.toLowerCase().trim(), role: 'patient' });
       if (!existingUser) {
         throw new AppError(404, 'Patient not found with this email. Use "Create Account" to register a new patient.');
       }
@@ -219,7 +219,7 @@ export async function addPatient(
       // Full create account flow
       const parsed = doctorCreatePatientSchema.parse(req.body);
 
-    const existingUser = await User.findOne({ email: parsed.email.toLowerCase() });
+    const existingUser = await User.findOne({ email: parsed.email.toLowerCase().trim() });
     if (existingUser) throw new AppError(409, 'Email already in use');
 
     // Check max patients limit
@@ -419,7 +419,7 @@ export async function updatePatientProfile(
     const parsed = updateProfileSchema.parse(req.body);
 
     if (parsed.email) {
-      const existing = await User.findOne({ email: parsed.email.toLowerCase(), _id: { $ne: patientId } });
+      const existing = await User.findOne({ email: parsed.email.toLowerCase().trim(), _id: { $ne: patientId } });
       if (existing) throw new AppError(409, 'Email already in use');
     }
 
