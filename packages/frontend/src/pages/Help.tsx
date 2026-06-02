@@ -1,16 +1,25 @@
 import { useAuth } from '../context/AuthContext';
+import { useState } from 'react';
 import { GuideButton } from '../components/GuideButton';
-import { doctorGuideSteps, doctorGuideConfig } from '../guides/doctorGuide';
-import { patientGuideSteps, patientGuideConfig } from '../guides/patientGuide';
+
+const guides: Record<string, { title: string; description: string; steps: number }> = {
+  doctor: {
+    title: 'Guida per Medici',
+    description: 'Tour interattivo delle funzionalità dedicate ai medici.',
+    steps: 13,
+  },
+  patient: {
+    title: 'Guida per Pazienti',
+    description: 'Tour interattivo delle funzionalità dedicate ai pazienti.',
+    steps: 8,
+  },
+};
 
 export function Help() {
   const { user } = useAuth();
+  const [showDetails, setShowDetails] = useState<string | null>(null);
 
-  const guides = user?.role === 'doctor'
-    ? [{ steps: doctorGuideSteps, config: doctorGuideConfig }]
-    : user?.role === 'patient'
-    ? [{ steps: patientGuideSteps, config: patientGuideConfig }]
-    : [];
+  const guide = user?.role ? guides[user.role] : null;
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -21,18 +30,14 @@ export function Help() {
         </p>
       </div>
 
-      {guides.length === 0 ? (
+      {!guide ? (
         <p className="text-sm text-gray-500">Nessuna guida disponibile per il tuo ruolo.</p>
       ) : (
-        <div className="space-y-3">
-          {guides.map((g, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-sm border p-5 space-y-3">
-              <h3 className="font-semibold">{g.config.title}</h3>
-              <p className="text-sm text-gray-600">{g.config.description}</p>
-              <p className="text-xs text-gray-400">{g.steps.length} step</p>
-              <GuideButton className="bg-blue-600 text-white hover:bg-blue-700" />
-            </div>
-          ))}
+        <div className="bg-white rounded-lg shadow-sm border p-5 space-y-3">
+          <h3 className="font-semibold">{guide.title}</h3>
+          <p className="text-sm text-gray-600">{guide.description}</p>
+          <p className="text-xs text-gray-400">{guide.steps} step</p>
+          <GuideButton className="bg-blue-600 text-white hover:bg-blue-700" />
         </div>
       )}
 
@@ -41,11 +46,11 @@ export function Help() {
         <div className="space-y-2 text-sm">
           {user?.role === 'doctor' && (
             <>
-              <details className="group">
+              <details className="group" open={showDetails === 'add-patient'} onToggle={() => setShowDetails(showDetails === 'add-patient' ? null : 'add-patient')}>
                 <summary className="cursor-pointer text-blue-600 hover:text-blue-800">Come aggiungo un paziente?</summary>
                 <p className="mt-1 text-gray-600 pl-4">Vai su "Pazienti" → clicca "+ Aggiungi Paziente". Puoi cercare per email o creare un nuovo account.</p>
               </details>
-              <details className="group">
+              <details className="group" open={showDetails === 'prescribe'} onToggle={() => setShowDetails(showDetails === 'prescribe' ? null : 'prescribe')}>
                 <summary className="cursor-pointer text-blue-600 hover:text-blue-800">Come prescrivo un farmaco?</summary>
                 <p className="mt-1 text-gray-600 pl-4">Apri la scheda del paziente → clicca "Farmaci" → "+ Nuovo Farmaco". Inserisci nome, dosaggio, orari.</p>
               </details>
@@ -53,17 +58,17 @@ export function Help() {
           )}
           {user?.role === 'patient' && (
             <>
-              <details className="group">
+              <details className="group" open={showDetails === 'add-measure'} onToggle={() => setShowDetails(showDetails === 'add-measure' ? null : 'add-measure')}>
                 <summary className="cursor-pointer text-blue-600 hover:text-blue-800">Come inserisco una misurazione?</summary>
                 <p className="mt-1 text-gray-600 pl-4">Vai su "Le Mie Misure" o usa la schermata mobile dal tuo smartphone per inserire rapidamente i valori.</p>
               </details>
-              <details className="group">
+              <details className="group" open={showDetails === 'meds'} onToggle={() => setShowDetails(showDetails === 'meds' ? null : 'meds')}>
                 <summary className="cursor-pointer text-blue-600 hover:text-blue-800">Come funzionano i farmaci?</summary>
                 <p className="mt-1 text-gray-600 pl-4">Il medico prescrive i farmaci. Li trovi nella Dashboard con l'orario. Clicca "Preso" per registrare l'assunzione.</p>
               </details>
             </>
           )}
-          <details className="group">
+          <details className="group" open={showDetails === 'support'} onToggle={() => setShowDetails(showDetails === 'support' ? null : 'support')}>
             <summary className="cursor-pointer text-blue-600 hover:text-blue-800">Come contatto il supporto?</summary>
             <p className="mt-1 text-gray-600 pl-4">Usa la sezione "Ticket e Segnalazioni" per inviare suggerimenti o segnalare problemi. Il team risponderà direttamente.</p>
           </details>

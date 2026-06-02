@@ -292,6 +292,8 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 
 ## Future Phases
 - **Phase 2**: Export CSV/JSON endpoint, advanced charts, Looker Studio Community Connector
-- **Phase 3**: BigQuery sync, device OAuth integrations (Fitbit, Google Fit), webhook endpoint
+- **Phase 3**: BigQuery sync, device OAuth integrations (Fitbit, Google Fit, Samsung Health), webhook endpoint
 - **Export storico BMI**: grafico BMI nel tempo
 - **Notifiche push**: per richieste di condivisione e conferma presa in carico
+- **Integrazione Samsung Health (API REST)**: previa approvazione Samsung Developer Program. OAuth 2.0, sync automatico su `DeviceConnection` (provider `'samsung'`) di pressione, battito, peso, glucosio, SpO₂, passi. Endpoint backend `/api/devices/samsung/*`, frontend in Profile con stato connessione e "Sincronizza ora"
+- **Integrazione Fitbit Web API** (alternativa self-service senza partnership): stessa architettura di Samsung ma OAuth immediato via `dev.fitbit.com`
