@@ -475,6 +475,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                   setCreateHomeFull(''); setCreateHomeCity(''); setCreateHomeProvince('');
                   setCreateHomeRegion(''); setCreateHomeCountry(''); setCreateHomeZip('');
                   setCreateMsg('Account paziente creato. Comunica la password temporanea al paziente — dovrà cambiarla al primo accesso.');
+                  setAddMode('email');
                   await loadPatients();
                 } catch (err: any) {
                   setCreateErr(err.response?.data?.error || 'Impossibile creare paziente');

@@ -235,7 +235,6 @@ export async function addPatient(
     }
 
     // Create user with temporary password
-    console.log('[DOCTOR CREATE] pwd input length:', parsed.password?.length, 'first char:', parsed.password?.[0]?.charCodeAt(0));
     const user = await User.create({
       email: parsed.email,
       password: parsed.password,
@@ -248,9 +247,6 @@ export async function addPatient(
       mustChangePassword: true,
       emailVerified: true,
     });
-
-    const freshUser = await User.findById(user._id).select('+password');
-    console.log('[DOCTOR CREATE] after create pwd length:', freshUser?.password?.length, 'hash:', freshUser?.password?.substring(0, 20));
 
     // Create height measurement if provided
     if (parsed.height) {

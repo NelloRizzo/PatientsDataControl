@@ -56,9 +56,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  console.log('[PRE-SAVE] isNew:', this.isNew, 'pwd before hash length:', this.password?.length, 'first chars:', this.password?.substring(0, 4));
   this.password = await bcrypt.hash(this.password, 12);
-  console.log('[PRE-SAVE] after hash length:', this.password?.length, 'hash:', this.password?.substring(0, 20));
   next();
 });
 
