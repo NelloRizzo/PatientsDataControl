@@ -8,7 +8,7 @@ import { AlertLog } from '../models/AlertLog.js';
 import { AppError } from '../middleware/errorHandler.js';
 import * as measurementService from '../services/measurementService.js';
 import { resolvePatientIds } from '../services/filterUtils.js';
-import { updateProfileSchema, createNoteSchema, doctorCreatePatientSchema, createMeasurementSchema, requestSharingSchema } from '@healthbridge/shared';
+import { updateProfileSchema, createNoteSchema, doctorCreatePatientSchema, createMeasurementSchema, requestSharingSchema, resetPasswordSchema } from '@healthbridge/shared';
 import { DoctorContract } from '../models/DoctorContract.js';
 import { calculateConsumedSince } from '../services/contractHelper.js';
 import { sendEmail } from '../services/emailService.js';
@@ -437,6 +437,34 @@ export async function updatePatientProfile(
     const user = await User.findByIdAndUpdate(patientId, parsed, { new: true, runValidators: true }).select('-password');
     if (!user) throw new AppError(404, 'User not found');
     res.json({ data: user });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function resetPatientPassword(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { patientId } = req.params;
+    await verifyAssociation(req.userId!, patientId);
+
+    const { password } = resetPasswordSchema.parse(req.body);
+
+    const user = await User.findById(patientId);
+    if (!user) throw new AppError(404, 'Patient not found');
+
+    user.password = password;
+    user.mustChangePassword = true;
+    await user.save();
+
+    sendEmail(user.email, 'Password reimpostata — HealthBridge',
+      `Ciao ${user.name},\n\nLa tua password è stata reimpostata dal tuo medico.\n\nAl prossimo accesso ti verrà richiesto di cambiarla.\n\nAccedi qui: ${env.appUrl}/login`
+    );
+
+    res.json({ message: 'Password reimpostata con successo' });
   } catch (error) {
     next(error);
   }

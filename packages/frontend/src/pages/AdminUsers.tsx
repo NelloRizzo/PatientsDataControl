@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import apiClient from '../api/client';
 import type { IUser } from '@healthbridge/shared';
 
+const ROLE_LABELS: Record<string, string> = {
+  patient: 'Paziente',
+  doctor: 'Medico',
+  analyst: 'Analista',
+  admin: 'Admin',
+};
+
 const emptyAddress = { full: '', city: '', province: '', region: '', country: '', zip: '' };
 
 export function AdminUsers() {
@@ -34,6 +41,26 @@ export function AdminUsers() {
   const [editLegal, setEditLegal] = useState({ ...emptyAddress });
   const [editMsg, setEditMsg] = useState('');
   const [editErr, setEditErr] = useState('');
+
+  const [resetPwdUserId, setResetPwdUserId] = useState<string | null>(null);
+  const [resetPwdUserName, setResetPwdUserName] = useState('');
+  const [resetPwdPassword, setResetPwdPassword] = useState('');
+  const [resetPwdMsg, setResetPwdMsg] = useState('');
+  const [resetPwdErr, setResetPwdErr] = useState('');
+
+  const handleResetPassword = async () => {
+    if (!resetPwdUserId || !resetPwdPassword) return;
+    setResetPwdMsg('');
+    setResetPwdErr('');
+    try {
+      await apiClient.post(`/admin/users/${resetPwdUserId}/reset-password`, { password: resetPwdPassword });
+      setResetPwdMsg('Password reimpostata con successo');
+      setResetPwdPassword('');
+      setTimeout(() => { setResetPwdUserId(null); setResetPwdMsg(''); }, 2000);
+    } catch (err: any) {
+      setResetPwdErr(err.response?.data?.error || 'Errore durante il reset');
+    }
+  };
 
   const loadUsers = () => {
     const params: any = {};
@@ -273,8 +300,9 @@ export function AdminUsers() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1">
-                    <button onClick={() => startEdit(u)} className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded hover:bg-blue-200">Edit</button>
-                    <button onClick={() => handleDelete(u._id)} className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded hover:bg-red-200">Delete</button>
+                    <button onClick={() => startEdit(u)} className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded hover:bg-blue-200">Modifica</button>
+                    <button onClick={() => { setResetPwdUserId(u._id); setResetPwdUserName(u.name); setResetPwdPassword(''); setResetPwdMsg(''); setResetPwdErr(''); }} className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded hover:bg-orange-200">Reset Pwd</button>
+                    <button onClick={() => handleDelete(u._id)} className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded hover:bg-red-200">Elimina</button>
                   </div>
                 </td>
               </tr>
@@ -350,6 +378,41 @@ export function AdminUsers() {
           );
         })()}
       </div>
+
+      {/* Reset Password Modal */}
+      {resetPwdUserId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+            <h3 className="text-base font-semibold mb-1">Reset Password</h3>
+            <p className="text-sm text-gray-500 mb-4">Reimposta la password per <strong>{resetPwdUserName}</strong></p>
+            <input
+              type="password"
+              minLength={8}
+              value={resetPwdPassword}
+              onChange={(e) => setResetPwdPassword(e.target.value)}
+              placeholder="Nuova password (min 8 caratteri)"
+              className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
+            />
+            {resetPwdMsg && <p className="text-xs text-green-600 mb-2">{resetPwdMsg}</p>}
+            {resetPwdErr && <p className="text-xs text-red-600 mb-2">{resetPwdErr}</p>}
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => { setResetPwdUserId(null); setResetPwdMsg(''); setResetPwdErr(''); }}
+                className="bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg text-sm hover:bg-gray-300"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleResetPassword}
+                disabled={resetPwdPassword.length < 8}
+                className="bg-orange-600 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-orange-700 disabled:bg-orange-300"
+              >
+                Reimposta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

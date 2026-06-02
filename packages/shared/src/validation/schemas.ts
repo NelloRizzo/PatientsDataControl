@@ -254,6 +254,10 @@ export const createContractSchema = z.object({
   status: z.enum(['active', 'expired', 'cancelled']).default('active'),
 });
 
+export const resetPasswordSchema = z.object({
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
 export const updateContractSchema = z.object({
   doctorId: z.string().min(1).optional(),
   startDate: z.string().optional(),

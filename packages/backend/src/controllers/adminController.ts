@@ -3,9 +3,9 @@ import type { AuthRequest } from '../middleware/auth.js';
 import { User } from '../models/User.js';
 import { PatientDoctor } from '../models/PatientDoctor.js';
 import { AppError } from '../middleware/errorHandler.js';
-import { registerSchema, createUserSchema, updateUserSchema } from '@healthbridge/shared';
+import { registerSchema, createUserSchema, updateUserSchema, resetPasswordSchema } from '@healthbridge/shared';
 import { generateVerificationToken } from '../services/authService.js';
-import { sendVerificationEmail } from '../services/emailService.js';
+import { sendVerificationEmail, sendEmail } from '../services/emailService.js';
 
 export async function listUsers(
   req: AuthRequest,
@@ -129,6 +129,33 @@ export async function updateUser(
     const user = await User.findByIdAndUpdate(id, parsed, { new: true }).select('-password');
     if (!user) throw new AppError(404, 'User not found');
     res.json({ data: user });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function resetUserPassword(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { password } = resetPasswordSchema.parse(req.body);
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+    if (!user) throw new AppError(404, 'User not found');
+    if (user.email === SYSTEM_ADMIN_EMAIL) throw new AppError(403, 'Cannot reset system admin password');
+
+    user.password = password;
+    user.mustChangePassword = true;
+    await user.save();
+
+    sendEmail(user.email, 'Password reimpostata — HealthBridge',
+      `Ciao ${user.name},\n\nLa tua password è stata reimpostata dall'amministratore.\n\nAl prossimo accesso ti verrà richiesto di cambiarla.\n\nAccedi qui: ${process.env.APP_URL || 'https://patientshealthbridge-app.onrender.com'}/login`
+    );
+
+    res.json({ message: 'Password reimpostata con successo' });
   } catch (error) {
     next(error);
   }

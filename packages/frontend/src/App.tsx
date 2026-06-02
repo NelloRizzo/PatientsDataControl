@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useSearchParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -6,6 +6,7 @@ import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
+import { MobileMeasurement } from './pages/MobileMeasurement';
 import { Measurements } from './pages/Measurements';
 import { NewMeasurement } from './pages/NewMeasurement';
 import { ImportMeasurements } from './pages/ImportMeasurements';
@@ -28,8 +29,12 @@ const queryClient = new QueryClient();
 
 function RootRedirect() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   if (user?.role === 'doctor') return <Navigate to="/doctor/patients" replace />;
   if (user?.role === 'admin') return <Navigate to="/admin/users" replace />;
+  if (user?.role === 'patient' && !searchParams.has('full')) {
+    return <Navigate to="/measurements/mobile" replace />;
+  }
   return <Dashboard />;
 }
 
@@ -63,6 +68,7 @@ export function App() {
                 <Route path="/doctor/contract" element={<ProtectedRoute roles={['doctor']}><DoctorContractStatus /></ProtectedRoute>} />
               </Route>
             </Route>
+            <Route path="/measurements/mobile" element={<ProtectedRoute roles={['patient']}><MobileMeasurement /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>

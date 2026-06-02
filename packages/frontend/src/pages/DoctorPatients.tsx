@@ -90,6 +90,26 @@ export function DoctorPatients() {
   const [editMsg, setEditMsg] = useState('');
   const [editErr, setEditErr] = useState('');
 
+  // Reset password
+  const [showResetPwd, setShowResetPwd] = useState(false);
+  const [resetPwdPassword, setResetPwdPassword] = useState('');
+  const [resetPwdMsg, setResetPwdMsg] = useState('');
+  const [resetPwdErr, setResetPwdErr] = useState('');
+
+  const handleResetPassword = async () => {
+    if (!selectedPatient || !resetPwdPassword) return;
+    setResetPwdMsg('');
+    setResetPwdErr('');
+    try {
+      await apiClient.post(`/doctor/patients/${selectedPatient}/reset-password`, { password: resetPwdPassword });
+      setResetPwdMsg('Password reimpostata con successo');
+      setResetPwdPassword('');
+      setTimeout(() => { setShowResetPwd(false); setResetPwdMsg(''); }, 2000);
+    } catch (err: any) {
+      setResetPwdErr(err.response?.data?.error || 'Errore durante il reset');
+    }
+  };
+
   // Notes
   const [notes, setNotes] = useState<any[]>([]);
   const [newNote, setNewNote] = useState('');
@@ -872,6 +892,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                   setEditMsg(''); setEditErr('');
                   setShowEditPatient(true);
                 }} className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded hover:bg-blue-700">Modifica</button>
+                <button onClick={() => { setResetPwdPassword(''); setResetPwdMsg(''); setResetPwdErr(''); setShowResetPwd(true); }} className="text-xs bg-orange-600 text-white px-2 py-0.5 rounded hover:bg-orange-700">Reset Pwd</button>
                 <Link to={`/measurements/new?forPatient=${selectedPatient}`}
                   className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700">
                   Nuova Misurazione
@@ -972,6 +993,39 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                 </div>
               )}
 
+              {showResetPwd && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+                  <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+                    <h3 className="text-base font-semibold mb-1">Reset Password</h3>
+                    <p className="text-sm text-gray-500 mb-4">Reimposta la password per <strong>{selectedPatientData?.name}</strong></p>
+                    <input
+                      type="password"
+                      minLength={8}
+                      value={resetPwdPassword}
+                      onChange={(e) => setResetPwdPassword(e.target.value)}
+                      placeholder="Nuova password (min 8 caratteri)"
+                      className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
+                    />
+                    {resetPwdMsg && <p className="text-xs text-green-600 mb-2">{resetPwdMsg}</p>}
+                    {resetPwdErr && <p className="text-xs text-red-600 mb-2">{resetPwdErr}</p>}
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => { setShowResetPwd(false); setResetPwdMsg(''); setResetPwdErr(''); }}
+                        className="bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg text-sm hover:bg-gray-300"
+                      >
+                        Annulla
+                      </button>
+                      <button
+                        onClick={handleResetPassword}
+                        disabled={resetPwdPassword.length < 8}
+                        className="bg-orange-600 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-orange-700 disabled:bg-orange-300"
+                      >
+                        Reimposta
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               {showEditPatient && (
                 <form onSubmit={async (e) => {
                   e.preventDefault(); setEditMsg(''); setEditErr('');

@@ -17,6 +17,7 @@ router.patch('/patients/:patientId', doctorController.updatePatientAssociation);
 router.patch('/patients/:patientId/notify', doctorController.toggleNotify);
 router.delete('/patients/:patientId', doctorController.removePatientAssociation);
 router.put('/patients/:patientId/profile', doctorController.updatePatientProfile);
+router.post('/patients/:patientId/reset-password', doctorController.resetPatientPassword);
 router.get('/patients/:patientId/notes', doctorController.getPatientNotes);
 router.post('/patients/:patientId/notes', doctorController.addPatientNote);
 router.get('/patients/:patientId/alerts', doctorController.getPatientAlerts);

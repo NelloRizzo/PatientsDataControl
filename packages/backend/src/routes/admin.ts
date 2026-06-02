@@ -11,6 +11,7 @@ router.use(requireRole('admin'));
 router.get('/users', adminController.listUsers);
 router.post('/users', adminController.createUser);
 router.put('/users/:id', adminController.updateUser);
+router.post('/users/:id/reset-password', adminController.resetUserPassword);
 router.delete('/users/:id', adminController.deleteUser);
 router.post('/associations', adminController.assignDoctor);
 router.get('/associations', adminController.listAssociations);
