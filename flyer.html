@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HealthBridge — Diventa Beta Tester</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    background: #f0fdfa;
+    color: #1e293b;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  .flyer {
+    max-width: 210mm;
+    width: 100%;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(13, 148, 136, 0.15);
+    overflow: hidden;
+    page-break-after: avoid;
+  }
+  .header {
+    background: linear-gradient(135deg, #0d9488 0%, #2563eb 100%);
+    color: #fff;
+    padding: 40px 44px 32px;
+    text-align: center;
+    position: relative;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 30px;
+    background: #fff;
+    border-radius: 30px 30px 0 0;
+  }
+  .header h1 {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .header .tagline {
+    font-size: 18px;
+    opacity: 0.9;
+    font-weight: 400;
+    margin-bottom: 24px;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.4);
+    padding: 8px 24px;
+    border-radius: 40px;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .body {
+    padding: 0 44px 28px;
+  }
+  .intro {
+    text-align: center;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #475569;
+    margin: 6px 0 28px;
+    max-width: 540px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .features {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .feature {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 14px;
+    transition: box-shadow 0.2s;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .feature:hover { box-shadow: 0 2px 12px rgba(13,148,136,0.08); }
+  .feature-icon {
+    font-size: 22px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .feature-content h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0d9488;
+    margin-bottom: 3px;
+  }
+  .feature-content p {
+    font-size: 12px;
+    line-height: 1.4;
+    color: #64748b;
+  }
+  .cta {
+    background: linear-gradient(135deg, #ccfbf1 0%, #dbeafe 100%);
+    border: 2px solid #0d9488;
+    border-radius: 14px;
+    padding: 28px 32px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .cta h2 {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0d9488;
+    margin-bottom: 6px;
+  }
+  .cta p {
+    font-size: 14px;
+    color: #475569;
+    margin-bottom: 16px;
+  }
+  .cta-email {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #0d9488;
+    color: #fff;
+    padding: 10px 28px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .cta-email:hover { background: #0f766e; }
+  .cta-note {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 10px;
+  }
+  .footer {
+    text-align: center;
+    padding: 0 44px 28px;
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+  .footer strong { color: #64748b; }
+  .flex-1 { flex: 1; }
+
+  @media print {
+    body {
+      padding: 0;
+      background: #fff;
+      display: block;
+      min-height: auto;
+    }
+    .flyer {
+      max-width: 100%;
+      border-radius: 0;
+      box-shadow: none;
+      page-break-after: avoid;
+      width: 210mm;
+      min-height: 297mm;
+    }
+    .header { padding: 32px 36px 28px; }
+    .body { padding: 0 36px 20px; }
+    .feature:hover { box-shadow: none; }
+    .footer { padding: 0 36px 20px; }
+    .cta { break-inside: avoid; }
+    .features { break-inside: avoid; }
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="flyer">
+
+  <div class="header">
+    <h1>HealthBridge</h1>
+    <p class="tagline">La piattaforma che rivoluziona il monitoraggio dei tuoi pazienti</p>
+    <span class="badge">Diventa Beta Tester &mdash; 10 posti disponibili</span>
+  </div>
+
+  <div class="body">
+    <p class="intro">
+      HealthBridge è un sistema completo per la registrazione, visualizzazione e analisi
+      delle misurazioni dei pazienti. Progettato da medici per medici, con interfaccia
+      completamente in italiano e nel pieno rispetto della normativa GDPR.
+    </p>
+
+    <div class="features">
+      <div class="feature">
+        <span class="feature-icon">📊</span>
+        <div class="feature-content">
+          <h3>Dashboard Medico</h3>
+          <p>Visualizza tutti i tuoi pazienti con ultime misurazioni, trend e grafici storici interattivi.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">💊</span>
+        <div class="feature-content">
+          <h3>Prescrizioni Farmaci</h3>
+          <p>Prescrivi farmaci con dosaggio e orari. Il paziente registra l'assunzione con un click.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">📋</span>
+        <div class="feature-content">
+          <h3>Anamnesi Strutturata</h3>
+          <p>Sei sezioni anamnestiche (fisiologica, familiare, farmacologica, patologica, sociale).</p>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">🚨</span>
+        <div class="feature-content">
+          <h3>Alert Automatici</h3>
+          <p>Notifiche immediate su valori critici. Soglie configurabili per ogni tipo di misurazione.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">🤖</span>
+        <div class="feature-content">
+          <h3>AI da Referti PDF</h3>
+          <p>Carica un referto PDF: l'intelligenza artificiale estrae automaticamente i valori misurati.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">📁</span>
+        <div class="feature-content">
+          <h3>Importazione CSV</h3>
+          <p>Importa misurazioni in blocco da file CSV. Ideale per migrare dati da altri sistemi.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">🔒</span>
+        <div class="feature-content">
+          <h3>Sicurezza GDPR</h3>
+          <p>Dati sanitari protetti con crittografia, autenticazione JWT e consenso tracciabile.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">🎫</span>
+        <div class="feature-content">
+          <h3>Supporto Diretto</h3>
+          <p>Sistema ticket integrato per segnalazioni, suggerimenti e assistenza prioritaria.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">🇮🇹</span>
+        <div class="feature-content">
+          <h3>Tutto in Italiano</h3>
+          <p>Interfaccia, notifiche, label e contenuti completamente tradotti e localizzati.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta">
+      <h2>Diventa Beta Tester</h2>
+      <p>Sei un medico e vuoi provare HealthBridge in anteprima?<br>
+        Ti basta inviarci una email per ricevere l'accesso gratuito alla beta.</p>
+      <a class="cta-email" href="mailto:healthbridge.beta@gmail.com">
+        ✉ healthbridge.beta@gmail.com
+      </a>
+      <p class="cta-note">Beta completamente gratuita &mdash; Nessun impegno &mdash; Useremo il tuo feedback per migliorare</p>
+      <p class="cta-note" style="margin-top:4px">Nella versione beta l'applicazione potrebbe necessitare di un paio di minuti per essere inizializzata al primo accesso</p>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <strong>HealthBridge</strong> &mdash; Piattaforma per il monitoraggio sanitario &mdash; <strong>Beta Program</strong><br>
+    https://patientshealthbridge-app.onrender.com &bull; healthbridge.beta@gmail.com
+  </div>
+
+</div>
+
+</body>
+</html>
