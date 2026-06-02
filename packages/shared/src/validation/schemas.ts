@@ -170,10 +170,19 @@ const anamnesisSectionSchema = z.object({
   entries: z.array(z.string()).default([]),
 });
 
+const farmacologicaEntrySchema = z.object({
+  text: z.string().min(1, 'Text is required'),
+  isCurrent: z.boolean(),
+});
+
+const farmacologicaSectionSchema = z.object({
+  entries: z.array(farmacologicaEntrySchema).default([]),
+});
+
 export const createAnamnesisSchema = z.object({
   fisiologica: anamnesisSectionSchema.optional(),
   familiare: anamnesisSectionSchema.optional(),
-  farmacologica: anamnesisSectionSchema.optional(),
+  farmacologica: farmacologicaSectionSchema.optional(),
   patologicaRemota: anamnesisSectionSchema.optional(),
   patologicaProssima: anamnesisSectionSchema.optional(),
   sociale: anamnesisSectionSchema.optional(),
@@ -254,8 +263,55 @@ export const createContractSchema = z.object({
   status: z.enum(['active', 'expired', 'cancelled']).default('active'),
 });
 
+const prescriptionTimeSchema = z.object({
+  time: z.string().regex(/^\d{2}:\d{2}$/, 'Must be HH:MM format'),
+  daysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
+});
+
+export const createPrescriptionSchema = z.object({
+  drugName: z.string().min(1, 'Drug name is required').max(200),
+  dosage: z.string().min(1, 'Dosage is required').max(100),
+  frequency: z.string().min(1, 'Frequency is required').max(200),
+  route: z.string().min(1, 'Route is required').max(100),
+  schedule: z.array(prescriptionTimeSchema).min(1, 'At least one schedule time is required'),
+  startDate: z.string().min(1, 'Start date is required'),
+  endDate: z.string().optional(),
+  notes: z.string().max(2000).optional(),
+});
+
+export const updatePrescriptionSchema = z.object({
+  drugName: z.string().min(1).max(200).optional(),
+  dosage: z.string().min(1).max(100).optional(),
+  frequency: z.string().min(1).max(200).optional(),
+  route: z.string().min(1).max(100).optional(),
+  schedule: z.array(prescriptionTimeSchema).min(1).optional(),
+  startDate: z.string().min(1).optional(),
+  endDate: z.string().optional().nullable(),
+  notes: z.string().max(2000).optional().nullable(),
+  active: z.boolean().optional(),
+});
+
+export const logMedicationSchema = z.object({
+  scheduledTime: z.string().regex(/^\d{2}:\d{2}$/, 'Must be HH:MM format'),
+  notes: z.string().max(500).optional(),
+});
+
 export const resetPasswordSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+export const createTicketSchema = z.object({
+  type: z.enum(['suggestion', 'bug_report']),
+  title: z.string().min(1, 'Title is required').max(200),
+  description: z.string().min(1, 'Description is required').max(5000),
+  page: z.string().max(500).optional(),
+  severity: z.enum(['low', 'medium', 'high']).optional(),
+});
+
+export const updateTicketSchema = z.object({
+  status: z.enum(['open', 'in_review', 'in_progress', 'resolved', 'closed']).optional(),
+  assigneeId: z.string().optional().nullable(),
+  adminNotes: z.string().max(2000).optional().nullable(),
 });
 
 export const updateContractSchema = z.object({

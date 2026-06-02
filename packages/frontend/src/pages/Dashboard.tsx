@@ -7,7 +7,7 @@ import { getMeasurementTypes } from '../api/measurementTypes';
 import { getTimeSeries } from '../api/measurements';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../api/client';
-import type { IMeasurementTypeConfig, TimeSeriesPoint, TimeGroupBy, ChartType, AggregationFunction, IPatientNote, IAnamnesis, UserRole } from '@healthbridge/shared';
+import type { IMeasurementTypeConfig, TimeSeriesPoint, TimeGroupBy, ChartType, AggregationFunction, IPatientNote, IAnamnesis, IPrescription, UserRole } from '@healthbridge/shared';
 
 function formatDate(value: string) {
   try {
@@ -32,6 +32,12 @@ export function Dashboard() {
   const [notes, setNotes] = useState<IPatientNote[]>([]);
   const [anamnesis, setAnamnesis] = useState<IAnamnesis[]>([]);
 
+  // My Medications
+  const [medications, setMedications] = useState<IPrescription[]>([]);
+  const [dueMeds, setDueMeds] = useState<any[]>([]);
+  const [takingId, setTakingId] = useState<string | null>(null);
+  const [medMsg, setMedMsg] = useState('');
+
   // My doctors
   const [myDoctors, setMyDoctors] = useState<any[]>([]);
   const [sharingDoctorId, setSharingDoctorId] = useState<string | null>(null);
@@ -47,8 +53,28 @@ export function Dashboard() {
       import('../api/note').then((mod) => mod.getMyNotes().then(setNotes).catch(() => {}));
       import('../api/anamnesis').then((mod) => mod.getMyAnamnesis().then(setAnamnesis).catch(() => {}));
       apiClient.get('/patient/doctors').then((res) => setMyDoctors(res.data.data)).catch(() => {});
+      apiClient.get('/patient/medications').then((res) => setMedications(res.data.data)).catch(() => {});
+      apiClient.get('/patient/medications/due').then((res) => setDueMeds(res.data.data)).catch(() => {});
     }
   }, [user?.role]);
+
+  useEffect(() => {
+    if (user?.role !== 'patient') return;
+    const interval = setInterval(() => {
+      apiClient.get('/patient/medications/due').then((res) => setDueMeds(res.data.data)).catch(() => {});
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [user?.role]);
+
+  const handleTake = async (id: string, scheduledTime: string) => {
+    setTakingId(id); setMedMsg('');
+    try {
+      await apiClient.post(`/patient/medications/${id}/take`, { scheduledTime });
+      setMedMsg('Assunzione registrata');
+      setDueMeds((prev) => prev.filter((d) => d.prescriptionId !== id || d.scheduledTime !== scheduledTime));
+    } catch { setMedMsg('Errore registrazione'); }
+    setTakingId(null);
+  };
 
   const handleConfirmDoctor = async (doctorId: string) => {
     try {
@@ -255,21 +281,21 @@ export function Dashboard() {
         )}
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
+      <div id="patient-chart-section" className="bg-white p-6 rounded-lg shadow-sm border">
         {loading ? (
-          <p className="text-gray-500 text-center py-12">Loading chart...</p>
+          <p className="text-gray-500 text-center py-12">Caricamento grafico...</p>
         ) : selectedType ? (
           renderChart()
         ) : (
           <p className="text-gray-500 text-center py-12">
-            Select a measurement type to view chart
+            Seleziona un tipo per visualizzare il grafico
           </p>
         )}
       </div>
 
       {myDoctors.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="px-4 py-3 border-b font-medium text-sm">My Doctors</div>
+        <div id="patient-my-doctors" className="bg-white rounded-lg shadow-sm border">
+          <div className="px-4 py-3 border-b font-medium text-sm">I Miei Dottori</div>
           <div className="divide-y">
             {myDoctors.map((d: any) => (
               <div key={d._id}>
@@ -354,9 +380,48 @@ export function Dashboard() {
         </div>
       )}
 
+      {medications.length > 0 && (
+        <div id="patient-medications-section" className="bg-white rounded-lg shadow-sm border">
+          <div className="px-4 py-3 border-b font-medium text-sm">I Miei Farmaci</div>
+          <div className="p-4">
+            {dueMeds.length > 0 && (
+              <div className="mb-3 space-y-2">
+                <p className="text-xs font-medium text-orange-600">Da assumere ora:</p>
+                {dueMeds.map((d, i) => (
+                  <div key={i} className="bg-orange-50 border border-orange-200 rounded p-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{d.drugName} {d.dosage}</p>
+                      <p className="text-xs text-gray-500">{d.frequency} — Via: {d.route}</p>
+                    </div>
+                    <button onClick={() => handleTake(d.prescriptionId, d.scheduledTime)}
+                      disabled={takingId === d.prescriptionId}
+                      className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 disabled:opacity-50">
+                      {takingId === d.prescriptionId ? '...' : 'Preso'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {medMsg && <p className="text-xs text-green-600 mb-2">{medMsg}</p>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {medications.map((m) => (
+                <div key={m._id} className="border rounded p-3 bg-gray-50">
+                  <p className="text-sm font-semibold">{m.drugName} <span className="font-normal text-gray-500">{m.dosage}</span></p>
+                  <p className="text-xs text-gray-500">{m.frequency} — {m.route}</p>
+                  {m.schedule.length > 0 && (
+                    <p className="text-xs text-gray-400 mt-0.5">Orari: {m.schedule.map((s) => s.time).join(', ')}</p>
+                  )}
+                  {m.notes && <p className="text-xs text-gray-400 mt-1">{m.notes}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {anamnesis.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="px-4 py-3 border-b font-medium text-sm">Your Anamnesis (Medical History)</div>
+        <div id="patient-anamnesis-section" className="bg-white rounded-lg shadow-sm border">
+          <div className="px-4 py-3 border-b font-medium text-sm">La Mia Anamnesi</div>
           <div className="divide-y">
               {anamnesis.map((a) => {
                 const sections = [
@@ -369,22 +434,36 @@ export function Dashboard() {
                 ];
                 return (
                 <div key={a._id} className="px-4 py-3 border-l-2 border-purple-300 ml-4 mr-4 my-2">
-                  <p className="text-xs text-gray-400">Recorded: {new Date(a.recordedAt).toLocaleString()}</p>
-                  {sections.map((s) => {
-                    const section = (a as any)[s.key];
-                    if (!section?.entries?.length) return null;
-                    return (
-                      <div key={s.key} className={`mt-2 border-l-2 ${s.color} pl-2`}>
-                        <p className="text-xs font-semibold text-gray-600">{s.label}</p>
-                        {section.entries.map((entry: string, i: number) => (
-                          <p key={i} className="text-sm whitespace-pre-wrap">• {entry}</p>
-                        ))}
-                      </div>
-                    );
-                  })}
+                  <p className="text-xs text-gray-400">Registrata: {new Date(a.recordedAt).toLocaleString()}</p>
+                    {sections.map((s) => {
+                      const section = (a as any)[s.key];
+                      if (!section?.entries?.length) return null;
+                      return (
+                        <div key={s.key} className={`mt-2 border-l-2 ${s.color} pl-2`}>
+                          <p className="text-xs font-semibold text-gray-600">{s.label}</p>
+                          {section.entries.map((entry: any, i: number) => {
+                            if (typeof entry === 'object' && entry.text !== undefined) {
+                              return (
+                                <p key={i} className="text-sm whitespace-pre-wrap flex items-center gap-1">
+                                  <span>• {entry.text}</span>
+                                  <span className={`text-xs px-1 py-0.5 rounded font-medium ${
+                                    entry.isCurrent
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-gray-100 text-gray-500'
+                                  }`}>
+                                    {entry.isCurrent ? 'Attuale' : 'Precedente'}
+                                  </span>
+                                </p>
+                              );
+                            }
+                            return <p key={i} className="text-sm whitespace-pre-wrap">• {entry}</p>;
+                          })}
+                        </div>
+                      );
+                    })}
                   {a.notes && (
                     <div className="mt-1">
-                      <p className="text-xs font-medium text-gray-600">Notes</p>
+                      <p className="text-xs font-medium text-gray-600">Note</p>
                       <p className="text-sm whitespace-pre-wrap">{a.notes}</p>
                     </div>
                   )}
@@ -397,7 +476,7 @@ export function Dashboard() {
 
       {notes.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border">
-          <div className="px-4 py-3 border-b font-medium text-sm">Notes from your doctor</div>
+          <div className="px-4 py-3 border-b font-medium text-sm">Note dal tuo medico</div>
           <div className="divide-y">
             {notes.map((n) => (
               <div key={n._id} className="px-4 py-3 border-l-2 border-green-300 ml-4 mr-4 my-2">

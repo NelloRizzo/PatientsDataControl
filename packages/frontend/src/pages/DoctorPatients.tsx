@@ -74,7 +74,7 @@ export function DoctorPatients() {
   const [sharingMsg, setSharingMsg] = useState('');
 
   // GDPR consent blocked
-  const [gdprBlocked, setGdprBlocked] = useState(false);
+
 
   // Recent activity
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
@@ -130,6 +130,7 @@ export function DoctorPatients() {
     patologicaProssima: '',
     sociale: '',
   });
+  const [isCurrentTherapy, setIsCurrentTherapy] = useState(true);
   const [newAnamnesisNotes, setNewAnamnesisNotes] = useState('');
   const [anamnesisMsg, setAnamnesisMsg] = useState('');
   const anamTabs = [
@@ -274,7 +275,6 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
       if (viewMode === 'individual' && selectedPatient) {
         const res = await apiClient.get(`/doctor/patients/${selectedPatient}/timeseries`, { params });
         setChartData(res.data.data);
-        setGdprBlocked(false);
       } else {
         const filterParams: Record<string, string> = { ...params };
         if (filterSex) filterParams.sex = filterSex;
@@ -286,10 +286,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
         const res = await apiClient.get('/doctor/timeseries', { params: filterParams });
         setChartData(res.data.data);
       }
-    } catch (err: any) {
-      if (err?.response?.status === 403 && err?.response?.data?.error?.includes('GDPR')) {
-        setGdprBlocked(true);
-      }
+    } catch {
       setChartData([]);
     }
     finally { setLoading(false); }
@@ -324,8 +321,8 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
   useEffect(() => {
     if (!selectedPatient || viewMode !== 'individual') return;
     apiClient.get(`/doctor/patients/${selectedPatient}/latest-measurements`)
-      .then((res) => { setMeasurements(res.data.data); setGdprBlocked(false); })
-      .catch((err) => { if (err?.response?.status === 403 && err?.response?.data?.error?.includes('GDPR')) setGdprBlocked(true); setMeasurements([]); });
+      .then((res) => setMeasurements(res.data.data))
+      .catch(() => setMeasurements([]));
     loadNotes();
     loadAnamnesis();
     loadBmi();
@@ -379,7 +376,6 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
 
   const renderChart = () => {
     if (loading) return <p className="text-gray-500 text-center py-12">Caricamento grafico...</p>;
-    if (gdprBlocked) return <p className="text-red-600 text-center py-12">Consenso GDPR non concesso dal paziente. I dati non sono accessibili.</p>;
     if (!chartData.length) return <p className="text-gray-500 text-center py-12">Nessun dato disponibile</p>;
 
     const commonProps = { data: chartData, margin: { top: 5, right: 30, left: 20, bottom: 5 } };
@@ -425,7 +421,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
       <h1 className="text-2xl font-bold">Dashboard Medico</h1>
 
       <div className="flex gap-4">
-        <div className="w-64 shrink-0 space-y-1">
+        <div id="sidebar-patients" className="w-64 shrink-0 space-y-1">
           {patients.length === 0 && <p className="text-sm text-gray-500">No patients assigned</p>}
 
           {/* Add Patient */}
@@ -563,7 +559,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                 selectedPatient === p._id && viewMode === 'individual'
                   ? 'bg-blue-50 text-blue-700 font-medium' : ''
               }`}>
-                <div className="flex-1 truncate cursor-pointer flex items-center gap-1.5" onClick={() => { setSelectedPatient(p._id); setViewMode('individual'); setSelectedFields([]); setChartData([]); setGdprBlocked(false); }}>
+                <div className="flex-1 truncate cursor-pointer flex items-center gap-1.5" onClick={() => { setSelectedPatient(p._id); setViewMode('individual'); setSelectedFields([]); setChartData([]); }}>
                   {p.hasAlerts && <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" title="Has active alerts" />}
                   <span className="font-medium truncate">{p.name}</span>
                   {p.sex && <span className="text-xs text-gray-400 shrink-0">({p.sex})</span>}
@@ -869,7 +865,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                   )}
                 </div>
               )}
-              <div className="flex gap-2 items-center bg-white px-4 py-2 rounded-lg shadow-sm border flex-wrap">
+              <div id="patient-actions" className="flex gap-2 items-center bg-white px-4 py-2 rounded-lg shadow-sm border flex-wrap">
                 <span className="text-sm font-medium">{selectedPatientData?.name}</span>
                 <span className={`text-xs px-1.5 py-0.5 rounded ${
                   selectedPatientData?.status === 'active' ? 'bg-green-100 text-green-700' :
@@ -897,6 +893,10 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                 <Link to={`/measurements/new?forPatient=${selectedPatient}`}
                   className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700">
                   Nuova Misurazione
+                </Link>
+                <Link id="patient-medications" to={`/doctor/patients/${selectedPatient}/medications`}
+                  className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded hover:bg-indigo-700">
+                  Farmaci
                 </Link>
                 <button onClick={async () => {
                   setSharingMsg('');
@@ -1075,7 +1075,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                 </form>
               )}
 
-              <div className="bg-white rounded-lg shadow-sm border">
+              <div id="latest-measurements" className="bg-white rounded-lg shadow-sm border">
                 <div className="px-4 py-3 border-b font-medium text-sm flex items-center justify-between">
                   <span>Ultime Misurazioni — {selectedPatientData?.name}</span>
                   <div className="flex gap-2 items-center">
@@ -1086,9 +1086,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                   </div>
                 </div>
                 {measurements.length === 0 ? (
-                  <p className={`text-center py-6 text-sm ${gdprBlocked ? 'text-red-600' : 'text-gray-500'}`}>
-                    {gdprBlocked ? 'Consenso GDPR non concesso dal paziente. I dati non sono accessibili.' : 'Nessuna misurazione ancora'}
-                  </p>
+                  <p className="text-center py-6 text-sm text-gray-500">Nessuna misurazione ancora</p>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
                     {measurements.map((m) => {
@@ -1135,7 +1133,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                 )}
               </div>
 
-              <div className="bg-white rounded-lg shadow-sm border">
+              <div id="patient-anamnesis" className="bg-white rounded-lg shadow-sm border">
                 <div className="px-4 py-3 border-b font-medium text-sm flex items-center justify-between">
                   <span>Anamnesi</span>
                   <button onClick={() => { setShowAnamnesisForm(!showAnamnesisForm); setAnamnesisMsg(''); setAnamTab('fisiologica'); }}
@@ -1155,13 +1153,18 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                         const body: any = {};
                         for (const [key, val] of Object.entries(anamEntries)) {
                           if (val.trim()) {
-                            body[key] = { entries: val.split('\n').map((l) => l.trim()).filter(Boolean) };
+                            const lines = val.split('\n').map((l) => l.trim()).filter(Boolean);
+                            if (key === 'farmacologica') {
+                              body[key] = { entries: lines.map((l) => ({ text: l, isCurrent: isCurrentTherapy })) };
+                            } else {
+                              body[key] = { entries: lines };
+                            }
                           }
                         }
                         if (newAnamnesisNotes.trim()) body.notes = newAnamnesisNotes.trim();
                         await apiClient.post(`/doctor/patients/${selectedPatient}/anamnesis`, body);
                         setAnamEntries({ fisiologica: '', familiare: '', farmacologica: '', patologicaRemota: '', patologicaProssima: '', sociale: '' });
-                        setNewAnamnesisNotes('');
+                        setNewAnamnesisNotes(''); setIsCurrentTherapy(true);
                         setShowAnamnesisForm(false);
                         setAnamnesisMsg('Anamnesi salvata');
                         loadAnamnesis();
@@ -1184,6 +1187,15 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                         <textarea value={anamEntries[anamTab]} onChange={(e) => setAnamEntries((prev) => ({ ...prev, [anamTab]: e.target.value }))}
                           rows={4} className="w-full border rounded px-3 py-2 text-sm"
                           placeholder={`Inserisci voci per ${anamTabs.find((t) => t.key === anamTab)?.label.toLowerCase()}, una per riga...`} />
+                        {anamTab === 'farmacologica' && (
+                          <label className="flex items-center gap-2 mt-1 cursor-pointer">
+                            <input type="checkbox" checked={isCurrentTherapy}
+                              onChange={(e) => setIsCurrentTherapy(e.target.checked)} />
+                            <span className={`text-xs font-medium ${isCurrentTherapy ? 'text-green-700' : 'text-gray-500'}`}>
+                              {isCurrentTherapy ? 'Terapia Attuale' : 'Terapia Precedente'}
+                            </span>
+                          </label>
+                        )}
                       </div>
                       <div>
                         <label className="block text-xs text-gray-500 mb-0.5">Note aggiuntive (opzionale)</label>
@@ -1210,9 +1222,23 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                             return (
                               <div key={s.key} className={`mt-1 border-l-2 ${s.color} pl-2`}>
                                 <p className="text-xs font-semibold text-gray-600">{s.label}</p>
-                                {section.entries.map((entry: string, i: number) => (
-                                  <p key={i} className="text-sm whitespace-pre-wrap">• {entry}</p>
-                                ))}
+                                {section.entries.map((entry: any, i: number) => {
+                                  if (typeof entry === 'object' && entry.text !== undefined) {
+                                    return (
+                                      <p key={i} className="text-sm whitespace-pre-wrap flex items-center gap-1">
+                                        <span>• {entry.text}</span>
+                                        <span className={`text-xs px-1 py-0.5 rounded font-medium ${
+                                          entry.isCurrent
+                                            ? 'bg-green-100 text-green-700'
+                                            : 'bg-gray-100 text-gray-500'
+                                        }`}>
+                                          {entry.isCurrent ? 'Attuale' : 'Precedente'}
+                                        </span>
+                                      </p>
+                                    );
+                                  }
+                                  return <p key={i} className="text-sm whitespace-pre-wrap">• {entry}</p>;
+                                })}
                               </div>
                             );
                           })}
@@ -1230,7 +1256,7 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow-sm border">
+              <div id="patient-notes" className="bg-white rounded-lg shadow-sm border">
                 <div className="px-4 py-3 border-b font-medium text-sm">Note Cliniche</div>
                 <div className="p-4 space-y-3">
                   <form onSubmit={async (e) => {

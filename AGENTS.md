@@ -130,6 +130,12 @@ Chart configurations are saveable per user via `ChartConfig` model:
 | GET | /api/doctor/patients/:patientId/notes | Get patient notes (chronological) |
 | POST | /api/doctor/patients/:patientId/notes | Add patient note |
 | GET | /api/doctor/patients/:patientId/alerts | Get patient alert history |
+| PUT | /api/doctor/patients/:patientId/profile | Update patient profile |
+| GET | /api/doctor/patients/:patientId/medications | List patient medications |
+| POST | /api/doctor/patients/:patientId/medications | Create prescription |
+| PUT | /api/doctor/patients/:patientId/medications/:id | Update prescription |
+| DELETE | /api/doctor/patients/:patientId/medications/:id | Delete prescription |
+| POST | /api/doctor/patients/:patientId/reset-password | Reset patient password |
 
 ### Analyst
 | Method | Path | Description |
@@ -153,6 +159,16 @@ Chart configurations are saveable per user via `ChartConfig` model:
 | PUT | /api/admin/contracts/:id | Update contract |
 | DELETE | /api/admin/contracts/:id | Delete contract |
 | GET | /api/admin/contracts/report | Contract report with peak/avg patients per doctor |
+
+### Tickets
+| Method | Path | Description |
+|---|---|---|
+| POST | /api/tickets | Create ticket (doctor only) |
+| GET | /api/tickets/mine | List my tickets |
+| GET | /api/tickets/:id | Get single ticket |
+| GET | /api/admin/tickets | List all tickets (admin only) |
+| PUT | /api/admin/tickets/:id | Update ticket (admin only — status, assignee, notes) |
+| GET | /api/admin/tickets/stats | Ticket stats (admin only) |
 
 ### Device (stub for future)
 | Method | Path | Description |
@@ -184,12 +200,15 @@ List endpoints accept `type`, `from`, `to` for type + date range filtering.
 - Delete: 204 No Content
 
 ## MongoDB Models
-- User, Measurement, MeasurementTypeConfig, DeviceConnection, ApiKey, PatientDoctor, ChartConfig, PatientNote, AlertTemplate, AlertLog
+- User, Measurement, MeasurementTypeConfig, DeviceConnection, ApiKey, PatientDoctor, ChartConfig, PatientNote, AlertTemplate, AlertLog, Prescription, MedicationLog, Ticket
 - All models use `timestamps: true` (createdAt/updatedAt)
 - User's password is auto-hashed via pre-save hook, stripped on toJSON
 - User has email verification fields: `emailVerified`, `verificationToken`, `verificationExpires` (token also stripped on toJSON)
 - Admin can update any user's password via `PUT /api/admin/users/:id` with `{ password }`
 - System admin (admin@healthbridge.com) is protected from deletion
+- Prescription model: drugName, dosage, frequency, route, schedule (time + daysOfWeek), startDate, endDate, notes, active
+- MedicationLog model: prescriptionId, patientId, takenAt, scheduledTime, notes
+- Ticket model: ticketNumber (auto TKT-NNNN), userId, type, severity, status, assigneeId, adminNotes
 
 ## Seeding the Database
 ```bash
@@ -210,39 +229,47 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 
 ### Done
 - Monorepo structure with shared, backend, frontend packages
-- All backend models: User, Measurement, MeasurementTypeConfig, PatientDoctor, DeviceConnection, ApiKey, ChartConfig, PatientNote, AlertTemplate, AlertLog
-- Shared types and Zod validation schemas including alert/profile/note schemas
-- Auth system: register, login, JWT refresh, role-based middleware, profile update endpoint (`PUT /api/auth/profile`)
-- Patient-Doctor association: admin CRUD (`/api/admin/associations`), doctor add/reactivate/remove patients (`POST/PATCH/DELETE /api/doctor/patients`), admin create/update/delete users (`POST/PUT/DELETE /api/admin/users`)
+- All backend models: User, Measurement, MeasurementTypeConfig, PatientDoctor, DeviceConnection, ApiKey, ChartConfig, PatientNote, AlertTemplate, AlertLog, Prescription, MedicationLog, Ticket
+- Shared types and Zod validation schemas including alert/profile/note/medication/ticket schemas
+- Auth system: register, login, JWT refresh, role-based middleware, profile update endpoint, set-password, change-password, reset-password
+- Patient-Doctor association: admin CRUD, doctor add/reactivate/remove patients, admin create/update/delete users, reset-password admin & doctor
 - Dynamic measurement type CRUD (admin-only) with alert/danger thresholds
 - Timeseries aggregation with configurable groupBy, field selection, and demographic filters
 - Alert threshold evaluation on measurement creation
-- Alert messaging system: AlertTemplate model, AlertLog model, channel interface (extensible), email channel (Nodemailer + Ethereal), processAlert called after createMeasurement, finds doctors via PatientDoctor, generates messages, sends email, logs result
+- Alert messaging system: AlertTemplate model, AlertLog model, channel interface, email channel (Nodemailer + Ethereal), processAlert after createMeasurement
 - Patient notes: PatientNote model, GET/POST /api/doctor/patients/:patientId/notes, UI in DoctorPatients
 - Doctor update patient profile: PUT /api/doctor/patients/:patientId/profile
-- CSV import for measurements (POST /api/measurements/import + frontend UI in Measurements page)
+- CSV import for measurements (POST /api/measurements/import + frontend UI)
 - Analyst cross-patient stats/timeseries with filters
-- Doctor endpoints: per-patient and aggregated timeseries/stats/notes
-- Frontend: Login, Register, Dashboard (configurable chart), Measurements list (+ import), NewMeasurement (dynamic form), Profile (editable with all fields), AdminMeasurementTypes, AdminUsers (create user with all fields, inline edit, delete), DoctorPatients, AdminAssociations (select doctor/patient and assign), AdminAlertTemplates (view/edit templates)
-- Seed script: 8 measurement types, 9 users, 5 associations, 700 measurements, 22 alert templates (7 types × 2 statuses alert/danger + 8 info templates)
-- Navbar: admin links for Users, Types, Associations, Alerts
-- System admin (admin@healthbridge.com) protected from deletion; admin can change any user's password via PUT /api/admin/users/:id with { password }
-- Info notification templates (8 types) for opt-in new measurement notifications to doctors, plus createAlertTemplateSchema now supports 'info' status
-- Alert log viewer for doctors: paginated GET /api/alerts/logs with filters, DoctorAlerts.tsx page, nav link, per-patient GET /api/doctor/patients/:patientId/alerts
-- Email verification: User model fields (emailVerified, verificationToken, verificationExpires), emailService.ts, POST /api/auth/verify-email, POST /api/auth/resend-verification, VerifyEmail.tsx page, banner in Layout/Profile, sent on register and admin create
-- Change password: dedicated POST /api/auth/change-password with oldPassword+newPassword validation, separate UI in Profile page
-- Macrogroup field on MeasurementTypeConfig: backfill script (`scripts/backfillMacrogroups.ts`) mapped all 8 types to cardiac/blood_gas/generalhealth/lipidemia
-- `User.maxPatients` field (doctor limit): enforced in `addPatient()`, visible/editable in AdminUsers create+edit forms
-- `DoctorContract` model + admin CRUD + report with peak/avg patient calculation (7-day sampling), CSV export
-- Doctor sidebar: patient names marked with red dot when `hasAlerts` (aggregated from AlertLog)
-- Patient detail in DoctorPatients: shows grid of latest measurement per type (via `GET /doctor/patients/:patientId/latest-measurements`), chart below shows all historical data of selected type
-- NewMeasurement page redesigned as gallery-style card grid (manual input or file upload per type)
+- Doctor endpoints: per-patient and aggregated timeseries/stats/notes/trends
+- Frontend: Login, Register, Dashboard (configurable chart), Measurements list (+ import), NewMeasurement (gallery), Profile (all fields), AdminMeasurementTypes, AdminUsers (inline edit), DoctorPatients (trends, cronologia misure), AdminAssociations, AdminAlertTemplates, DoctorAlerts, AdminContracts, AdminContractReport, DoctorPatientMedications, DoctorTickets, AdminTickets, MobileMeasurement, Help
+- Seed script: 8 measurement types, 9 users, 5 associations, 700 measurements, 22 alert templates, GdprConsent, metric-only height/weight
+- Navbar: sottomenu dropdown per ruolo, logout a sinistra, link Guida in Profilo, id per guide
+- System admin (admin@healthbridge.com) protected from deletion
+- Email verification: User model fields, emailService.ts, verify/resend endpoints, VerifyEmail page, banner in Layout/Profile
+- Macrogroup field on MeasurementTypeConfig: backfill script mapped 8 types
+- `User.maxPatients` field + `DoctorContract` model + admin CRUD + report with peak/avg
+- Doctor sidebar: patient names with red dot when `hasAlerts`
+- Patient detail: latest-per-type grid + trend icons + historical chart + month navigation table
+- NewMeasurement: gallery-style card grid, AI extraction per type checkbox, `?forPatient=<id>` query param
+- **Navbar ridisegnata**: dropdown a comparsa per ruolo, mobile hamburger + sezioni expandibili, "Esci" a sinistra (desktop icona+testo, mobile fondo con separatore)
+- **MobileMeasurement.tsx**: schermata mobile standalone full-screen per pazienti, galleria tra tipi, Prec/Succ, input campi+unità+note, senza Navbar
+- **Fix interceptor 401**: skip refresh/redirect per route `/auth/*`
+- **Trend backend**: `patientLatestMeasurements` con `$push` + `$arrayElemAt[1]` per previousValues e trends
+- **Cronologia misure**: pannello inline dopo chart, navigazione mesi, tabella dinamica
+- **Reset password admin**: POST `/api/admin/users/:id/reset-password` + modale frontend
+- **Reset password dottore**: POST `/api/doctor/patients/:patientId/reset-password` + pulsante header
+- **Sistema Farmaci/Prescrizioni full stack**: IPrescription/PrescriptionTime/IMedicationLog types, Zod schemas, Prescription/MedicationLog models, medicationController CRUD + dueMedications + takeMedication, DoctorPatientMedications.tsx CRUD, Dashboard "I Miei Farmaci" con "Preso" + polling 60s, Notification categoria `'medication'`
+- **Anamnesi farmacologica strutturata**: IFarmacologicaEntry `{ text, isCurrent }`, checkbox Terapia Attuale/Precedente in DoctorPatients + Dashboard badge verde/grigio
+- **Gate GDPR rimosso**: verifyGdprConsent rimossa da doctorController.ts, gdprBlocked rimosso da DoctorPatients.tsx, Privacy.tsx sezione 8 aggiornata (art. 9(2)(h))
+- **Sistema Ticket**: ITicket types (ticketNumber, severity, status), Ticket model, ticketController (create, myTickets, allTickets, update, stats), DoctorTickets.tsx (form + lista), AdminTickets.tsx (tabella + filtri + modale edit)
+- **Guide interattive (driver.js)**: libreria driver.js@1.4.0, doctorGuide.ts (15 step), patientGuide.ts (9 step), GuideButton.tsx, Help.tsx, Navbar link "Guida", id su elementi chiave
 
 ### In Progress
-- None currently
+- (none)
 
-### Blocked / Needs Verification
-- None currently
+### Blocked
+- (none)
 
 ### Triaged / Future
 - Export CSV/JSON endpoint
@@ -250,154 +277,21 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - BigQuery sync, device OAuth (Fitbit, Google Fit), webhook endpoint
 - Export storico BMI (grafico BMI nel tempo)
 - Notifiche push per richieste condivisione e conferma presa in carico
-- Guida dottore (pagine help/FAQ/tutorial)
 
 ## Completed Features (Current Session)
 
-### Render Deployment — Due Servizi (render.yaml)
-- Sostituito Docker multi-stage build con due servizi nativi Render definiti in `render.yaml`:
-  - **`patientshealthbridge-api`** — Node Web Service, Express backend su `https://patientshealthbridge-api.onrender.com`
-  - **`patientshealthbridge-app`** — Node Web Service, frontend statico con `server.js` su `https://patientshealthbridge-app.onrender.com`
-- Nomi univoci scelti per evitare suffissi casuali di Render
-- `NODE_ENV=development npm install` nel build command per garantire installazione devDependencies (TypeScript)
-- `VITE_API_URL` configurato sul frontend service per puntare all'API
-- `APP_URL` configurato sul backend per CORS e link email
+### Elementi Guide Completati con ID
+- **Navbar.tsx**: funzione `item(label, to, id?)` accetta parametro `id`; aggiunti `#alerts-link`, `#import-link`, `#tickets-link` nei dropdown Strumenti (desktop e mobile)
+- **DoctorPatients.tsx**: aggiunti id a sezioni chiave: `#sidebar-patients`, `#patient-actions`, `#patient-medications`, `#patient-notes`, `#patient-anamnesis`, `#latest-measurements`
+- **Dashboard.tsx**: aggiunti `#patient-chart-section`, `#patient-my-doctors`, `#patient-anamnesis-section`, `#patient-medications-section`
+- **doctorGuide.ts**: step `#patient-chart` → `#chart-section` (corrisponde all'id reale già presente)
 
-### CORS Multi-Origin
-- `packages/backend/src/index.ts` — CORS cambiato da `origin: env.appUrl` (stringa singola) ad array con `['http://localhost:5173', env.appUrl]`, così funziona sia in dev che in prod
-
-### TypeScript 6.0.3 + ignoreDeprecations
-- Aggiornato TypeScript da `^5.5.0` a `6.0.3` (esatto) in tutti e tre i packages
-- Aggiunto `"ignoreDeprecations": "6.0"` nei tsconfig di backend e frontend per silenziare l'errore TS5101 su `baseUrl`/`paths` (deprecati in TS 7.0)
-- `baseUrl`/`paths` mantenuti per risolvere `@healthbridge/shared` (necessario con npm workspaces)
-
-### Frontend VITE_API_URL
-- Aggiunto `VITE_API_URL` env var support in `src/api/client.ts`
-- `const API_BASE = import.meta.env.VITE_API_URL || ''`; defaults to empty (same-origin `/api` per dev via Vite proxy)
-- Applicato sia a `baseURL` che al refresh interceptor
-
-### Backend SPA Serving Removed
-- Rimosso `express.static` serving del frontend dist e catch-all `*` route da `src/index.ts`
-- Rimossi import `path` e `fileURLToPath` inutilizzati
-
-### Macrogroup Backfill Script
-- `packages/backend/scripts/backfillMacrogroups.ts` — mappa tutte le 8 chiavi measurement type a un macrogroup (cardiac/blood_gas/generalhealth/lipidemia)
-- Aggiunto script npm: `npm run backfill:macrogroups --workspace=packages/backend`
-
-### Doctor maxPatients + DoctorContract
-- `User.maxPatients` aggiunto al model User, allo shared type IUser e agli Zod schemas
-- `DoctorContract` model (doctorId, startDate, endDate, maxPatients, fee, currency, notes, status)
-- Admin CRUD per contratti su `/api/admin/contracts` con autosync di `User.maxPatients`
-- Report con peak/avg patients + CSV export su `/api/admin/contracts/report`
-- Frontend: `AdminContracts.tsx` (modal CRUD), `AdminContractReport.tsx` (date range + tabella + export)
-- `AdminUsers.tsx`: colonna maxPatients in tabella, campo edit/crea (solo per ruolo doctor)
-- Seed: `maxPatients: 2` per dr.smith e dr.jones
-
-### Alert Dot nella Doctor Dashboard
-- `GET /api/doctor/patients` ora restituisce `hasAlerts: bool` per ogni paziente (aggregato da AlertLog)
-- Frontend: pallino rosso accanto ai nomi dei pazienti con alert attivi
-
-### Latest-per-Type per Doctor
-- Nuovo endpoint `GET /api/doctor/patients/:patientId/latest-measurements` che raggruppa per type e restituisce l'ultima misurazione
-- Frontend: griglia di card "Latest Measurements" nel pannello dettaglio paziente (al posto della tabella flat precedent)
-
-### NewMeasurement Gallery
-- Redesign completo: griglia responsive di card (una per tipo misurazione)
-- Ogni card espandibile con due modalità: Manual (input numerico + unità) e Upload (drag & drop file CSV/immagine)
-- Bottone Save/Upload individuale per card con feedback visivo
-
-### Anamnesi Strutturata, GDPR, Sharing & Presa in Carico (Fase 1-5 completa)
-- **FASE 1 (Modelli & Schemi)**: shared types (IUser, IAnamnesis, IPatientDoctor, IGdprConsent), Zod schemas (doctorCreatePatientSchema, updateSharingSchema, requestSharingSchema, setPasswordSchema, privacyConsentSchema, createAnamnesisSchema), Mongoose models (User con birthCity/NO password required, Anamnesis 6 sezioni, PatientDoctor con sharedMeasurementTypes, GdprConsent con storico)
-- **FASE 2 (Backend Endpoints)**: auth (POST /api/auth/set-password, register non permette paziente), dottore (POST /api/doctor/patients con 2 modalità: add by email + crea account, createPatientMeasurement, requestSharing, getPatientSharing), paziente (myDoctors, confirmDoctor, rejectDoctor, getDoctorSharing, updateDoctorSharing, privacyConsent, getPrivacyConsentHistory, getBmi), filtro sharedMeasurementTypes su tutti i GET measurements, verifica GDPR su accesso dati
-- **FASE 3**: Seed con GdprConsent e height/weight metric-only; `scripts/migrateAnamnesis.ts`; endpoint BMI (`GET /api/patient/bmi`)
-- **FASE 4**: Frontend paziente: Register rimuove role patient, sezione "I miei Dottori" in Dashboard con confirm/reject, sezione GDPR in Profile con storico, toggle condivisione
-- **FASE 5**: Frontend dottore: Add Patient con 2 modalità (by email / create account con campi intake), badge pending/active/rejected, form anamnesi a 6 tabs, BMI card, modale richiesta condivisione tipi, view sharing settings
-
-### Italianizzazione Completa DoctorPatients.tsx
-- Bottone "Nuova Misurazione" aggiunto nel dettaglio paziente (collegamento a `/measurements/new?forPatient=<id>`)
-- Import `Link` da react-router-dom aggiunto
-- Tradotti in italiano: label filtri sesso/età/città/regione/paese, opzioni select (Maschio/Femmina/Altro, Tutti), label grafico (Tipo Misurazione, Raggruppamento Temporale, Aggregazione, Tipo Grafico, Linea/Area/Barre, Ora/Giorno/Settimana/Mese/Anno, Media/Minimo/Massimo), macrogruppi (Salute Generale/Cardiaco/Sangue/Gas/Profilo Lipidico/Funzione Renale), pulsanti (Aggiorna Grafico, Salva/Elimina configurazioni), form edit paziente (Data di Nascita, Sesso, Salva/Annulla), badge stato (Attivo/In attesa/Rifiutato/Inattivo, Attiva/Disattiva), sezione anamnesi (Nuova Voce/Annulla, una voce per riga, Salva Anamnesi, Note aggiuntive, nessuna anamnesi ancora), note cliniche (Note Cliniche, Mostra al paziente, Invia notifica email, Associa all'ultima anamnesi, Condivisa/Notificata/Anamnesi), messaggi conferma/errore, placeholder, dialog conferma rimozione
-
-### Nomi Misurazioni in Italiano + Seed --clean
-- Seed aggiornato con nomi italiani per tutti i tipi e campi misurazione (es. `blood_pressure` → `Pressione Sanguigna`, `Systolic` → `Sistolica`, ecc.)
-- Aggiunto parametro `--clean` al seed: cancella tutti i dati e re-seed da zero; senza `--clean` esce se già popolato
-- `Dashboard.tsx`: macrogruppi tradotti in italiano (Salute Generale, Cardiaco, Sangue/Gas, Profilo Lipidico, Funzione Renale)
-- `AdminMeasurementTypes.tsx`: macrogruppi tradotti in italiano
-- `index.html`: `lang="it"`
-
-### Fix Produzione: pdfjs-dist
-- `aiExtractController.ts`: passato `{ data: file.buffer }` al costruttore `PDFParse` invece di `{}` — risolve l'errore `getDocument - no 'url' parameter provided` in produzione su Render
-- `load()` ora non riceve argomenti (usa `this.options` impostati dal costruttore)
-- `getText(1)` restituisce `TextResult` con `.text`
-
-### Admin non crea più pazienti
-- `createUserSchema` e `updateUserSchema`: rimosso `'patient'` dai ruoli ammessi (solo doctor/analyst/admin)
-- `AdminUsers.tsx`: rimosso "Patient" dal select ruolo, opzioni tradotte in italiano (Medico/Analista/Admin)
-
-### Dottore sceglie tipi misurazione alla creazione paziente
-- `doctorCreatePatientSchema`: aggiunto campo opzionale `sharedMeasurementTypes: z.array(z.string())`
-- `doctorController.ts` `addPatient`: passa `sharedMeasurementTypes` dalla request al `PatientDoctor.create()`, default `['*']` se non fornito
-- `DoctorPatients.tsx`: multi-select checkboxes nel form "Crea Account" per scegliere tipi (se nessuno selezionato, default tutti)
-
-### Fix Privacy.tsx — Layout + Testo
-- `App.tsx`: spostato `/privacy` dentro `<Route element={<Layout />}>` così ha Navbar e struttura di navigazione (accessibile anche senza auth)
-- `Privacy.tsx` sezione 8: "Profile → Privacy & GDPR Consent" → "Profilo → Consenso GDPR"
-
-### Fix Admin Crea Utente (role 'patient' bug)
-- `AdminUsers.tsx`: `resetForm()` resettava `newRole` a `'patient'` → cambiato a `'doctor'`
-- `AdminUsers.tsx`: `useState('patient')` → `useState('doctor')`
-- `schemas.ts` `updateUserSchema`: riaggiunto `'patient'` all'enum (serve per modificare utenti pazienti esistenti)
-- `AdminUsers.tsx`: tradotti in italiano i select ruolo (filtro, crea, modifica)
-- Error handling migliorato: mostra messaggio specifico per 409 (email già registrata)
-
-### Address Fields Autocomplete Off
-- `AdminUsers.tsx`, `Profile.tsx`, `DoctorPatients.tsx`: aggiunto `autoComplete="off"` a tutti i campi indirizzo (full, city, province, region, country, zip) per evitare che il browser suggerisca email
-
-### Password Visibility Toggle
-- `AdminUsers.tsx`: icona occhio SVG nel campo password del form creazione utente, toggle tra `type="password"` e `type="text"`
-
-### Password Temporanea per Paziente (Dottore Crea Account)
-- **`User.ts`**: aggiunto campo `mustChangePassword: Boolean` (default false)
-- **`doctorCreatePatientSchema`**: aggiunto campo `password: z.string().min(8)` (obbligatorio)
-- **`doctorController.ts` `addPatient`**: ora usa la password fornita dal dottore, setta `mustChangePassword: true`, `emailVerified: true`, invia email notifica (non più link set-password)
-- **`authService.ts`**: `loginUser` restituisce `mustChangePassword`; `changePassword` azzera il flag
-- **`DoctorPatients.tsx`**: campo "Password temporanea" nel form Crea Account; `loadPatients` reso `async/await` (la lista si aggiorna subito)
-- **`Login.tsx`**: dopo login, se `mustChangePassword: true` → reindirizza a `/profile?mustChangePassword=1`
-- **`Profile.tsx`**: banner giallo password temporanea + `useSearchParams` per gestire il flag; dopo cambio password OK pulisce il parametro
-- **`AuthContext.tsx`**: `login()` restituisce `IUser` invece di `void`
-
-### Profile.tsx Tradotto in Italiano
-- Titolo "Profile" → "Profilo"
-- Label form (Name/Nome, Birth Date/Data di Nascita, Sex/Sesso, Role/Ruolo, Not specified/Non specificato, Male/Female/Other → Maschio/Femmina/Altro)
-- Pulsanti (Edit/Modifica, Cancel/Annulla, Save Changes/Salva Modifiche, Change Password/Cambia Password, Accept/Re-accept/Revoke → Accetta/Riaccetta/Revoca Consenso)
-- Sezione GDPR: "Privacy & GDPR Consent" → "Consenso GDPR", storico "Granted/Revoked" → "Concesso/Revocato", "Consent History" → "Storico Consenso"
-- Email verification: "Verified/Not verified" → "Verificata/Non verificata", "Resend..." → "Invia email di verifica"
-- Indirizzi: "Home Address/Legal Address" → "Indirizzo di Casa/Indirizzo Legale"
-- Ruolo utente: mostra label italiano (Paziente/Medico/Analista/Admin)
-
-### Comportamento Atteso: CSV Import → Grafici Vuoti per Dottore
-- Il dottore importa CSV (salva dati) ma non vede i grafici perché `verifyGdprConsent` (`doctorController.ts:581`) blocca la lettura finché il paziente non:
-  1. Fa login (con password temporanea)
-  2. Cambia password (forzato dal banner)
-  3. Concede il Consenso GDPR (Profilo → Consenso GDPR)
-  4. Conferma il dottore (Dashboard → I Miei Dottori)
-
-### Sezione GDPR Visibile a Tutti gli Utenti
-- `Profile.tsx`: rimossa la condizione `user.role === 'patient'` dal gate della sezione GDPR (errore `riga 248` → `riga 246`); ora visibile per tutti i ruoli (dottore, analista, admin, paziente)
-- Testo adattato: "Il consenso alla privacy consente ai medici di accedere ai tuoi dati" → "Il consenso GDPR autorizza la piattaforma a trattare i tuoi dati personali"
-- Confirm dialog revoca: tradotto in italiano "La revoca del consenso limiterà il trattamento dei tuoi dati. Continuare?"
-- Backend endpoint `POST/GET /patient/privacy-consent` già generico (usa `req.userId`), nessuna modifica necessaria
-
-### Messaggio Blocco GDPR nella Vista Dottore
-- `DoctorPatients.tsx`: aggiunto stato `gdprBlocked`, resettato al cambio paziente
-- `loadChart` e `latest-measurements` fetch: catch dell'errore 403 `'Patient has not provided GDPR consent'` → setta `gdprBlocked: true`
-- Render grafico: mostra messaggio rosso "Consenso GDPR non concesso dal paziente. I dati non sono accessibili." al posto di "Nessun dato disponibile"
-- Card ultime misurazioni: mostra stesso messaggio rosso al posto di "Nessuna misurazione ancora"
-- Tutti i messaggi tradotti in italiano (Caricamento grafico, Nessun dato disponibile, ecc.)
+### Traduzioni Dashboard.tsx Completate
+- `#patient-chart-section`: placeholder "Loading chart..." → "Caricamento grafico...", "Select a measurement type..." → "Seleziona un tipo per visualizzare il grafico"
+- `#patient-my-doctors`: titolo "My Doctors" → "I Miei Dottori"
 
 ## Future Phases
 - **Phase 2**: Export CSV/JSON endpoint, advanced charts, Looker Studio Community Connector
 - **Phase 3**: BigQuery sync, device OAuth integrations (Fitbit, Google Fit), webhook endpoint
-- **Guida dottore**: Help pages, FAQ, tutorial interattivo per l'utilizzo della piattaforma
 - **Export storico BMI**: grafico BMI nel tempo
 - **Notifiche push**: per richieste di condivisione e conferma presa in carico

@@ -1,4 +1,4 @@
-export type NotificationCategory = 'info' | 'alert' | 'danger' | 'warning' | 'medicalnote';
+export type NotificationCategory = 'info' | 'alert' | 'danger' | 'warning' | 'medicalnote' | 'medication';
 
 export interface INotification {
   _id: string;

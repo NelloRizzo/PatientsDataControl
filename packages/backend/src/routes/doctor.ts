@@ -4,7 +4,8 @@ import { requireRole } from '../middleware/roles.js';
 import { validate } from '../middleware/validate.js';
 import * as doctorController from '../controllers/doctorController.js';
 import * as anamnesisController from '../controllers/anamnesisController.js';
-import { createMeasurementSchema, requestSharingSchema } from '@healthbridge/shared';
+import * as medicationController from '../controllers/medicationController.js';
+import { createMeasurementSchema, requestSharingSchema, createPrescriptionSchema, updatePrescriptionSchema } from '@healthbridge/shared';
 
 const router = Router();
 
@@ -29,6 +30,10 @@ router.get('/patients/:patientId/timeseries', doctorController.patientTimeseries
 router.get('/patients/:patientId/stats', doctorController.patientStats);
 router.get('/patients/:patientId/sharing', doctorController.getPatientSharing);
 router.post('/patients/:patientId/request-sharing', validate(requestSharingSchema), doctorController.requestSharing);
+router.get('/patients/:patientId/medications', medicationController.listPatientMedications);
+router.post('/patients/:patientId/medications', validate(createPrescriptionSchema), medicationController.createPrescription);
+router.put('/patients/:patientId/medications/:id', validate(updatePrescriptionSchema), medicationController.updatePrescription);
+router.delete('/patients/:patientId/medications/:id', medicationController.deletePrescription);
 router.get('/patients/:patientId/anamnesis', anamnesisController.listAnamnesis);
 router.post('/patients/:patientId/anamnesis', anamnesisController.createAnamnesis);
 router.get('/recent-activity', doctorController.recentActivity);

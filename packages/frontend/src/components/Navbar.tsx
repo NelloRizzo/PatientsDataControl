@@ -41,8 +41,8 @@ export function Navbar() {
     setOpenDropdown(null);
   };
 
-  const item = (label: string, to: string) => (
-    <Link key={to} to={to} onClick={close} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 whitespace-nowrap">
+  const item = (label: string, to: string, id?: string) => (
+    <Link key={to} to={to} onClick={close} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 whitespace-nowrap" id={id}>
       {label}
     </Link>
   );
@@ -82,8 +82,8 @@ export function Navbar() {
     <>
       {item('Profilo', '/profile')}
       {user.role === 'patient' && item('Le Mie Misure', '/measurements')}
+      {item('Guida', '/help')}
       {item('Privacy', '/privacy')}
-      {btnItem('Esci', () => { close(); handleLogout(); })}
     </>
   );
 
@@ -93,27 +93,28 @@ export function Navbar() {
         <div className="flex justify-between h-16">
           <div className="flex items-center gap-1">
             <Link to={user.role === 'patient' ? '/measurements' : '/'} onClick={close}
-              className="text-xl font-bold text-blue-600 mr-4 whitespace-nowrap">
+              className="text-xl font-bold text-blue-600 mr-4 whitespace-nowrap" id="nav-logo">
               HealthBridge
             </Link>
             <div className="hidden md:flex items-center gap-1">
               {user.role === 'patient' && (
                 <>
                   <NavLink to="/" label="Dashboard" />
-                  <Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown>
+                  <div id="nav-profile"><Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown></div>
                 </>
               )}
               {user.role === 'doctor' && (
                 <>
-                  <Dropdown name="patients" label="Pazienti">
+                  <div id="patients-menu"><Dropdown name="patients" label="Pazienti">
                     {item('I Miei Pazienti', '/doctor/patients')}
-                    {item('Alert', '/doctor/alerts')}
-                  </Dropdown>
-                  <Dropdown name="tools" label="Strumenti">
-                    {item('Importa Misurazioni', '/measurements/import')}
+                    {item('Alert', '/doctor/alerts', 'alerts-link')}
+                  </Dropdown></div>
+                  <div id="tools-menu"><Dropdown name="tools" label="Strumenti">
+                    {item('Importa Misurazioni', '/measurements/import', 'import-link')}
                     {item('Contratto', '/doctor/contract')}
-                  </Dropdown>
-                  <Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown>
+                    {item('Ticket e Segnalazioni', '/doctor/tickets', 'tickets-link')}
+                  </Dropdown></div>
+                  <div id="nav-profile"><Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown></div>
                 </>
               )}
               {user.role === 'admin' && (
@@ -125,18 +126,27 @@ export function Navbar() {
                     {item('Alert Template', '/admin/alert-templates')}
                     {item('Contratti', '/admin/contracts')}
                     {item('Report', '/admin/contracts/report')}
+                    {item('Ticket', '/admin/tickets')}
                   </Dropdown>
-                  <Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown>
+                  <div id="nav-profile"><Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown></div>
                 </>
               )}
               {user.role === 'analyst' && (
-                <Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown>
+                <div id="nav-profile"><Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown></div>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <NotificationBell />
+          <div className="flex items-center gap-2">
+            <div id="nav-notification-bell"><NotificationBell /></div>
             <span className="hidden md:inline text-sm text-gray-500">{user.name} ({roleLabel[user.role] || user.role})</span>
+            <button onClick={() => { close(); handleLogout(); }}
+              className="hidden md:inline-flex items-center gap-1 px-2 py-1.5 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+              title="Esci">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span>Esci</span>
+            </button>
             <button onClick={() => { setMobileOpen(!mobileOpen); setOpenDropdown(null); }}
               className="md:hidden p-2 rounded text-gray-600 hover:text-gray-900 hover:bg-gray-100">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,8 +171,8 @@ function MobileNav({ user, close, handleLogout }: { user: any; close: () => void
   const [expanded, setExpanded] = useState<string | null>(null);
   const toggleExp = (name: string) => setExpanded((prev) => (prev === name ? null : name));
 
-  const item = (label: string, to: string) => (
-    <Link key={to} to={to} onClick={close} className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+  const item = (label: string, to: string, id?: string) => (
+    <Link key={to} to={to} onClick={close} className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded" id={id}>
       {label}
     </Link>
   );
@@ -189,10 +199,6 @@ function MobileNav({ user, close, handleLogout }: { user: any; close: () => void
             {item('Profilo', '/profile')}
             {item('Le Mie Misure', '/measurements')}
             {item('Privacy', '/privacy')}
-            <button onClick={() => { close(); handleLogout(); }}
-              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 rounded">
-              Esci
-            </button>
           </Section>
         </>
       )}
@@ -200,19 +206,16 @@ function MobileNav({ user, close, handleLogout }: { user: any; close: () => void
         <>
           <Section name="patients" label="Pazienti">
             {item('I Miei Pazienti', '/doctor/patients')}
-            {item('Alert', '/doctor/alerts')}
+            {item('Alert', '/doctor/alerts', 'alerts-link')}
           </Section>
           <Section name="tools" label="Strumenti">
-            {item('Importa Misurazioni', '/measurements/import')}
+            {item('Importa Misurazioni', '/measurements/import', 'import-link')}
             {item('Contratto', '/doctor/contract')}
+            {item('Ticket e Segnalazioni', '/doctor/tickets', 'tickets-link')}
           </Section>
           <Section name="profile" label="Profilo">
             {item('Profilo', '/profile')}
             {item('Privacy', '/privacy')}
-            <button onClick={() => { close(); handleLogout(); }}
-              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 rounded">
-              Esci
-            </button>
           </Section>
         </>
       )}
@@ -225,14 +228,11 @@ function MobileNav({ user, close, handleLogout }: { user: any; close: () => void
             {item('Alert Template', '/admin/alert-templates')}
             {item('Contratti', '/admin/contracts')}
             {item('Report', '/admin/contracts/report')}
+            {item('Ticket', '/admin/tickets')}
           </Section>
           <Section name="profile" label="Profilo">
             {item('Profilo', '/profile')}
             {item('Privacy', '/privacy')}
-            <button onClick={() => { close(); handleLogout(); }}
-              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 rounded">
-              Esci
-            </button>
           </Section>
         </>
       )}
@@ -240,13 +240,17 @@ function MobileNav({ user, close, handleLogout }: { user: any; close: () => void
         <Section name="profile" label="Profilo">
           {item('Profilo', '/profile')}
           {item('Privacy', '/privacy')}
-          <button onClick={() => { close(); handleLogout(); }}
-            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 rounded">
-            Esci
-          </button>
         </Section>
       )}
-      <div className="px-4 pt-2 text-xs text-gray-400 border-t">{user.name} ({roleLabel[user.role] || user.role})</div>
+      <hr className="my-2 border-gray-200" />
+      <div className="px-4 pb-1 text-xs text-gray-400">{user.name} ({roleLabel[user.role] || user.role})</div>
+      <button onClick={() => { close(); handleLogout(); }}
+        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded font-medium">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        Esci
+      </button>
     </div>
   );
 }

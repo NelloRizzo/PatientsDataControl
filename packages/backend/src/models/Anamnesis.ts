@@ -4,12 +4,21 @@ const sectionSchema = new mongoose.Schema({
   entries: [String],
 }, { _id: false });
 
+const farmacologicaEntrySchema = new mongoose.Schema({
+  text: { type: String, required: true },
+  isCurrent: { type: Boolean, default: true },
+}, { _id: false });
+
+const farmacologicaSectionSchema = new mongoose.Schema({
+  entries: [farmacologicaEntrySchema],
+}, { _id: false });
+
 export interface IAnamnesisDocument extends mongoose.Document {
   patientId: mongoose.Types.ObjectId;
   recordedAt: Date;
   fisiologica?: { entries: string[] };
   familiare?: { entries: string[] };
-  farmacologica?: { entries: string[] };
+  farmacologica?: { entries: { text: string; isCurrent: boolean }[] };
   patologicaRemota?: { entries: string[] };
   patologicaProssima?: { entries: string[] };
   sociale?: { entries: string[] };
@@ -33,7 +42,7 @@ const anamnesisSchema = new mongoose.Schema<IAnamnesisDocument>(
     },
     fisiologica: { type: sectionSchema },
     familiare: { type: sectionSchema },
-    farmacologica: { type: sectionSchema },
+    farmacologica: { type: farmacologicaSectionSchema },
     patologicaRemota: { type: sectionSchema },
     patologicaProssima: { type: sectionSchema },
     sociale: { type: sectionSchema },

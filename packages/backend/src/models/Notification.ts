@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 export interface INotificationDocument extends mongoose.Document {
   userId: mongoose.Types.ObjectId;
-  category: 'info' | 'alert' | 'danger' | 'warning' | 'medicalnote';
+  category: 'info' | 'alert' | 'danger' | 'warning' | 'medicalnote' | 'medication';
   title: string;
   body: string;
   read: boolean;
@@ -23,7 +23,7 @@ const notificationSchema = new mongoose.Schema<INotificationDocument>(
     },
     category: {
       type: String,
-      enum: ['info', 'alert', 'danger', 'warning', 'medicalnote'],
+      enum: ['info', 'alert', 'danger', 'warning', 'medicalnote', 'medication'],
       required: true,
     },
     title: {

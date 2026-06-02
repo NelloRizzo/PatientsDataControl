@@ -80,9 +80,10 @@ export function Privacy() {
         <h2 className="text-lg font-semibold">8. Revoca del Consenso</h2>
         <p className="text-sm">
           Il paziente può revocare il consenso in qualsiasi momento dalla sezione "Profilo" →
-          "Consenso GDPR". La revoca comporta il congelamento dell'accesso ai propri
-          dati da parte dei medici curanti fino a una nuova accettazione. La revoca non pregiudica
-          la liceità del trattamento basata sul consenso prima della revoca.
+          "Consenso GDPR". La base giuridica del trattamento dei dati sanitari è l'art. 9(2)(h)
+          del GDPR (finalità di medicina preventiva e assistenza sanitaria), pertanto la revoca
+          non blocca l'accesso ai dati da parte dei medici curanti. La revoca viene comunque
+          registrata nello storico per trasparenza.
         </p>
       </section>
 

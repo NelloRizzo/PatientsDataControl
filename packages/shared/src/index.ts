@@ -11,4 +11,6 @@ export * from './types/anamnesis.js';
 export * from './types/contract.js';
 export * from './types/extraction.js';
 export * from './types/gdpr.js';
+export * from './types/medication.js';
+export * from './types/ticket.js';
 export * from './validation/schemas.js';

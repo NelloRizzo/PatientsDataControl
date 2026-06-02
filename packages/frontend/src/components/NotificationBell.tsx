@@ -60,6 +60,7 @@ export function NotificationBell() {
       danger: 'bg-red-100 text-red-700',
       warning: 'bg-orange-100 text-orange-700',
       medicalnote: 'bg-green-100 text-green-700',
+      medication: 'bg-purple-100 text-purple-700',
     };
     return colors[cat] || 'bg-gray-100 text-gray-700';
   };
@@ -81,17 +82,17 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border z-50">
           <div className="px-4 py-3 border-b flex items-center justify-between">
-            <span className="text-sm font-medium">Notifications</span>
+            <span className="text-sm font-medium">Notifiche</span>
             <button onClick={() => { setOpen(false); navigate('/notifications'); }}
               className="text-xs text-blue-600 hover:underline">
-              View all
+              Vedi tutte
             </button>
           </div>
           <div className="max-h-72 overflow-y-auto">
             {loading ? (
-              <p className="text-sm text-gray-500 text-center py-6">Loading...</p>
+              <p className="text-sm text-gray-500 text-center py-6">Caricamento...</p>
             ) : notifications.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-6">No new notifications</p>
+              <p className="text-sm text-gray-500 text-center py-6">Nessuna notifica</p>
             ) : (
               notifications.map((n) => (
                 <div key={n._id}

@@ -64,23 +64,9 @@ export async function myPatients(
     ]);
     const alertMap = new Map(alertCounts.map((a) => [a._id.toString(), a.count]));
 
-    // Batch check GDPR consent
-    const { GdprConsent } = await import('../models/GdprConsent.js');
-    const allConsents = await GdprConsent.find({
-      userId: { $in: patientIds },
-      type: 'privacy_policy',
-    }).sort({ grantedAt: -1 }).lean();
-    const consentMap = new Map<string, boolean>();
-    for (const c of allConsents) {
-      if (!consentMap.has(c.userId.toString())) {
-        consentMap.set(c.userId.toString(), c.granted);
-      }
-    }
-
     const data = patients.map((p) => ({
       ...p,
       hasAlerts: (alertMap.get(p._id) || 0) > 0,
-      gdprConsented: consentMap.get(p._id) ?? false,
     }));
 
     res.json({ data });
@@ -97,7 +83,6 @@ export async function patientLatestMeasurements(
   try {
     const { patientId } = req.params;
     await verifyAssociation(req.userId!, patientId);
-    await verifyGdprConsent(patientId);
 
     const sharedTypes = await getSharedTypes(req.userId!, patientId);
     if (!sharedTypes) { res.status(403).json({ error: 'No active association' }); return; }
@@ -649,17 +634,6 @@ export async function getPatientSharing(
   }
 }
 
-async function verifyGdprConsent(patientId: string): Promise<void> {
-  const { GdprConsent } = await import('../models/GdprConsent.js');
-  const consent = await GdprConsent.findOne({
-    userId: patientId,
-    type: 'privacy_policy',
-  }).sort({ grantedAt: -1 }).lean();
-  if (!consent || !consent.granted) {
-    throw new AppError(403, 'Patient has not provided GDPR consent');
-  }
-}
-
 async function getSharedTypes(doctorId: string, patientId: string): Promise<string[] | null> {
   const assoc = await PatientDoctor.findOne({ doctorId, patientId, status: 'active' })
     .select('sharedMeasurementTypes')
@@ -676,7 +650,6 @@ export async function patientMeasurements(
   try {
     const { patientId } = req.params;
     await verifyAssociation(req.userId!, patientId);
-    await verifyGdprConsent(patientId);
 
     const sharedTypes = await getSharedTypes(req.userId!, patientId);
     if (!sharedTypes) { res.status(403).json({ error: 'No active association' }); return; }
@@ -731,7 +704,6 @@ export async function deletePatientMeasurements(
   try {
     const { patientId } = req.params;
     await verifyAssociation(req.userId!, patientId);
-    await verifyGdprConsent(patientId);
 
     const sharedTypes = await getSharedTypes(req.userId!, patientId);
     if (!sharedTypes) { res.status(403).json({ error: 'No active association' }); return; }
@@ -756,7 +728,6 @@ export async function patientTimeseries(
   try {
     const { patientId } = req.params;
     await verifyAssociation(req.userId!, patientId);
-    await verifyGdprConsent(patientId);
 
     const sharedTypes = await getSharedTypes(req.userId!, patientId);
     if (!sharedTypes) { res.status(403).json({ error: 'No active association' }); return; }
@@ -786,7 +757,6 @@ export async function patientStats(
   try {
     const { patientId } = req.params;
     await verifyAssociation(req.userId!, patientId);
-    await verifyGdprConsent(patientId);
 
     const sharedTypes = await getSharedTypes(req.userId!, patientId);
     if (!sharedTypes) { res.status(403).json({ error: 'No active association' }); return; }
