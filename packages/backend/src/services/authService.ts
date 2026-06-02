@@ -52,6 +52,8 @@ export async function loginUser(email: string, password: string) {
     throw new AppError(401, 'Invalid email or password');
   }
 
+  console.log('[LOGIN] found user:', user.email, 'pwd len:', user.password?.length, 'hash:', user.password?.substring(0, 20));
+
   const isMatch = await user.comparePassword(password);
   if (!isMatch) {
     throw new AppError(401, 'Invalid email or password');
@@ -143,7 +145,10 @@ export async function changePassword(userId: string, oldPassword: string, newPas
     throw new AppError(404, 'User not found');
   }
 
+  console.log('[CHANGE] found user:', user.email, 'pwd len:', user.password?.length, 'hash:', user.password?.substring(0, 20));
+
   const isMatch = await user.comparePassword(oldPassword);
+  console.log('[CHANGE] compare result:', isMatch);
   if (!isMatch) {
     throw new AppError(401, 'Current password is incorrect');
   }
