@@ -52,6 +52,7 @@ export async function loginUser(email: string, password: string) {
     throw new AppError(401, 'Invalid email or password');
   }
 
+  console.log('[LOGIN] input pwd length:', password.length, 'first char code:', password.charCodeAt(0));
   console.log('[LOGIN] found user:', user.email, 'pwd len:', user.password?.length, 'hash:', user.password?.substring(0, 20));
 
   const isMatch = await user.comparePassword(password);

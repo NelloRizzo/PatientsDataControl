@@ -93,7 +93,10 @@ export async function createUser(
     const existing = await User.findOne({ email: parsed.email.toLowerCase().trim() });
     if (existing) throw new AppError(409, 'Email already registered');
 
+    console.log('[ADMIN CREATE] pwd input length:', parsed.password?.length);
     const user = await User.create(parsed);
+    const fresh = await User.findById(user._id).select('+password');
+    console.log('[ADMIN CREATE] after create hash length:', fresh?.password?.length, 'hash:', fresh?.password?.substring(0, 20));
     const token = await generateVerificationToken(user._id.toString());
     await sendVerificationEmail(user.email, token);
     res.status(201).json({ data: user.toJSON() });
