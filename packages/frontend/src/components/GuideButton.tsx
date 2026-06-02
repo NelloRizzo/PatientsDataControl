@@ -1,6 +1,8 @@
 import { useAuth } from '../context/AuthContext';
-import { doctorGuideSteps } from '../guides/doctorGuide';
-import { patientGuideSteps } from '../guides/patientGuide';
+import { createDoctorGuide } from '../guides/doctorGuide';
+import { createPatientGuide } from '../guides/patientGuide';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useCallback } from 'react';
 import 'driver.js/dist/driver.css';
 
 interface GuideButtonProps {
@@ -9,19 +11,37 @@ interface GuideButtonProps {
 
 export function GuideButton({ className = '' }: GuideButtonProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const startGuide = async () => {
-    const { driver } = await import('driver.js');
-    const steps = user?.role === 'doctor' ? doctorGuideSteps
-      : user?.role === 'patient' ? patientGuideSteps
-      : null;
+  const createSteps = useCallback(() => {
+    if (user?.role === 'doctor') return createDoctorGuide(navigate);
+    if (user?.role === 'patient') return createPatientGuide(navigate);
+    return null;
+  }, [user?.role, navigate]);
+
+  const startGuide = useCallback((fromStep = 0) => {
+    const steps = createSteps();
     if (!steps) return;
-    const d = driver({ steps, animate: true, showProgress: true });
-    d.drive();
-  };
+    import('driver.js').then(({ driver }) => {
+      const d = driver({ steps, animate: true, showProgress: true });
+      d.drive(fromStep);
+    });
+  }, [createSteps]);
+
+  useEffect(() => {
+    const pendingStep = sessionStorage.getItem('guideStep');
+    const pendingRole = sessionStorage.getItem('guideRole');
+    if (pendingStep && pendingRole === user?.role) {
+      sessionStorage.removeItem('guideStep');
+      sessionStorage.removeItem('guideRole');
+      const step = parseInt(pendingStep, 10);
+      if (!isNaN(step)) startGuide(step);
+    }
+  }, [user?.role, location.pathname, startGuide]);
 
   return (
-    <button onClick={startGuide}
+    <button onClick={() => startGuide(0)}
       className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors ${className}`}
       title="Avvia guida interattiva">
       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

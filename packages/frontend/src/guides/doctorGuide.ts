@@ -1,144 +1,131 @@
 import type { DriveStep } from 'driver.js';
+import type { NavigateFunction } from 'react-router-dom';
 
-export const doctorGuideSteps: DriveStep[] = [
-  {
-    element: '#nav-logo',
-    popover: {
-      title: 'Benvenuto in HealthBridge',
-      description: 'Questa guida ti mostrerà le principali funzionalità per medici.',
-      side: 'bottom',
-      align: 'start',
-    },
-  },
-  {
-    element: '#patients-menu',
-    popover: {
-      title: 'I Tuoi Pazienti',
-      description: 'Da qui accedi alla lista dei tuoi pazienti e alle loro schede.',
-      side: 'bottom',
-      align: 'start',
-    },
-  },
-  {
-    element: '#tools-menu',
-    popover: {
-      title: 'Strumenti',
-      description: 'Qui trovi: importazione CSV, contratto e ticket di segnalazione.',
-      side: 'bottom',
-      align: 'start',
-    },
-  },
-  {
-    element: '#nav-profile',
-    popover: {
-      title: 'Profilo e Guida',
-      description: 'Da qui puoi modificare il profilo, leggere la privacy e riavviare questa guida.',
-      side: 'bottom',
-      align: 'start',
-    },
-  },
-  {
-    element: '#sidebar-patients',
-    popover: {
-      title: 'Lista Pazienti',
-      description: 'Clicca su un paziente per vedere i suoi dati. Il pallino rosso indica alert attivi.',
-      side: 'right',
-      align: 'start',
-    },
-  },
-  {
-    element: '#latest-measurements',
-    popover: {
-      title: 'Ultime Misurazioni',
-      description: 'Qui vedi l\'ultima rilevazione per ogni tipo. Le icone mostrano il trend: ↑ migliorato, ↓ peggiorato, → stabile.',
-      side: 'left',
-      align: 'start',
-    },
-  },
-  {
-    element: '#chart-section',
-    popover: {
-      title: 'Grafico Storico',
-      description: 'Seleziona un tipo di misurazione per vedere l\'andamento nel tempo. Puoi cambiare raggruppamento e aggregazione.',
-      side: 'top',
-      align: 'start',
-    },
-  },
-  {
-    element: '#patient-anamnesis',
-    popover: {
-      title: 'Anamnesi',
-      description: 'Qui puoi visualizzare e aggiungere voci anamnestiche strutturate in 6 sezioni.',
-      side: 'left',
-      align: 'start',
-    },
-  },
-  {
-    element: '#patient-notes',
-    popover: {
-      title: 'Note Cliniche',
-      description: 'Aggiungi note private o condivisibili con il paziente. Puoi inviare notifica email.',
-      side: 'top',
-      align: 'start',
-    },
-  },
-  {
-    element: '#patient-medications',
-    popover: {
-      title: 'Farmaci',
-      description: 'Prescrivi farmaci con dosaggio, frequenza e orari. Il paziente riceve notifica e può registrare l\'assunzione.',
-      side: 'left',
-      align: 'start',
-    },
-  },
-  {
-    element: '#patient-actions',
-    popover: {
-      title: 'Azioni Paziente',
-      description: 'Da qui puoi modificare profilo, resettare password, gestire la condivisione tipi e creare misurazioni.',
-      side: 'bottom',
-      align: 'start',
-    },
-  },
-  {
-    element: '#alerts-link',
-    popover: {
-      title: 'Alert',
-      description: 'Visualizza la cronologia degli alert generati automaticamente dalle misurazioni.',
-      side: 'bottom',
-      align: 'start',
-    },
-  },
-  {
-    element: '#import-link',
-    popover: {
-      title: 'Importa Misurazioni',
-      description: 'Carica file CSV per importare misurazioni in blocco. Supporta anche estrazione AI da PDF referti.',
-      side: 'bottom',
-      align: 'start',
-    },
-  },
-  {
-    element: '#tickets-link',
-    popover: {
-      title: 'Ticket e Segnalazioni',
-      description: 'Segnala bug o suggerisci nuove funzionalità. Il team admin risponderà tramite ticket.',
-      side: 'bottom',
-      align: 'start',
-    },
-  },
-  {
-    element: '#nav-notification-bell',
-    popover: {
-      title: 'Notifiche',
-      description: 'Qui arrivano notifiche su nuovi pazienti, alert, farmaci e messaggi. Controlla periodicamente!',
-      side: 'bottom',
-      align: 'end',
-    },
-  },
-];
+export function createDoctorGuide(navigate: NavigateFunction): DriveStep[] {
+  const navTo = (path: string, nextStep: number) => {
+    sessionStorage.setItem('guideStep', String(nextStep));
+    sessionStorage.setItem('guideRole', 'doctor');
+    navigate(path);
+  };
 
-export const doctorGuideConfig = {
-  title: 'Guida per Medici',
-  description: 'Tour interattivo delle funzionalità dedicate ai medici.',
-};
+  return [
+    {
+      element: '#nav-logo',
+      popover: {
+        title: 'Benvenuto in HealthBridge',
+        description: 'Questa guida ti mostrerà le principali funzionalità per medici.',
+        side: 'bottom',
+        align: 'start',
+      },
+    },
+    {
+      element: '#patients-menu',
+      popover: {
+        title: 'Pazienti',
+        description: 'Da qui accedi alla lista dei tuoi assistiti, visualizzi gli alert e gestisci le schede.',
+        side: 'bottom',
+        align: 'start',
+      },
+    },
+    {
+      element: '#tools-menu',
+      popover: {
+        title: 'Strumenti',
+        description: 'Importazione CSV, contratto e sistema di ticket per segnalazioni.',
+        side: 'bottom',
+        align: 'start',
+      },
+    },
+    {
+      element: '#nav-profile',
+      popover: {
+        title: 'Profilo',
+        description: 'Modifica i tuoi dati, leggi l\'informativa privacy e riavvia questa guida.',
+        side: 'bottom',
+        align: 'start',
+        onNextClick: () => { navTo('/doctor/patients', 4); return false; },
+      },
+    },
+    {
+      element: '#sidebar-patients',
+      popover: {
+        title: 'Lista Pazienti',
+        description: 'Qui vedi tutti i tuoi pazienti. Il pallino rosso indica alert attivi. Clicca su un nome per aprire la scheda dettaglio.',
+        side: 'right',
+        align: 'start',
+      },
+    },
+    {
+      element: '#sidebar-patients',
+      popover: {
+        title: 'Seleziona un Paziente',
+        description: 'Clicca su uno dei nomi nella lista per visualizzare i dettagli. Poi premi "Avanti" per continuare.',
+        side: 'right',
+        align: 'start',
+      },
+    },
+    {
+      element: '#latest-measurements',
+      popover: {
+        title: 'Ultime Misurazioni',
+        description: 'Ogni card mostra l\'ultimo valore per tipo. Le icone indicano il trend: ↑ migliorato, ↓ peggiorato, → stabile. Clicca una card per selezionare il tipo nel grafico.',
+        side: 'left',
+        align: 'start',
+      },
+    },
+    {
+      element: '#chart-section',
+      popover: {
+        title: 'Grafico Storico',
+        description: 'Seleziona tipo, raggruppamento e aggregazione per analizzare l\'andamento nel tempo.',
+        side: 'top',
+        align: 'start',
+      },
+    },
+    {
+      element: '#patient-anamnesis',
+      popover: {
+        title: 'Anamnesi',
+        description: 'Visualizza e aggiungi voci anamnestiche in 6 sezioni: fisiologica, familiare, farmacologica, patologica remota, prossima e sociale.',
+        side: 'left',
+        align: 'start',
+      },
+    },
+    {
+      element: '#patient-notes',
+      popover: {
+        title: 'Note Cliniche',
+        description: 'Aggiungi note visibili solo a te o condivisibili con il paziente, con notifica email.',
+        side: 'top',
+        align: 'start',
+      },
+    },
+    {
+      element: '#patient-medications',
+      popover: {
+        title: 'Farmaci',
+        description: 'Prescrivi farmaci con dosaggio, frequenza e orari. Il paziente riceve notifica e registra l\'assunzione con "Preso".',
+        side: 'left',
+        align: 'start',
+      },
+    },
+    {
+      element: '#patient-actions',
+      popover: {
+        title: 'Azioni',
+        description: 'Modifica profilo, reset password, gestisci condivisione tipi e crea misurazioni per il paziente.',
+        side: 'bottom',
+        align: 'start',
+      },
+    },
+    {
+      element: '#nav-notification-bell',
+      popover: {
+        title: 'Notifiche',
+        description: 'Ricevi alert su valori critici, nuovi pazienti, farmaci prescritti e aggiornamenti. Controlla periodicamente!',
+        side: 'bottom',
+        align: 'end',
+      },
+    },
+  ];
+}
