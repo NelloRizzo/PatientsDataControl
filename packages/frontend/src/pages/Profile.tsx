@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../api/client';
+import type { IDeviceConnection } from '@healthbridge/shared';
 
 const emptyAddr = { full: '', city: '', province: '', region: '', country: '', zip: '' };
 
 export function Profile() {
-  const { user, login } = useAuth();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [editing, setEditing] = useState(false);
@@ -24,17 +25,95 @@ export function Profile() {
   const [cpMsg, setCpMsg] = useState('');
   const [cpErr, setCpErr] = useState('');
 
-  // Resend verification
   const [resending, setResending] = useState(false);
   const [resendMsg, setResendMsg] = useState('');
 
-  // GDPR
   const [gdprHistory, setGdprHistory] = useState<any[]>([]);
   const [gdprMsg, setGdprMsg] = useState('');
+
+  // Device connections
+  const [connections, setConnections] = useState<IDeviceConnection[]>([]);
+  const [connLoading, setConnLoading] = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [connMsg, setConnMsg] = useState('');
+  const [deviceToast, setDeviceToast] = useState('');
 
   useEffect(() => {
     apiClient.get('/patient/privacy-consent').then((res) => setGdprHistory(res.data.data)).catch(() => {});
   }, [user]);
+
+  // Detects OAuth callback redirect
+  useEffect(() => {
+    if (searchParams.get('device') === 'connected') {
+      const provider = searchParams.get('provider') || 'google_health';
+      setDeviceToast(`Dispositivo ${provider === 'google_health' ? 'Google Health' : provider} collegato con successo!`);
+      setSearchParams({}, { replace: true });
+      fetchConnections();
+    }
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (user?.role === 'patient') fetchConnections();
+  }, [user]);
+
+  const fetchConnections = async () => {
+    setConnLoading(true);
+    try {
+      const res = await apiClient.get('/devices/connections');
+      setConnections(res.data.data || []);
+    } catch {}
+    setConnLoading(false);
+  };
+
+  const handleConnect = async (provider: string) => {
+    setConnMsg('');
+    try {
+      const res = await apiClient.get('/devices/oauth-url', { params: { provider } });
+      window.location.href = res.data.url;
+    } catch (err: any) {
+      setConnMsg(err.response?.data?.error || 'Errore OAuth');
+    }
+  };
+
+  const handleUpgrade = async () => {
+    setConnMsg('');
+    try {
+      const res = await apiClient.post('/devices/upgrade-to-google');
+      window.location.href = res.data.url;
+    } catch (err: any) {
+      setConnMsg(err.response?.data?.error || 'Errore upgrade');
+    }
+  };
+
+  const handleSync = async (provider: string) => {
+    setSyncingId(provider);
+    setConnMsg('');
+    try {
+      const res = await apiClient.post(`/devices/sync/${provider}`);
+      const { synced, errors } = res.data;
+      if (errors?.length) {
+        setConnMsg(`Sincronizzato ${synced} valori. Errori: ${errors.slice(0, 3).join(', ')}`);
+      } else {
+        setConnMsg(`Sincronizzati ${synced} nuovi valori!`);
+      }
+    } catch (err: any) {
+      setConnMsg(err.response?.data?.error || 'Errore sincronizzazione');
+    }
+    setSyncingId(null);
+    fetchConnections();
+  };
+
+  const handleDisconnect = async (id: string) => {
+    if (!confirm('Rimuovere questa connessione?')) return;
+    setConnMsg('');
+    try {
+      await apiClient.delete(`/devices/connections/${id}`);
+      setConnMsg('Connessione rimossa');
+      fetchConnections();
+    } catch (err: any) {
+      setConnMsg(err.response?.data?.error || 'Errore rimozione');
+    }
+  };
 
   const handleGdprAccept = async () => {
     setGdprMsg('');
@@ -134,7 +213,6 @@ export function Profile() {
       if (Object.keys(body).length === 0) { setEditing(false); return; }
 
       await apiClient.put('/auth/profile', body);
-      const me = await apiClient.get('/auth/me');
       setMsg('Profilo aggiornato');
       setEditing(false);
       window.location.reload();
@@ -142,6 +220,8 @@ export function Profile() {
       setErr(err.response?.data?.error || 'Aggiornamento fallito');
     }
   };
+
+  const activeConnections = connections.filter((c) => c.active);
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -153,6 +233,14 @@ export function Profile() {
           <button onClick={() => setEditing(false)} className="bg-gray-300 text-gray-700 px-3 py-1.5 rounded text-sm hover:bg-gray-400">Annulla</button>
         )}
       </div>
+
+      {/* Device connected toast */}
+      {deviceToast && (
+        <div className="mb-4 p-3 rounded-lg border text-sm bg-green-50 border-green-200 text-green-700">
+          {deviceToast}
+          <button onClick={() => setDeviceToast('')} className="ml-2 underline text-xs">Chiudi</button>
+        </div>
+      )}
 
       {/* Email verification status */}
       {user.role !== 'admin' && (
@@ -213,7 +301,7 @@ export function Profile() {
 
       {/* Must change password banner */}
       {searchParams.get('mustChangePassword') === '1' && (
-        <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-3 rounded-lg text-sm">
+        <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-3 rounded-lg text-sm mt-4">
           <strong>Password temporanea.</strong> Devi cambiare la password prima di proseguire.
         </div>
       )}
@@ -241,6 +329,82 @@ export function Profile() {
           {cpErr && <p className="text-xs text-red-600">{cpErr}</p>}
         </form>
       </div>
+
+      {/* Device Connections — visible only for patients */}
+      {user.role === 'patient' && (
+        <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border space-y-4">
+          <h2 className="text-lg font-semibold">Dispositivi Connessi</h2>
+          <p className="text-xs text-gray-500">
+            Collega il tuo account Fitbit per importare automaticamente le misurazioni.
+          </p>
+
+          {deviceToast && (
+            <div className="p-3 rounded-lg border text-sm bg-green-50 border-green-200 text-green-700">
+              {deviceToast}
+              <button onClick={() => setDeviceToast('')} className="ml-2 underline text-xs">Chiudi</button>
+            </div>
+          )}
+
+          {connLoading ? (
+            <p className="text-sm text-gray-400">Caricamento...</p>
+          ) : (
+            <div className="space-y-3">
+              {activeConnections.length === 0 && !connLoading && (
+                <p className="text-sm text-gray-500 italic">Nessun dispositivo connesso.</p>
+              )}
+
+              {activeConnections.map((conn) => (
+                <div key={conn._id} className="border rounded p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{conn.provider === 'google_health' ? '🔵' : '💚'}</span>
+                    <div>
+                      <p className="text-sm font-medium">{conn.name}</p>
+                      <p className="text-xs text-gray-400">
+                        {conn.oauthType === 'google' ? 'Google OAuth' : 'Fitbit OAuth'}
+                        {conn.lastSync && ` — Ultimo sync: ${new Date(conn.lastSync).toLocaleString()}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleSync(conn.provider)}
+                      disabled={syncingId === conn.provider}
+                      className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
+                    >
+                      {syncingId === conn.provider ? 'Sync...' : 'Sincronizza'}
+                    </button>
+                    <button
+                      onClick={() => handleDisconnect(conn._id)}
+                      className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200"
+                    >
+                      Rimuovi
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => handleConnect('google_health')}
+              className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
+            >
+              Collega con Google
+            </button>
+            {connections.some((c) => c.provider === 'fitbit' && c.active) && (
+              <button
+                onClick={handleUpgrade}
+                className="bg-yellow-500 text-white px-4 py-1.5 rounded text-sm hover:bg-yellow-600"
+              >
+                Aggiorna a Google
+              </button>
+            )}
+          </div>
+
+          {connMsg && <p className="text-xs text-green-600">{connMsg}</p>}
+        </div>
+      )}
 
       {/* GDPR Privacy Consent */}
       <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border space-y-4">
@@ -275,7 +439,7 @@ export function Profile() {
               </div>
             </div>
           )}
-        </div>
+      </div>
     </div>
   );
 }
