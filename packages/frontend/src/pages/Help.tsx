@@ -1,25 +1,9 @@
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
-import { GuideButton } from '../components/GuideButton';
-
-const guides: Record<string, { title: string; description: string; steps: number }> = {
-  doctor: {
-    title: 'Guida per Medici',
-    description: 'Tour interattivo delle funzionalità dedicate ai medici.',
-    steps: 13,
-  },
-  patient: {
-    title: 'Guida per Pazienti',
-    description: 'Tour interattivo delle funzionalità dedicate ai pazienti.',
-    steps: 8,
-  },
-};
 
 export function Help() {
   const { user } = useAuth();
   const [showDetails, setShowDetails] = useState<string | null>(null);
-
-  const guide = user?.role ? guides[user.role] : null;
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -29,17 +13,6 @@ export function Help() {
           Tour interattivi per conoscere le funzionalità della piattaforma.
         </p>
       </div>
-
-      {!guide ? (
-        <p className="text-sm text-gray-500">Nessuna guida disponibile per il tuo ruolo.</p>
-      ) : (
-        <div className="bg-white rounded-lg shadow-sm border p-5 space-y-3">
-          <h3 className="font-semibold">{guide.title}</h3>
-          <p className="text-sm text-gray-600">{guide.description}</p>
-          <p className="text-xs text-gray-400">{guide.steps} step</p>
-          <GuideButton className="bg-blue-600 text-white hover:bg-blue-700" />
-        </div>
-      )}
 
       <div className="bg-white rounded-lg shadow-sm border p-5 space-y-3">
         <h3 className="font-semibold">FAQ Rapide</h3>

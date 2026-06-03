@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { NotificationBell } from './NotificationBell';
+import { GuideButton } from './GuideButton';
 
 const roleLabel: Record<string, string> = {
   patient: 'Paziente',
@@ -82,7 +83,6 @@ export function Navbar() {
     <>
       {item('Profilo', '/profile')}
       {user.role === 'patient' && item('Le Mie Misure', '/measurements')}
-      {item('Guida', '/help')}
       {item('Privacy', '/privacy')}
     </>
   );
@@ -138,6 +138,7 @@ export function Navbar() {
           </div>
           <div className="flex items-center gap-2">
             <div id="nav-notification-bell"><NotificationBell /></div>
+            <GuideButton />
             <span className="hidden md:inline text-sm text-gray-500">{user.name} ({roleLabel[user.role] || user.role})</span>
             <button onClick={() => { close(); handleLogout(); }}
               className="hidden md:inline-flex items-center gap-1 px-2 py-1.5 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
@@ -242,6 +243,9 @@ function MobileNav({ user, close, handleLogout }: { user: any; close: () => void
           {item('Privacy', '/privacy')}
         </Section>
       )}
+      <div className="px-4 py-1.5">
+        <GuideButton />
+      </div>
       <hr className="my-2 border-gray-200" />
       <div className="px-4 pb-1 text-xs text-gray-400">{user.name} ({roleLabel[user.role] || user.role})</div>
       <button onClick={() => { close(); handleLogout(); }}
