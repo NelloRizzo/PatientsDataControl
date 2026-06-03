@@ -221,15 +221,18 @@ export function Analisi() {
             const color = TYPE_COLORS[colorIdx % TYPE_COLORS.length];
             newSeries.push({ key, label: `${t.name} — ${f.name} (${agg})`, color, unit: f.unit });
             // KPI bands
-            if (f.alertMin != null || f.alertMax != null || f.dangerMin != null || f.dangerMax != null) {
-              const allKpis: { val: number; fill: string; label: string }[] = [];
-              if (f.dangerMin != null) allKpis.push({ val: f.dangerMin, fill: '#ef4444', label: `${t.name} danger min` });
-              if (f.alertMin != null) allKpis.push({ val: f.alertMin, fill: '#eab308', label: `${t.name} alert min` });
-              if (f.alertMax != null) allKpis.push({ val: f.alertMax, fill: '#eab308', label: `${t.name} alert max` });
-              if (f.dangerMax != null) allKpis.push({ val: f.dangerMax, fill: '#ef4444', label: `${t.name} danger max` });
-              for (const k of allKpis) {
-                newKpiBands.push({ label: k.label, y1: k.val, y2: k.val + (k.fill === '#ef4444' ? 0.5 : 0.5), fill: k.fill, fillOpacity: 0.15 });
-              }
+            const dMin = f.dangerMin ?? null;
+            const aMin = f.alertMin ?? null;
+            const aMax = f.alertMax ?? null;
+            const dMax = f.dangerMax ?? null;
+            if (dMin != null && aMin != null && dMin < aMin) {
+              newKpiBands.push({ y1: dMin, y2: aMin, fill: '#eab308', fillOpacity: 0.12 });
+            }
+            if (aMin != null && aMax != null) {
+              newKpiBands.push({ y1: aMin, y2: aMax, fill: '#22c55e', fillOpacity: 0.08 });
+            }
+            if (aMax != null && dMax != null && aMax < dMax) {
+              newKpiBands.push({ y1: aMax, y2: dMax, fill: '#eab308', fillOpacity: 0.12 });
             }
             colorIdx++;
           }
@@ -243,6 +246,20 @@ export function Analisi() {
             const key = `${r.prefix}__${f.key}`;
             const color = PATIENT_COLORS[colorIdx % PATIENT_COLORS.length];
             newSeries.push({ key, label: `${r.prefix} — ${f.name} (${agg})`, color, unit: f.unit });
+            // KPI bands (same thresholds per type, regardless of patient)
+            const dMin = f.dangerMin ?? null;
+            const aMin = f.alertMin ?? null;
+            const aMax = f.alertMax ?? null;
+            const dMax = f.dangerMax ?? null;
+            if (dMin != null && aMin != null && dMin < aMin) {
+              newKpiBands.push({ y1: dMin, y2: aMin, fill: '#eab308', fillOpacity: 0.12 });
+            }
+            if (aMin != null && aMax != null) {
+              newKpiBands.push({ y1: aMin, y2: aMax, fill: '#22c55e', fillOpacity: 0.08 });
+            }
+            if (aMax != null && dMax != null && aMax < dMax) {
+              newKpiBands.push({ y1: aMax, y2: dMax, fill: '#eab308', fillOpacity: 0.12 });
+            }
             colorIdx++;
           }
         }

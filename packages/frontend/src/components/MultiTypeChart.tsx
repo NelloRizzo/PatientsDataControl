@@ -13,7 +13,6 @@ export interface SeriesDefinition {
 }
 
 export interface KpiBand {
-  label: string;
   y1: number;
   y2: number;
   fill: string;
@@ -113,7 +112,7 @@ export function MultiTypeChart({ data, series, chartType, showKpi, kpiBands, sho
     for (let i = 0; i < kpiBands.length; i++) {
       const b = kpiBands[i];
       chartChildren.push(
-        <ReferenceArea key={`kpi-${i}`} y1={b.y1} y2={b.y2} fill={b.fill} fillOpacity={b.fillOpacity} label={b.label} />
+        <ReferenceArea key={`kpi-${i}`} y1={b.y1} y2={b.y2} fill={b.fill} fillOpacity={b.fillOpacity} />
       );
     }
   }
