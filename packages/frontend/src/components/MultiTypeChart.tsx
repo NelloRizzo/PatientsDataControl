@@ -19,12 +19,19 @@ export interface KpiBand {
   fillOpacity: number;
 }
 
+export interface KpiThresholdLine {
+  value: number;
+  label: string;
+  color: string;
+}
+
 export interface MultiTypeChartProps {
   data: Record<string, any>[];
   series: SeriesDefinition[];
   chartType: ChartType;
   showKpi: boolean;
   kpiBands: KpiBand[];
+  kpiThresholdLines?: KpiThresholdLine[];
   showTrend: boolean;
   trendMethod: TrendMethod;
   trendWindow: number;
@@ -72,7 +79,7 @@ function calculateLinearRegression(data: Record<string, any>[], key: string): (n
   return data.map((_, i) => Math.round((slope * i + intercept) * 100) / 100);
 }
 
-export function MultiTypeChart({ data, series, chartType, showKpi, kpiBands, showTrend, trendMethod, trendWindow, loading }: MultiTypeChartProps) {
+export function MultiTypeChart({ data, series, chartType, showKpi, kpiBands, kpiThresholdLines, showTrend, trendMethod, trendWindow, loading }: MultiTypeChartProps) {
   if (loading) {
     return <p className="text-gray-500 text-center py-12">Caricamento grafico...</p>;
   }
@@ -114,6 +121,21 @@ export function MultiTypeChart({ data, series, chartType, showKpi, kpiBands, sho
       chartChildren.push(
         <ReferenceArea key={`kpi-${i}`} y1={b.y1} y2={b.y2} fill={b.fill} fillOpacity={b.fillOpacity} />
       );
+    }
+    if (kpiThresholdLines) {
+      for (let i = 0; i < kpiThresholdLines.length; i++) {
+        const tl = kpiThresholdLines[i];
+        chartChildren.push(
+          <ReferenceLine
+            key={`kpi-line-${i}`}
+            y={tl.value}
+            stroke={tl.color}
+            strokeDasharray="3 3"
+            strokeWidth={1}
+            label={{ value: tl.label, position: 'left', fill: tl.color, fontSize: 10 }}
+          />
+        );
+      }
     }
   }
 

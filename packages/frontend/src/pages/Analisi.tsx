@@ -3,7 +3,7 @@ import { getMeasurementTypes } from '../api/measurementTypes';
 import { getChartConfigs, createChartConfig, deleteChartConfig } from '../api/chartConfigs';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../api/client';
-import { MultiTypeChart, type SeriesDefinition, type KpiBand } from '../components/MultiTypeChart';
+import { MultiTypeChart, type SeriesDefinition, type KpiBand, type KpiThresholdLine } from '../components/MultiTypeChart';
 import type {
   IMeasurementTypeConfig, IChartConfig, CreateChartConfigRequest, TimeGroupBy, ChartType,
   AggregationFunction, ScopeMode, CompareView, TrendMethod, TimeSeriesPoint,
@@ -69,6 +69,7 @@ export function Analisi() {
   const [chartData, setChartData] = useState<Record<string, any>[]>([]);
   const [series, setSeries] = useState<SeriesDefinition[]>([]);
   const [kpiBands, setKpiBands] = useState<KpiBand[]>([]);
+  const [kpiThresholdLines, setKpiThresholdLines] = useState<KpiThresholdLine[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -264,8 +265,26 @@ export function Analisi() {
           }
         }
       }
+      const allThresholds = new Map<string, { value: number; color: string }>();
+      const addThreshold = (value: number, label: string, color: string) => {
+        const key = `${value}`;
+        if (!allThresholds.has(key)) allThresholds.set(key, { value, color });
+      };
+      for (const t of activeTypes) {
+        for (const f of t.fields) {
+          if (f.dangerMin != null) addThreshold(f.dangerMin, `${f.dangerMin}${f.unit ? ' ' + f.unit : ''}`, '#ef4444');
+          if (f.alertMin != null) addThreshold(f.alertMin, `${f.alertMin}${f.unit ? ' ' + f.unit : ''}`, '#ca8a04');
+          if (f.alertMax != null) addThreshold(f.alertMax, `${f.alertMax}${f.unit ? ' ' + f.unit : ''}`, '#ca8a04');
+          if (f.dangerMax != null) addThreshold(f.dangerMax, `${f.dangerMax}${f.unit ? ' ' + f.unit : ''}`, '#ef4444');
+        }
+      }
+      const newThresholdLines: KpiThresholdLine[] = Array.from(allThresholds.entries())
+        .filter(([_, v]) => v.value > 0)
+        .sort((a, b) => a[1].value - b[1].value)
+        .map(([key, v]) => ({ value: v.value, label: key, color: v.color }));
       setSeries(newSeries);
       setKpiBands(newKpiBands);
+      setKpiThresholdLines(newThresholdLines);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Errore caricamento dati');
     } finally {
@@ -536,6 +555,7 @@ export function Analisi() {
             chartType={chartType}
             showKpi={showKpi}
             kpiBands={kpiBands}
+            kpiThresholdLines={kpiThresholdLines}
             showTrend={showTrend}
             trendMethod={trendMethod}
             trendWindow={trendWindow}
@@ -563,6 +583,7 @@ export function Analisi() {
                   chartType={chartType}
                   showKpi={showKpi}
                   kpiBands={kpiBands}
+                  kpiThresholdLines={kpiThresholdLines}
                   showTrend={showTrend}
                   trendMethod={trendMethod}
                   trendWindow={trendWindow}
