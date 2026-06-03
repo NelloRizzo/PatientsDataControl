@@ -19,10 +19,22 @@ function getIcon(key: string) {
   return icons[key] || '📋';
 }
 
+function loadPreferred(userId: string): string[] {
+  try {
+    const raw = localStorage.getItem(`hb_preferred_${userId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function savePreferred(userId: string, keys: string[]) {
+  localStorage.setItem(`hb_preferred_${userId}`, JSON.stringify(keys));
+}
+
 export function MobileMeasurement() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [types, setTypes] = useState<IMeasurementTypeConfig[]>([]);
+  const [preferredKeys, setPreferredKeys] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
   const [values, setValues] = useState<Record<string, string>>({});
   const [units, setUnits] = useState<Record<string, string>>({});
@@ -32,11 +44,32 @@ export function MobileMeasurement() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getMeasurementTypes().then(setTypes).catch(() => {});
-  }, []);
+    getMeasurementTypes().then((t) => {
+      setTypes(t);
+      if (user?._id) setPreferredKeys(loadPreferred(user._id));
+    }).catch(() => {});
+  }, [user?._id]);
 
-  const currentType = types[index];
-  const total = types.length;
+  const sortedTypes = types
+    .filter((t) => t.active !== false)
+    .sort((a, b) => {
+      const aP = preferredKeys.includes(a.key) ? 0 : 1;
+      const bP = preferredKeys.includes(b.key) ? 0 : 1;
+      return aP - bP;
+    });
+
+  const currentType = sortedTypes[index];
+  const total = sortedTypes.length;
+
+  const togglePreferred = (key: string) => {
+    setPreferredKeys((prev) => {
+      const next = prev.includes(key)
+        ? prev.filter((k) => k !== key)
+        : [...prev, key];
+      if (user?._id) savePreferred(user._id, next);
+      return next;
+    });
+  };
 
   useEffect(() => {
     setValues({});
@@ -122,12 +155,19 @@ export function MobileMeasurement() {
               {/* Type header */}
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-3xl">{getIcon(currentType.key)}</span>
-                <div>
+                <div className="flex-1">
                   <p className="text-base font-bold text-gray-800">{currentType.name}</p>
                   {currentType.description && (
                     <p className="text-xs text-gray-400">{currentType.description}</p>
                   )}
                 </div>
+                <button
+                  onClick={() => togglePreferred(currentType.key)}
+                  className={`text-2xl transition-all ${preferredKeys.includes(currentType.key) ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'}`}
+                  aria-label={preferredKeys.includes(currentType.key) ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}
+                >
+                  {preferredKeys.includes(currentType.key) ? '★' : '☆'}
+                </button>
               </div>
 
               {/* Fields */}
