@@ -24,6 +24,7 @@ import { DoctorContractStatus } from './pages/DoctorContractStatus';
 import { DoctorPatientMedications } from './pages/DoctorPatientMedications';
 import { DoctorTickets } from './pages/DoctorTickets';
 import { AdminTickets } from './pages/AdminTickets';
+import { Analisi } from './pages/Analisi';
 import { Help } from './pages/Help';
 import { Notifications } from './pages/Notifications';
 import { VerifyEmail } from './pages/VerifyEmail';
@@ -73,6 +74,7 @@ export function App() {
                 <Route path="/doctor/patients/:patientId/medications" element={<ProtectedRoute roles={['doctor']}><DoctorPatientMedications /></ProtectedRoute>} />
                 <Route path="/doctor/tickets" element={<ProtectedRoute roles={['doctor']}><DoctorTickets /></ProtectedRoute>} />
                 <Route path="/admin/tickets" element={<ProtectedRoute roles={['admin']}><AdminTickets /></ProtectedRoute>} />
+                <Route path="/analisi" element={<ProtectedRoute roles={['doctor', 'analyst']}><Analisi /></ProtectedRoute>} />
                 <Route path="/help" element={<Help />} />
               </Route>
             </Route>

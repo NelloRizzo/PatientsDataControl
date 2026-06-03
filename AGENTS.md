@@ -270,6 +270,7 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - **CSV export endpoint**: `GET /api/analyst/export/csv` e `GET /api/doctor/export/csv` — esporta misurazioni in formato CSV con filtri (type, from, to, sesso, età, indirizzo). Colonne dinamiche in base ai field keys del tipo. Usabile da Google Sheets via `=IMPORTDATA(url)`. Headers: `Content-Type: text/csv`, `Content-Disposition: attachment`.
 - **AI estrazione — auto-creazione nuovi tipi misurazione**: IA ora estrai TUTTI i valori medici (non solo tipi noti). Se un tipo non esiste in `MeasurementTypeConfig`, viene creato automaticamente con `active: false`, `category: "Auto-Estratto"`, `macrogroup: "Auto-Estratto"`. Frontend mostra badge `🆕 Nuovo` e nota informativa. L'admin deve attivare il tipo per renderlo visibile.
 - **BMI display + storico grafico**: backend endpoint `GET /api/patient/bmi/timeseries` (calcola BMI storico usando ultima altezza + pesi nel tempo), frontend card con BMI attuale + sparkline in DoctorPatients.tsx (`#patient-bmi-section` prima di `#latest-measurements`) e Dashboard.tsx. Seed aggiornato con misure di altezza per tutti i pazienti.
+- **Pagina Analisi multi-misura**: nuova pagina `/analisi` in Strumenti per dottore e analista. Seleziona più tipi misurazione con aggregazione per-type, confronta pazienti (sovrapposto o separato), linee KPI con aree colorate (ReferenceArea), trend SMA/regressione lineare, date range selezionabile, e salvataggio/caricamento configurazioni. Nessuna modifica backend — chiama endpoint timeseries esistenti in parallelo e mergea i risultati.
 
 ### In Progress
 - (none)
@@ -294,6 +295,18 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - `#patient-chart-section`: placeholder "Loading chart..." → "Caricamento grafico...", "Select a measurement type..." → "Seleziona un tipo per visualizzare il grafico"
 - `#patient-my-doctors`: titolo "My Doctors" → "I Miei Dottori"
 
+### Pagina Analisi Multi-Misura
+- **Nuova pagina `/analisi`**: accessibile da menu Strumenti per dottori e analisti
+- **Scope selezionabile**: paziente singolo, confronto multi-paziente, o aggregato (con filtri demografici per analista)
+- **Multi-tipo con aggregazione per-type**: ogni tipo misurazione ha la propria select Media/Minimo/Massimo
+- **Confronto pazienti**: seleziona 2+ pazienti, visualizzazione sovrapposta (stesso chart) o separata (un chart per paziente)
+- **KPI bands**: `ReferenceArea` colorate (verde range normale, giallo alert, rosso danger) basate su `alertMin/Max` e `dangerMin/Max` del MeasurementTypeConfig
+- **Trend**: media mobile (SMA con finestra configurabile) o regressione lineare, renderizzata come linea tratteggiata
+- **Date range**: input Da/A selezionabili
+- **Salvataggio configurazioni**: salva/carica/elimina configurazioni multi-tipo espanse (ChartConfig esteso con `types`, `typeAggregations`, `showKpi`, `showTrend`, `scopeMode`, ecc.)
+- **Zero modifiche backend**: chiama `Promise.all` sugli endpoint timeseries esistenti e mergea i risultati lato client
+- **File**: `MultiTypeChart.tsx`, `Analisi.tsx`, `Navbar.tsx` (link), `App.tsx` (route), `ChartConfig.ts` (model esteso), `chart.ts`/`schemas.ts` (shared types estesi)
+
 ### BMI Card + Grafico Storico
 - **Backend**: nuovo `GET /api/patient/bmi/timeseries` — calcola BMI storico usando ultima altezza nota + ogni peso nel tempo, con supporto `from`/`to` query params
 - **DoctorPatients.tsx**: BMI card spostata da `#patient-actions` a `#patient-bmi-section` (prima di `#latest-measurements`), con sparkline Recharts (120px, linea blu, tooltip data+BMI)
@@ -301,7 +314,6 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - **Seed**: aggiunte misure di altezza una tantum per ogni paziente (prima del loop dei 30 giorni), con valori realistici (160-182 cm)
 
 ## Future Phases
-- **Phase 2**: Advanced charts, Looker Studio Community Connector
 - **Phase 3**: BigQuery sync, device OAuth integrations (Fitbit, Google Fit, Samsung Health), webhook endpoint
 - **Notifiche push**: per richieste di condivisione e conferma presa in carico
 - **Integrazione Samsung Health (API REST)**: previa approvazione Samsung Developer Program. OAuth 2.0, sync automatico su `DeviceConnection` (provider `'samsung'`) di pressione, battito, peso, glucosio, SpO₂, passi. Endpoint backend `/api/devices/samsung/*`, frontend in Profile con stato connessione e "Sincronizza ora"

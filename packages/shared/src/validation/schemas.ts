@@ -230,6 +230,15 @@ export const createChartConfigSchema = z.object({
   fields: z.array(z.string().min(1)).min(1),
   chartType: z.enum(['line', 'area', 'bar']).default('line'),
   dateRange: z.object({ from: z.string().optional(), to: z.string().optional() }).optional(),
+  types: z.array(z.string().min(1)).optional(),
+  typeAggregations: z.record(z.enum(['avg', 'min', 'max'])).optional(),
+  showKpi: z.boolean().optional(),
+  showTrend: z.boolean().optional(),
+  trendMethod: z.enum(['sma', 'linear']).optional(),
+  trendWindow: z.number().int().positive().optional(),
+  scopeMode: z.enum(['single', 'compare', 'aggregated']).optional(),
+  compareView: z.enum(['overlaid', 'separate']).optional(),
+  patientIds: z.array(z.string().min(1)).optional(),
 });
 
 export const updateChartConfigSchema = z.object({
@@ -240,6 +249,15 @@ export const updateChartConfigSchema = z.object({
   fields: z.array(z.string().min(1)).min(1).optional(),
   chartType: z.enum(['line', 'area', 'bar']).optional(),
   dateRange: z.object({ from: z.string().optional(), to: z.string().optional() }).optional(),
+  types: z.array(z.string().min(1)).optional(),
+  typeAggregations: z.record(z.enum(['avg', 'min', 'max'])).optional(),
+  showKpi: z.boolean().optional(),
+  showTrend: z.boolean().optional(),
+  trendMethod: z.enum(['sma', 'linear']).optional(),
+  trendWindow: z.number().int().positive().optional(),
+  scopeMode: z.enum(['single', 'compare', 'aggregated']).optional(),
+  compareView: z.enum(['overlaid', 'separate']).optional(),
+  patientIds: z.array(z.string().min(1)).optional(),
 });
 
 export const updateAlertTemplateSchema = z.object({

@@ -110,6 +110,7 @@ export function Navbar() {
                     {item('Alert', '/doctor/alerts', 'alerts-link')}
                   </Dropdown></div>
                   <div id="tools-menu"><Dropdown name="tools" label="Strumenti">
+                    {item('Analisi', '/analisi')}
                     {item('Importa Misurazioni', '/measurements/import', 'import-link')}
                     {item('Contratto', '/doctor/contract')}
                     {item('Ticket e Segnalazioni', '/doctor/tickets', 'tickets-link')}
@@ -132,7 +133,12 @@ export function Navbar() {
                 </>
               )}
               {user.role === 'analyst' && (
-                <div id="nav-profile"><Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown></div>
+                <>
+                  <div id="tools-menu"><Dropdown name="tools" label="Strumenti">
+                    {item('Analisi', '/analisi')}
+                  </Dropdown></div>
+                  <div id="nav-profile"><Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown></div>
+                </>
               )}
             </div>
           </div>
@@ -210,6 +216,7 @@ function MobileNav({ user, close, handleLogout }: { user: any; close: () => void
             {item('Alert', '/doctor/alerts', 'alerts-link')}
           </Section>
           <Section name="tools" label="Strumenti">
+            {item('Analisi', '/analisi')}
             {item('Importa Misurazioni', '/measurements/import', 'import-link')}
             {item('Contratto', '/doctor/contract')}
             {item('Ticket e Segnalazioni', '/doctor/tickets', 'tickets-link')}
@@ -238,10 +245,15 @@ function MobileNav({ user, close, handleLogout }: { user: any; close: () => void
         </>
       )}
       {user.role === 'analyst' && (
-        <Section name="profile" label="Profilo">
-          {item('Profilo', '/profile')}
-          {item('Privacy', '/privacy')}
-        </Section>
+        <>
+          <Section name="tools" label="Strumenti">
+            {item('Analisi', '/analisi')}
+          </Section>
+          <Section name="profile" label="Profilo">
+            {item('Profilo', '/profile')}
+            {item('Privacy', '/privacy')}
+          </Section>
+        </>
       )}
       <div className="px-4 py-1.5">
         <GuideButton />

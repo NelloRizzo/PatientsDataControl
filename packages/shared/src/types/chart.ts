@@ -4,6 +4,12 @@ export type AggregationFunction = 'avg' | 'min' | 'max';
 
 export type ChartType = 'line' | 'area' | 'bar';
 
+export type ScopeMode = 'single' | 'compare' | 'aggregated';
+
+export type CompareView = 'overlaid' | 'separate';
+
+export type TrendMethod = 'sma' | 'linear';
+
 export type PatientFilterField =
   | 'sex'
   | 'age'
@@ -37,6 +43,16 @@ export interface IChartConfig {
     from?: string;
     to?: string;
   };
+  // Nuovi campi multi-tipo
+  types?: string[];
+  typeAggregations?: Record<string, AggregationFunction>;
+  showKpi?: boolean;
+  showTrend?: boolean;
+  trendMethod?: TrendMethod;
+  trendWindow?: number;
+  scopeMode?: ScopeMode;
+  compareView?: CompareView;
+  patientIds?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -53,9 +69,24 @@ export interface CreateChartConfigRequest {
     from?: string;
     to?: string;
   };
+  // Nuovi campi multi-tipo (opzionali)
+  types?: string[];
+  typeAggregations?: Record<string, AggregationFunction>;
+  showKpi?: boolean;
+  showTrend?: boolean;
+  trendMethod?: TrendMethod;
+  trendWindow?: number;
+  scopeMode?: ScopeMode;
+  compareView?: CompareView;
+  patientIds?: string[];
 }
 
 export interface TimeSeriesPoint {
+  timestamp: string;
+  values: Record<string, number>;
+}
+
+export interface MultiTimeSeriesPoint {
   timestamp: string;
   values: Record<string, number>;
 }
