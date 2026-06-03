@@ -24,6 +24,7 @@ router.put('/doctors/:doctorId/sharing', validate(updateSharingSchema), patientC
 
 // BMI
 router.get('/bmi', patientController.getBmi);
+router.get('/bmi/timeseries', patientController.getBmiTimeSeries);
 
 // Medications
 router.get('/medications', medicationController.myMedications);

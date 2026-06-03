@@ -19,13 +19,60 @@ const BMI_LEVELS = [
   { min: 40, max: Infinity, label: 'Obesity Class III', color: 'text-red-900' },
 ];
 
+export async function getBmiTimeSeries(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = (req.query.userId as string) || req.params.userId || req.userId!;
+    const { from, to } = req.query as { from?: string; to?: string };
+
+    const heightDoc = await Measurement.findOne({ userId, type: 'height' }).sort({ timestamp: -1 }).lean();
+    if (!heightDoc) {
+      res.json({ data: [] });
+      return;
+    }
+    const heightCm = (heightDoc as any).values?.value;
+    if (!heightCm) {
+      res.json({ data: [] });
+      return;
+    }
+    const heightM = heightCm / 100;
+
+    const match: any = { userId: new mongoose.Types.ObjectId(userId), type: 'weight' };
+    if (from || to) {
+      match.timestamp = {};
+      if (from) match.timestamp.$gte = new Date(from);
+      if (to) match.timestamp.$lte = new Date(to);
+    }
+
+    const weights = await Measurement.find(match).sort({ timestamp: 1 }).lean();
+
+    const data = weights.map((w: any) => {
+      const weightKg = w.values?.value;
+      if (!weightKg) return null;
+      const bmi = weightKg / (heightM * heightM);
+      return {
+        timestamp: w.timestamp?.toISOString?.(),
+        bmi: Math.round(bmi * 100) / 100,
+        weightKg,
+      };
+    }).filter(Boolean);
+
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getBmi(
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const userId = req.params.userId || req.userId!;
+    const userId = (req.query.userId as string) || req.params.userId || req.userId!;
 
     const [heightDoc, weightDoc] = await Promise.all([
       Measurement.findOne({ userId, type: 'height' }).sort({ timestamp: -1 }).lean(),

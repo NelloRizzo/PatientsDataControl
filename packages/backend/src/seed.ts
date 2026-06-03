@@ -300,6 +300,19 @@ async function seed() {
   const now = new Date();
   const measurementDocs: any[] = [];
 
+  // Height measurements (one per patient, needed for BMI)
+  const baseHeights = [175, 165, 182, 160, 178];
+  for (const patient of patients) {
+    measurementDocs.push({
+      userId: patient._id,
+      type: 'height',
+      values: { value: baseHeights[patients.indexOf(patient)] },
+      units: { value: 'cm' },
+      source: 'manual',
+      timestamp: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+    });
+  }
+
   for (const patient of patients) {
     for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
       const date = new Date(now);

@@ -5,6 +5,7 @@ export interface ExtractedField {
   confidence: number; // 0–100
   alertStatus?: 'normal' | 'alert' | 'danger';
   alertMessage?: string;
+  name?: string;
 }
 
 export interface ExtractionResult {
@@ -13,6 +14,7 @@ export interface ExtractionResult {
   fields: ExtractedField[];
   notes?: string;
   overallConfidence: number; // 0–100
+  isNew?: boolean;
 }
 
 export interface ExtractionWarning {

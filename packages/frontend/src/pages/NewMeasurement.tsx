@@ -419,6 +419,7 @@ export function NewMeasurement() {
                     />
                     <span className="text-lg">{getIcon(result.type)}</span>
                     <span className="font-medium text-sm">{result.typeName}</span>
+                    {result.isNew && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-semibold">🆕 Nuovo</span>}
                   </label>
                   <ConfidenceBadge value={result.overallConfidence} />
                 </div>
@@ -458,6 +459,12 @@ export function NewMeasurement() {
               );
             })}
 
+            {globalResults.some(r => r.isNew) && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg px-4 py-3 text-xs text-purple-700 mb-3">
+                I tipi contrassegnati con 🆕 Nuovo sono stati aggiunti automaticamente al sistema.
+                Un amministratore deve attivarli prima che appaiano tra i tipi di misurazione.
+              </div>
+            )}
             <div className="flex gap-2 sticky bottom-0 bg-white pt-3 border-t">
               <button
                 onClick={handleGlobalSaveSelected}

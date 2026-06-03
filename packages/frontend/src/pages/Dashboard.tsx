@@ -38,6 +38,11 @@ export function Dashboard() {
   const [takingId, setTakingId] = useState<string | null>(null);
   const [medMsg, setMedMsg] = useState('');
 
+  // BMI
+  const [bmi, setBmi] = useState<any>(null);
+  const [bmiHistory, setBmiHistory] = useState<any[]>([]);
+  const [bmiLoading, setBmiLoading] = useState(false);
+
   // My doctors
   const [myDoctors, setMyDoctors] = useState<any[]>([]);
   const [sharingDoctorId, setSharingDoctorId] = useState<string | null>(null);
@@ -55,6 +60,10 @@ export function Dashboard() {
       apiClient.get('/patient/doctors').then((res) => setMyDoctors(res.data.data)).catch(() => {});
       apiClient.get('/patient/medications').then((res) => setMedications(res.data.data)).catch(() => {});
       apiClient.get('/patient/medications/due').then((res) => setDueMeds(res.data.data)).catch(() => {});
+      setBmiLoading(true);
+      apiClient.get('/patient/bmi').then((res) => setBmi(res.data.data)).catch(() => setBmi(null));
+      apiClient.get('/patient/bmi/timeseries').then((res) => setBmiHistory(res.data.data || [])).catch(() => setBmiHistory([]))
+        .finally(() => setBmiLoading(false));
     }
   }, [user?.role]);
 
@@ -280,6 +289,49 @@ export function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* BMI Card */}
+      {user?.role === 'patient' && (
+        <div id="patient-bmi-section" className="bg-white rounded-lg shadow-sm border p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium">BMI</h3>
+            {bmi && (
+              <div className="flex items-center gap-4 text-xs text-gray-400">
+                <span>{bmi.heightCm} cm</span>
+                <span>{bmi.weightKg} kg</span>
+                <span>{bmi.measuredAt ? new Date(bmi.measuredAt).toLocaleDateString() : ''}</span>
+              </div>
+            )}
+          </div>
+          {bmiLoading ? (
+            <p className="text-xs text-gray-400">Caricamento BMI...</p>
+          ) : bmi ? (
+            <div className="flex items-center gap-6">
+              <div className="flex-shrink-0">
+                <p className={`text-3xl font-bold ${bmi.color || 'text-gray-900'}`}>{bmi.bmi}</p>
+                <p className={`text-sm font-medium ${bmi.color || 'text-gray-500'}`}>{bmi.level}</p>
+              </div>
+              {bmiHistory.length > 1 && (
+                <div className="flex-1 min-w-0">
+                  <ResponsiveContainer width="100%" height={120}>
+                    <LineChart data={bmiHistory}>
+                      <XAxis dataKey="timestamp" tick={false} axisLine={false} />
+                      <YAxis domain={['dataMin - 1', 'dataMax + 1']} tick={false} axisLine={false} />
+                      <Tooltip
+                        labelFormatter={(v) => new Date(v).toLocaleDateString()}
+                        formatter={(val: any) => [Number(val).toFixed(1), 'BMI']}
+                      />
+                      <Line type="monotone" dataKey="bmi" stroke="#2563eb" dot={false} strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500">Servono misurazioni di peso e altezza</p>
+          )}
+        </div>
+      )}
 
       <div id="patient-chart-section" className="bg-white p-6 rounded-lg shadow-sm border">
         {loading ? (

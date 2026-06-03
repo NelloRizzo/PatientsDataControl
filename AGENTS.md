@@ -136,12 +136,14 @@ Chart configurations are saveable per user via `ChartConfig` model:
 | PUT | /api/doctor/patients/:patientId/medications/:id | Update prescription |
 | DELETE | /api/doctor/patients/:patientId/medications/:id | Delete prescription |
 | POST | /api/doctor/patients/:patientId/reset-password | Reset patient password |
+| GET | /api/doctor/export/csv | Export patients' measurements as CSV (type, from, to, demographic filters) |
 
 ### Analyst
 | Method | Path | Description |
 |---|---|---|
 | GET | /api/analyst/stats | Cross-patient stats (with demographic filters) |
 | GET | /api/analyst/timeseries | Cross-patient timeseries (with demographic filters) |
+| GET | /api/analyst/export/csv | Export cross-patient measurements as CSV (type, from, to, demographic filters) |
 
 ### Admin
 | Method | Path | Description |
@@ -264,6 +266,10 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - **Gate GDPR rimosso**: verifyGdprConsent rimossa da doctorController.ts, gdprBlocked rimosso da DoctorPatients.tsx, Privacy.tsx sezione 8 aggiornata (art. 9(2)(h))
 - **Sistema Ticket**: ITicket types (ticketNumber, severity, status), Ticket model, ticketController (create, myTickets, allTickets, update, stats), DoctorTickets.tsx (form + lista), AdminTickets.tsx (tabella + filtri + modale edit)
 - **Guide interattive (driver.js)**: libreria driver.js@1.4.0, doctorGuide.ts (15 step), patientGuide.ts (9 step), GuideButton.tsx, Help.tsx, Navbar link "Guida", id su elementi chiave
+- **Fix GuideButton — navigazione tra pagine**: `GuideButton` spostato in `Navbar.tsx` (desktop accanto a Esci, mobile prima del separatore) invece di essere solo in `Help.tsx`. Ora la guida sopravvive al cambio pagina perché Navbar è sempre montata.
+- **CSV export endpoint**: `GET /api/analyst/export/csv` e `GET /api/doctor/export/csv` — esporta misurazioni in formato CSV con filtri (type, from, to, sesso, età, indirizzo). Colonne dinamiche in base ai field keys del tipo. Usabile da Google Sheets via `=IMPORTDATA(url)`. Headers: `Content-Type: text/csv`, `Content-Disposition: attachment`.
+- **AI estrazione — auto-creazione nuovi tipi misurazione**: IA ora estrai TUTTI i valori medici (non solo tipi noti). Se un tipo non esiste in `MeasurementTypeConfig`, viene creato automaticamente con `active: false`, `category: "Auto-Estratto"`, `macrogroup: "Auto-Estratto"`. Frontend mostra badge `🆕 Nuovo` e nota informativa. L'admin deve attivare il tipo per renderlo visibile.
+- **BMI display + storico grafico**: backend endpoint `GET /api/patient/bmi/timeseries` (calcola BMI storico usando ultima altezza + pesi nel tempo), frontend card con BMI attuale + sparkline in DoctorPatients.tsx (`#patient-bmi-section` prima di `#latest-measurements`) e Dashboard.tsx. Seed aggiornato con misure di altezza per tutti i pazienti.
 
 ### In Progress
 - (none)
@@ -272,10 +278,8 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - (none)
 
 ### Triaged / Future
-- Export CSV/JSON endpoint
-- Advanced charts / Looker Studio connector
+- Advanced charts / Looker Studio Community Connector
 - BigQuery sync, device OAuth (Fitbit, Google Fit), webhook endpoint
-- Export storico BMI (grafico BMI nel tempo)
 - Notifiche push per richieste condivisione e conferma presa in carico
 
 ## Completed Features (Current Session)
@@ -290,10 +294,15 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - `#patient-chart-section`: placeholder "Loading chart..." → "Caricamento grafico...", "Select a measurement type..." → "Seleziona un tipo per visualizzare il grafico"
 - `#patient-my-doctors`: titolo "My Doctors" → "I Miei Dottori"
 
+### BMI Card + Grafico Storico
+- **Backend**: nuovo `GET /api/patient/bmi/timeseries` — calcola BMI storico usando ultima altezza nota + ogni peso nel tempo, con supporto `from`/`to` query params
+- **DoctorPatients.tsx**: BMI card spostata da `#patient-actions` a `#patient-bmi-section` (prima di `#latest-measurements`), con sparkline Recharts (120px, linea blu, tooltip data+BMI)
+- **Dashboard.tsx**: stesso componente BMI aggiunto per il paziente (prima di `#patient-chart-section`), visibile solo per ruolo `patient`
+- **Seed**: aggiunte misure di altezza una tantum per ogni paziente (prima del loop dei 30 giorni), con valori realistici (160-182 cm)
+
 ## Future Phases
-- **Phase 2**: Export CSV/JSON endpoint, advanced charts, Looker Studio Community Connector
+- **Phase 2**: Advanced charts, Looker Studio Community Connector
 - **Phase 3**: BigQuery sync, device OAuth integrations (Fitbit, Google Fit, Samsung Health), webhook endpoint
-- **Export storico BMI**: grafico BMI nel tempo
 - **Notifiche push**: per richieste di condivisione e conferma presa in carico
 - **Integrazione Samsung Health (API REST)**: previa approvazione Samsung Developer Program. OAuth 2.0, sync automatico su `DeviceConnection` (provider `'samsung'`) di pressione, battito, peso, glucosio, SpO₂, passi. Endpoint backend `/api/devices/samsung/*`, frontend in Profile con stato connessione e "Sincronizza ora"
 - **Integrazione Fitbit Web API** (alternativa self-service senza partnership): stessa architettura di Samsung ma OAuth immediato via `dev.fitbit.com`

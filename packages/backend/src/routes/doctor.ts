@@ -5,6 +5,7 @@ import { validate } from '../middleware/validate.js';
 import * as doctorController from '../controllers/doctorController.js';
 import * as anamnesisController from '../controllers/anamnesisController.js';
 import * as medicationController from '../controllers/medicationController.js';
+import * as exportController from '../controllers/exportController.js';
 import { createMeasurementSchema, requestSharingSchema, createPrescriptionSchema, updatePrescriptionSchema } from '@healthbridge/shared';
 
 const router = Router();
@@ -40,5 +41,6 @@ router.get('/recent-activity', doctorController.recentActivity);
 router.get('/timeseries', doctorController.aggregatedTimeseries);
 router.get('/stats', doctorController.aggregatedStats);
 router.get('/contract-status', doctorController.getContractStatus);
+router.get('/export/csv', exportController.doctorCsv);
 
 export default router;
