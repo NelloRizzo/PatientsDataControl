@@ -19,4 +19,8 @@ export const env = {
     from: process.env.EMAIL_FROM || 'noreply@healthbridge.com',
   },
   groqApiKey: process.env.GROQ_API_KEY || '',
+  fitbit: {
+    clientId: process.env.FITBIT_CLIENT_ID || '',
+    clientSecret: process.env.FITBIT_CLIENT_SECRET || '',
+  },
 };

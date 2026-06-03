@@ -17,15 +17,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const token = localStorage.getItem('accessToken');
     if (token) {
       authApi.getMe()
-        .then(setUser)
+        .then((u) => { if (!cancelled) setUser(u); })
         .catch(() => localStorage.removeItem('accessToken'))
-        .finally(() => setLoading(false));
+        .finally(() => { if (!cancelled) setLoading(false); });
     } else {
       setLoading(false);
     }
+    return () => { cancelled = true; };
   }, []);
 
   const login = async (email: string, password: string) => {

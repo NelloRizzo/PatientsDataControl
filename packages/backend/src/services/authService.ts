@@ -52,7 +52,7 @@ export async function loginUser(email: string, password: string) {
     throw new AppError(401, 'Invalid email or password');
   }
 
-  const isMatch = await user.comparePassword(password);
+  const isMatch = await user.comparePassword(password.trim());
   if (!isMatch) {
     throw new AppError(401, 'Invalid email or password');
   }

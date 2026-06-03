@@ -7,7 +7,7 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -15,7 +15,7 @@ export function Login() {
     setError('');
     setSubmitting(true);
     try {
-      const user = await login(email.trim(), password);
+      const user = await login(email.trim(), password.trim());
       navigate(user.mustChangePassword ? '/profile?mustChangePassword=1' : '/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login fallito');
@@ -56,13 +56,13 @@ export function Login() {
           </div>
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || loading}
             className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {submitting && (
+            {(submitting || loading) && (
               <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
             )}
-            Accedi
+            {loading ? 'Caricamento...' : 'Accedi'}
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-500">
