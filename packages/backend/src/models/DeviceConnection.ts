@@ -1,9 +1,12 @@
 import mongoose from 'mongoose';
 import type { DeviceProvider } from '@healthbridge/shared';
 
+export type OAuthType = 'fitbit' | 'google';
+
 export interface IDeviceConnectionDocument extends mongoose.Document {
   userId: mongoose.Types.ObjectId;
   provider: DeviceProvider;
+  oauthType: OAuthType;
   name: string;
   accessToken: string;
   refreshToken?: string;
@@ -25,8 +28,9 @@ const deviceConnectionSchema = new mongoose.Schema<IDeviceConnectionDocument>(
     provider: {
       type: String,
       required: true,
-      enum: ['fitbit', 'google_fit', 'apple_health', 'garmin', 'custom'],
+      enum: ['fitbit', 'google_fit', 'google_health', 'apple_health', 'garmin', 'custom'],
     },
+    oauthType: { type: String, enum: ['fitbit', 'google'], default: 'fitbit' },
     name: { type: String, required: true },
     accessToken: { type: String, required: true },
     refreshToken: String,

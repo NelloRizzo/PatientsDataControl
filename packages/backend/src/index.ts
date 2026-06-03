@@ -17,12 +17,16 @@ import notificationRoutes from './routes/notifications.js';
 import patientRoutes from './routes/patient.js';
 import contractRoutes from './routes/contracts.js';
 import ticketRoutes from './routes/tickets.js';
-import { FitbitProvider, deviceRegistry } from './services/device/index.js';
+import { FitbitProvider, GoogleHealthProvider, deviceRegistry } from './services/device/index.js';
 
 const app = express();
 
 if (env.fitbit.clientId && env.fitbit.clientSecret) {
   deviceRegistry.register(new FitbitProvider(env.fitbit.clientId, env.fitbit.clientSecret));
+}
+
+if (env.googleHealth.clientId && env.googleHealth.clientSecret) {
+  deviceRegistry.register(new GoogleHealthProvider(env.googleHealth.clientId, env.googleHealth.clientSecret));
 }
 
 const allowedOrigins = ['http://localhost:5173', env.appUrl];

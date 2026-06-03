@@ -23,4 +23,8 @@ export const env = {
     clientId: process.env.FITBIT_CLIENT_ID || '',
     clientSecret: process.env.FITBIT_CLIENT_SECRET || '',
   },
+  googleHealth: {
+    clientId: process.env.GOOGLE_HEALTH_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_HEALTH_CLIENT_SECRET || '',
+  },
 };

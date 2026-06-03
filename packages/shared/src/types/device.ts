@@ -1,9 +1,12 @@
-export type DeviceProvider = 'fitbit' | 'google_fit' | 'apple_health' | 'garmin' | 'custom';
+export type DeviceProvider = 'fitbit' | 'google_fit' | 'google_health' | 'apple_health' | 'garmin' | 'custom';
+
+export type OAuthType = 'fitbit' | 'google';
 
 export interface IDeviceConnection {
   _id: string;
   userId: string;
   provider: DeviceProvider;
+  oauthType: OAuthType;
   name: string;
   active: boolean;
   lastSync?: string;

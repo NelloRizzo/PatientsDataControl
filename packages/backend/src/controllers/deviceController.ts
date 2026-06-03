@@ -1,6 +1,7 @@
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { DeviceConnection } from '../models/DeviceConnection.js';
+import type { OAuthType } from '../models/DeviceConnection.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { deviceRegistry } from '../services/device/index.js';
 import { env } from '../config/env.js';
@@ -24,10 +25,11 @@ export async function connect(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { provider, name, accessToken, refreshToken } = req.body;
+    const { provider, name, accessToken, refreshToken, oauthType } = req.body;
     const connection = await DeviceConnection.create({
       userId: req.userId,
       provider,
+      oauthType: oauthType || 'fitbit',
       name,
       accessToken,
       refreshToken,
@@ -88,22 +90,30 @@ export async function handleCallback(
     if (oauthError) throw new AppError(400, `OAuth error: ${oauthError}`);
 
     const parsed = JSON.parse(Buffer.from(state, 'base64').toString());
-    const { userId, provider } = parsed;
+    const { userId, provider, upgradeFromConnectionId } = parsed;
 
     const devProv = deviceRegistry.get(provider);
     const redirectUri = `${env.appUrl}/api/devices/callback?provider=${provider}`;
     const tokens = await devProv.exchangeCode(code, redirectUri);
 
-    const connection = await DeviceConnection.create({
+    const oauthType: OAuthType = provider === 'google_health' ? 'google' : 'fitbit';
+
+    if (upgradeFromConnectionId) {
+      await DeviceConnection.findByIdAndUpdate(upgradeFromConnectionId, { active: false });
+    }
+
+    await DeviceConnection.create({
       userId,
       provider,
+      oauthType,
       name: devProv.displayName,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       expiresAt: tokens.expiresAt,
     });
 
-    res.redirect(`${env.appUrl}/profile?device=connected&provider=${provider}`);
+    const profileParam = oauthType === 'google' ? 'device=connected&provider=google_health' : 'device=connected';
+    res.redirect(`${env.appUrl}/profile?${profileParam}`);
   } catch (error) {
     next(error);
   }
@@ -139,6 +149,34 @@ export async function syncProvider(
       synced: result.measurements.length,
       errors: result.errors,
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function upgradeToGoogle(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const connection = await DeviceConnection.findOne({
+      userId: req.userId,
+      provider: 'fitbit',
+      active: true,
+    });
+    if (!connection) throw new AppError(404, 'No active Fitbit connection to upgrade');
+
+    const devProv = deviceRegistry.get('google_health');
+    const redirectUri = `${env.appUrl}/api/devices/callback?provider=google_health`;
+    const state = Buffer.from(JSON.stringify({
+      userId: req.userId,
+      provider: 'google_health',
+      upgradeFromConnectionId: connection._id.toString(),
+    })).toString('base64');
+    const url = devProv.getOAuthUrl(state, redirectUri);
+
+    res.json({ url, state });
   } catch (error) {
     next(error);
   }

@@ -54,7 +54,7 @@ export function GuideButton({ className = '' }: GuideButtonProps) {
 
   return (
     <button onClick={() => startGuide(0)}
-      className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors ${className}`}
+      className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors ${className || 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
       title="Avvia guida interattiva">
       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

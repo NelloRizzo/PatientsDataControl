@@ -7,6 +7,7 @@ const router = Router();
 router.get('/oauth-url', authenticate, deviceController.getOAuthUrl);
 router.get('/callback', deviceController.handleCallback);
 router.post('/sync/:provider', authenticate, deviceController.syncProvider);
+router.post('/upgrade-to-google', authenticate, deviceController.upgradeToGoogle);
 
 router.use(authenticate);
 
