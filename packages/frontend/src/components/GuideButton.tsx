@@ -2,7 +2,8 @@ import { useAuth } from '../context/AuthContext';
 import { createDoctorGuide } from '../guides/doctorGuide';
 import { createPatientGuide } from '../guides/patientGuide';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
+import type { Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 
 interface GuideButtonProps {
@@ -13,21 +14,30 @@ export function GuideButton({ className = '' }: GuideButtonProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const driverRef = useRef<Driver | null>(null);
+
+  const cleanup = useCallback(() => {
+    if (driverRef.current) {
+      try { driverRef.current.destroy(); } catch {}
+      driverRef.current = null;
+    }
+  }, []);
 
   const createSteps = useCallback(() => {
-    if (user?.role === 'doctor') return createDoctorGuide(navigate);
-    if (user?.role === 'patient') return createPatientGuide(navigate);
+    if (user?.role === 'doctor') return createDoctorGuide(navigate, cleanup);
+    if (user?.role === 'patient') return createPatientGuide(navigate, cleanup);
     return null;
-  }, [user?.role, navigate]);
+  }, [user?.role, navigate, cleanup]);
 
   const startGuide = useCallback((fromStep = 0) => {
     const steps = createSteps();
     if (!steps) return;
+    cleanup();
     import('driver.js').then(({ driver }) => {
-      const d = driver({ steps, animate: true, showProgress: true });
-      d.drive(fromStep);
+      driverRef.current = driver({ steps, animate: true, showProgress: true });
+      driverRef.current.drive(fromStep);
     });
-  }, [createSteps]);
+  }, [createSteps, cleanup]);
 
   useEffect(() => {
     const pendingStep = sessionStorage.getItem('guideStep');
@@ -39,6 +49,8 @@ export function GuideButton({ className = '' }: GuideButtonProps) {
       if (!isNaN(step)) startGuide(step);
     }
   }, [user?.role, location.pathname, startGuide]);
+
+  useEffect(() => () => cleanup(), [cleanup]);
 
   return (
     <button onClick={() => startGuide(0)}
