@@ -24,6 +24,7 @@ export interface KpiThresholdLine {
   value: number;
   label: string;
   color: string;
+  seriesKey?: string;
 }
 
 export interface MultiTypeChartProps {

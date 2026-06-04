@@ -295,6 +295,7 @@ export function Analisi() {
                 value,
                 label: `${value}${f.unit ? ' ' + f.unit : ''}`,
                 color,
+                seriesKey,
               });
             };
             if (f.dangerMin != null) addLine(f.dangerMin);
@@ -366,6 +367,7 @@ export function Analisi() {
 
   const handleSeriesColorChange = useCallback((seriesKey: string, color: string) => {
     setSeries((prev) => prev.map((s) => s.key === seriesKey ? { ...s, color } : s));
+    setKpiThresholdLines((prev) => prev.map((l) => l.seriesKey === seriesKey ? { ...l, color } : l));
     updateTypeColors((prev) => ({ ...prev, [seriesKey]: color }));
   }, []);
 
