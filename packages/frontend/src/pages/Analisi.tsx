@@ -468,15 +468,14 @@ export function Analisi() {
                       <label className="flex items-center gap-1 cursor-pointer">
                         <input type="checkbox" checked={!!selectedTypes[t.key]}
                           onChange={() => toggleType(t.key)} className="accent-blue-600" />
-                        <span className="relative inline-flex items-center">
-                          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: color }} />
-                          <input type="color" value={color}
-                            onChange={(e) => setTypeColors((prev) => ({ ...prev, [t.key]: e.target.value }))}
-                            onClick={(e) => e.stopPropagation()}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                        </span>
                         <span>{t.name}</span>
                       </label>
+                      <span className="relative inline-flex items-center" onMouseDown={(e) => e.stopPropagation()}>
+                        <input type="color" value={color}
+                          onChange={(e) => setTypeColors((prev) => ({ ...prev, [t.key]: e.target.value }))}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                        <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: color }} />
+                      </span>
                       <select value={typeAggregations[t.key] || 'avg'}
                         onChange={(e) => setTypeAggregations((prev) => ({ ...prev, [t.key]: e.target.value as AggregationFunction }))}
                         className="text-xs border rounded px-1 py-0.5"
