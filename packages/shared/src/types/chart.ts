@@ -46,6 +46,7 @@ export interface IChartConfig {
   // Nuovi campi multi-tipo
   types?: string[];
   typeAggregations?: Record<string, AggregationFunction>;
+  typeColors?: Record<string, string>;
   showKpi?: boolean;
   showTrend?: boolean;
   trendMethod?: TrendMethod;
@@ -72,6 +73,7 @@ export interface CreateChartConfigRequest {
   // Nuovi campi multi-tipo (opzionali)
   types?: string[];
   typeAggregations?: Record<string, AggregationFunction>;
+  typeColors?: Record<string, string>;
   showKpi?: boolean;
   showTrend?: boolean;
   trendMethod?: TrendMethod;

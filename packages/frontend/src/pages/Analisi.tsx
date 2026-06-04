@@ -54,6 +54,7 @@ export function Analisi() {
   // Selected types with per-type aggregation
   const [selectedTypes, setSelectedTypes] = useState<Record<string, boolean>>({});
   const [typeAggregations, setTypeAggregations] = useState<Record<string, AggregationFunction>>({});
+  const [typeColors, setTypeColors] = useState<Record<string, string>>({});
 
   // Controls
   const [groupBy, setGroupBy] = useState<TimeGroupBy>('day');
@@ -122,6 +123,7 @@ export function Analisi() {
       setSelectedTypes(sel);
     }
     if (cfg.typeAggregations) setTypeAggregations(cfg.typeAggregations);
+    if (cfg.typeColors) setTypeColors(cfg.typeColors);
     if (cfg.groupBy) setGroupBy(cfg.groupBy);
     if (cfg.chartType) setChartType(cfg.chartType);
     if (cfg.showKpi != null) setShowKpi(cfg.showKpi);
@@ -219,7 +221,7 @@ export function Analisi() {
           const agg = typeAggregations[t.key] || 'avg';
           for (const f of t.fields) {
             const key = `${t.key}__${f.key}`;
-            const color = TYPE_COLORS[colorIdx % TYPE_COLORS.length];
+            const color = typeColors[t.key] || TYPE_COLORS[colorIdx % TYPE_COLORS.length];
             newSeries.push({ key, label: `${t.name} — ${f.name} (${agg})`, color, unit: f.unit });
             // KPI bands
             const dMin = f.dangerMin ?? null;
@@ -298,7 +300,7 @@ export function Analisi() {
     } finally {
       setLoading(false);
     }
-  }, [types, selectedTypes, typeAggregations, scopeMode, selectedPatient, selectedPatients, groupBy, chartType, dateFrom, dateTo, patients, isDoctor]);
+  }, [types, selectedTypes, typeAggregations, typeColors, scopeMode, selectedPatient, selectedPatients, groupBy, chartType, dateFrom, dateTo, patients, isDoctor]);
 
   // Auto-load data when a saved config is selected
   useEffect(() => {
@@ -332,6 +334,7 @@ export function Analisi() {
         dateRange: { from: dateFrom ? new Date(dateFrom).toISOString() : undefined, to: dateTo ? new Date(dateTo + 'T23:59:59').toISOString() : undefined },
         types: Object.keys(selectedTypes).filter((k) => selectedTypes[k]),
         typeAggregations,
+        typeColors: Object.keys(typeColors).length ? typeColors : undefined,
         showKpi,
         showTrend,
         trendMethod,
@@ -459,13 +462,19 @@ export function Analisi() {
               </summary>
               <div className="flex flex-wrap gap-x-4 gap-y-2 pl-2">
                 {groupTypes.map((t, i) => {
-                  const color = TYPE_COLORS[i % TYPE_COLORS.length];
+                  const color = typeColors[t.key] || TYPE_COLORS[i % TYPE_COLORS.length];
                   return (
                     <div key={t.key} className="flex items-center gap-2">
                       <label className="flex items-center gap-1 cursor-pointer">
                         <input type="checkbox" checked={!!selectedTypes[t.key]}
                           onChange={() => toggleType(t.key)} className="accent-blue-600" />
-                        <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: color }} />
+                        <span className="relative inline-flex items-center">
+                          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: color }} />
+                          <input type="color" value={color}
+                            onChange={(e) => setTypeColors((prev) => ({ ...prev, [t.key]: e.target.value }))}
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                        </span>
                         <span>{t.name}</span>
                       </label>
                       <select value={typeAggregations[t.key] || 'avg'}
