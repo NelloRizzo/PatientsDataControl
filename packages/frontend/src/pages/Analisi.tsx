@@ -300,6 +300,11 @@ export function Analisi() {
     }
   }, [types, selectedTypes, typeAggregations, scopeMode, selectedPatient, selectedPatients, groupBy, chartType, dateFrom, dateTo, patients, isDoctor]);
 
+  // Auto-load data when a saved config is selected
+  useEffect(() => {
+    if (selectedConfigId) loadData();
+  }, [selectedConfigId, loadData]);
+
   // Toggle a measurement type
   const toggleType = (key: string) => {
     setSelectedTypes((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -356,7 +361,7 @@ export function Analisi() {
 
   const handleLoadConfig = (id: string) => {
     const cfg = savedConfigs.find((c) => c._id === id);
-    if (cfg) { applyConfig(cfg); setSelectedConfigId(id); setTimeout(() => loadData(), 0); }
+    if (cfg) { applyConfig(cfg); setSelectedConfigId(id); }
   };
 
   // Get active types as array
