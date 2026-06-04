@@ -315,6 +315,7 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 Le annotazioni/issues sono in `todo/` (locale, non versionato).
 L'agente non implementa nulla senza esplicita richiesta "procediamo con l'implementazione del todo N." oppure con data/ora del todo.
 Tutta la discussione/ragionamento va solo nei todo. Niente modifiche a codice finché non arriva richiesta esplicita di implementazione.
+**In modalità build, chiedere sempre conferma prima di modificare — il richiedente potrebbe voler ragionare ulteriormente prima di procedere.**
 
 ## Future Phases
 - **Phase 3**: BigQuery sync, device OAuth integrations (Fitbit, Google Fit, Samsung Health), webhook endpoint
