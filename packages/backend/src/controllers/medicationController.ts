@@ -8,6 +8,7 @@ import { Notification } from '../models/Notification.js';
 import { sendEmail } from '../services/emailService.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { env } from '../config/env.js';
+import { t } from '../services/i18n.js';
 
 async function verifyAssociation(doctorId: string, patientId: string) {
   const association = await PatientDoctor.findOne({
@@ -16,7 +17,7 @@ async function verifyAssociation(doctorId: string, patientId: string) {
     status: 'active',
   });
   if (!association) {
-    throw new AppError(403, 'You are not authorized to manage this patient\'s medications');
+    throw new AppError(403, t('error.prescription.notAuthorized'));
   }
 }
 
@@ -75,8 +76,8 @@ export async function createPrescription(
     if (patient?.email) {
       await sendEmail(
         patient.email,
-        `Nuova prescrizione medica — ${req.body.drugName}`,
-        `Il Dr. ${doctorName} ti ha prescritto:\n\nFarmaco: ${req.body.drugName}\nDosaggio: ${req.body.dosage}\nFrequenza: ${req.body.frequency}\nVia: ${req.body.route}\n\nAccedi alla piattaforma per visualizzare i dettagli.\n${env.appUrl}`
+        t('email.newPrescriptionSubject', { drugName: req.body.drugName }),
+        t('email.newPrescriptionBody', { doctorName, drugName: req.body.drugName, dosage: req.body.dosage, frequency: req.body.frequency, route: req.body.route, url: env.appUrl })
       );
     }
     res.status(201).json({ data: prescription });
@@ -99,7 +100,7 @@ export async function updatePrescription(
       { new: true, runValidators: true }
     );
     if (!prescription) {
-      throw new AppError(404, 'Prescription not found');
+      throw new AppError(404, t('error.prescription.notFound'));
     }
     res.json({ data: prescription });
   } catch (err) {
@@ -117,7 +118,7 @@ export async function deletePrescription(
     await verifyAssociation(req.userId!, patientId);
     const prescription = await Prescription.findOneAndDelete({ _id: id, patientId });
     if (!prescription) {
-      throw new AppError(404, 'Prescription not found');
+      throw new AppError(404, t('error.prescription.notFound'));
     }
     // Also delete associated logs
     await MedicationLog.deleteMany({ prescriptionId: id });
@@ -164,7 +165,7 @@ export async function getMedicationLog(
     // Verify ownership
     const prescription = await Prescription.findOne({ _id: id, patientId: req.userId! });
     if (!prescription) {
-      throw new AppError(404, 'Prescription not found');
+      throw new AppError(404, t('error.prescription.notFound'));
     }
     const logs = await MedicationLog.find({ prescriptionId: id })
       .sort({ takenAt: -1 })
@@ -185,7 +186,7 @@ export async function takeMedication(
     const { id } = req.params;
     const prescription = await Prescription.findOne({ _id: id, patientId: req.userId! });
     if (!prescription) {
-      throw new AppError(404, 'Prescription not found');
+      throw new AppError(404, t('error.prescription.notFound'));
     }
     const log = await MedicationLog.create({
       prescriptionId: id,

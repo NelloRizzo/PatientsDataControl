@@ -4,6 +4,7 @@ import { Measurement } from '../models/Measurement.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { MeasurementTypeConfig } from '../models/MeasurementTypeConfig.js';
 import { processAlert, sendInfoNotification } from './alertService.js';
+import { t } from './i18n.js';
 import type {
   CreateMeasurementRequest,
   UpdateMeasurementRequest,
@@ -165,7 +166,7 @@ export async function getMeasurementById(
 ): Promise<IMeasurement> {
   const doc = await Measurement.findOne({ _id: measurementId, userId });
   if (!doc) {
-    throw new AppError(404, 'Measurement not found');
+    throw new AppError(404, t('error.measurement.notFound'));
   }
   return toJSON(doc);
 }
@@ -181,7 +182,7 @@ export async function updateMeasurement(
     { new: true, runValidators: true }
   );
   if (!doc) {
-    throw new AppError(404, 'Measurement not found');
+    throw new AppError(404, t('error.measurement.notFound'));
   }
   return toJSON(doc);
 }
@@ -192,7 +193,7 @@ export async function deleteMeasurement(
 ): Promise<void> {
   const doc = await Measurement.findOneAndDelete({ _id: measurementId, userId });
   if (!doc) {
-    throw new AppError(404, 'Measurement not found');
+    throw new AppError(404, t('error.measurement.notFound'));
   }
 }
 
@@ -329,10 +330,10 @@ function determineTargetUserId(
 ): string {
   if (userRole === 'patient') return userId;
   if (userRole === 'doctor' || userRole === 'admin') {
-    if (!patientId) throw new AppError(400, 'patientId is required for admin/doctor import');
+    if (!patientId) throw new AppError(400, t('error.patient.idRequired'));
     return patientId;
   }
-  throw new AppError(403, 'Role not allowed to import');
+  throw new AppError(403, t('error.measurement.roleNotAllowed'));
 }
 
 function getDateFormat(groupBy: TimeGroupBy): string {

@@ -4,6 +4,7 @@ import * as authService from '../services/authService.js';
 import { User } from '../models/User.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { updateProfileSchema, verifyEmailSchema, resendVerificationSchema, changePasswordSchema, setPasswordSchema } from '@healthbridge/shared';
+import { t } from '../services/i18n.js';
 
 export async function setPassword(
   req: AuthRequest, res: Response, next: NextFunction
@@ -114,12 +115,12 @@ export async function updateProfile(
 
     if (parsed.email) {
       const existing = await User.findOne({ email: parsed.email.toLowerCase().trim(), _id: { $ne: req.userId } });
-      if (existing) throw new AppError(409, 'Email already in use');
+      if (existing) throw new AppError(409, t('error.user.emailAlreadyInUse'));
     }
 
     if (parsed.password) {
       const user = await User.findById(req.userId);
-      if (!user) throw new AppError(404, 'User not found');
+      if (!user) throw new AppError(404, t('error.user.notFound'));
       user.password = parsed.password;
       const { password, ...rest } = parsed;
       Object.assign(user, rest);
@@ -129,7 +130,7 @@ export async function updateProfile(
     }
 
     const user = await User.findByIdAndUpdate(req.userId, parsed, { new: true, runValidators: true }).select('-password');
-    if (!user) throw new AppError(404, 'User not found');
+    if (!user) throw new AppError(404, t('error.user.notFound'));
     res.json({ data: user });
   } catch (error) {
     next(error);

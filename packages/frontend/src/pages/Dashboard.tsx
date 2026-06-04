@@ -3,6 +3,7 @@ import {
   LineChart, Line, AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
 import { getMeasurementTypes } from '../api/measurementTypes';
 import { getTimeSeries } from '../api/measurements';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +21,7 @@ function formatDate(value: string) {
 }
 
 export function Dashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [types, setTypes] = useState<IMeasurementTypeConfig[]>([]);
   const [selectedType, setSelectedType] = useState('');
@@ -79,9 +81,9 @@ export function Dashboard() {
     setTakingId(id); setMedMsg('');
     try {
       await apiClient.post(`/patient/medications/${id}/take`, { scheduledTime });
-      setMedMsg('Assunzione registrata');
+      setMedMsg(t('ui.dashboard.takeRecorded'));
       setDueMeds((prev) => prev.filter((d) => d.prescriptionId !== id || d.scheduledTime !== scheduledTime));
-    } catch { setMedMsg('Errore registrazione'); }
+    } catch { setMedMsg(t('ui.common.error')); }
     setTakingId(null);
   };
 
@@ -148,7 +150,7 @@ export function Dashboard() {
 
   const renderChart = () => {
     if (!data.length) {
-      return <p className="text-gray-500 text-center py-12">No data available</p>;
+      return <p className="text-gray-500 text-center py-12">{t('ui.common.noData')}</p>;
     }
 
     const commonProps = {
@@ -195,18 +197,18 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <h1 className="text-2xl font-bold">{t('ui.nav.dashboard')}</h1>
 
       <div className="bg-white p-6 rounded-lg shadow-sm border space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Measurement Type</label>
+            <label className="block text-sm font-medium mb-1">{t('ui.dashboard.measurementType')}</label>
             <select
               value={selectedType}
               onChange={(e) => { setSelectedType(e.target.value); setSelectedFields([]); }}
               className="w-full border rounded px-3 py-2"
             >
-              <option value="">Select type...</option>
+              <option value="">{t('ui.measurements.selectTypePlaceholder')}</option>
               {(() => {
                 const groups: Record<string, typeof types> = {};
                 for (const t of types) {
@@ -214,15 +216,8 @@ export function Dashboard() {
                   if (!groups[g]) groups[g] = [];
                   groups[g].push(t);
                 }
-                const labels: Record<string, string> = {
-                  generalhealth: 'Salute Generale',
-                  cardiac: 'Cardiaco',
-                  blood_gas: 'Sangue / Gas',
-                  lipidemia: 'Profilo Lipidico',
-                  renal: 'Funzione Renale',
-                };
                 return Object.entries(groups).map(([group, ts]) => (
-                  <optgroup key={group} label={labels[group] || group}>
+                  <optgroup key={group} label={t(`ui.dashboard.macrogroup.${group}`, group)}>
                     {ts.map((t) => (
                       <option key={t.key} value={t.key}>{t.name}</option>
                     ))}
@@ -232,48 +227,48 @@ export function Dashboard() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Time Grouping</label>
+            <label className="block text-sm font-medium mb-1">{t('ui.dashboard.timeGrouping')}</label>
             <select
               value={groupBy}
               onChange={(e) => setGroupBy(e.target.value as TimeGroupBy)}
               className="w-full border rounded px-3 py-2"
             >
-              <option value="hour">Hour</option>
-              <option value="day">Day</option>
-              <option value="week">Week</option>
-              <option value="month">Month</option>
-              <option value="year">Year</option>
+              <option value="hour">{t('ui.dashboard.hour')}</option>
+              <option value="day">{t('ui.dashboard.day')}</option>
+              <option value="week">{t('ui.dashboard.week')}</option>
+              <option value="month">{t('ui.dashboard.month')}</option>
+              <option value="year">{t('ui.dashboard.year')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Aggregation</label>
+            <label className="block text-sm font-medium mb-1">{t('ui.dashboard.aggregation')}</label>
             <select
               value={aggregation}
               onChange={(e) => setAggregation(e.target.value as AggregationFunction)}
               className="w-full border rounded px-3 py-2"
             >
-              <option value="avg">Average</option>
-              <option value="min">Minimum</option>
-              <option value="max">Maximum</option>
+              <option value="avg">{t('ui.dashboard.average')}</option>
+              <option value="min">{t('ui.dashboard.minimum')}</option>
+              <option value="max">{t('ui.dashboard.maximum')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Chart Type</label>
+            <label className="block text-sm font-medium mb-1">{t('ui.dashboard.chartType')}</label>
             <select
               value={chartType}
               onChange={(e) => setChartType(e.target.value as ChartType)}
               className="w-full border rounded px-3 py-2"
             >
-              <option value="line">Line</option>
-              <option value="area">Area</option>
-              <option value="bar">Bar</option>
+              <option value="line">{t('ui.dashboard.line')}</option>
+              <option value="area">{t('ui.dashboard.area')}</option>
+              <option value="bar">{t('ui.dashboard.bar')}</option>
             </select>
           </div>
         </div>
 
         {currentType && (
           <div>
-            <label className="block text-sm font-medium mb-2">Fields (Y-axis)</label>
+            <label className="block text-sm font-medium mb-2">{t('ui.dashboard.fields')}</label>
             <div className="flex flex-wrap gap-2">
               {currentType.fields.map((field) => (
                 <label key={field.key} className="flex items-center gap-1 text-sm">
@@ -294,7 +289,7 @@ export function Dashboard() {
       {user?.role === 'patient' && (
         <div id="patient-bmi-section" className="bg-white rounded-lg shadow-sm border p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium">BMI</h3>
+            <h3 className="text-sm font-medium">{t('ui.dashboard.bmiLabel')}</h3>
             {bmi && (
               <div className="flex items-center gap-4 text-xs text-gray-400">
                 <span>{bmi.heightCm} cm</span>
@@ -304,7 +299,7 @@ export function Dashboard() {
             )}
           </div>
           {bmiLoading ? (
-            <p className="text-xs text-gray-400">Caricamento BMI...</p>
+            <p className="text-xs text-gray-400">{t('ui.common.loading')}</p>
           ) : bmi ? (
             <div className="flex items-center gap-6">
               <div className="flex-shrink-0">
@@ -328,26 +323,26 @@ export function Dashboard() {
               )}
             </div>
           ) : (
-            <p className="text-xs text-gray-500">Servono misurazioni di peso e altezza</p>
+            <p className="text-xs text-gray-500">{t('ui.dashboard.bmiMissing')}</p>
           )}
         </div>
       )}
 
       <div id="patient-chart-section" className="bg-white p-6 rounded-lg shadow-sm border">
         {loading ? (
-          <p className="text-gray-500 text-center py-12">Caricamento grafico...</p>
+          <p className="text-gray-500 text-center py-12">{t('ui.common.loading')}</p>
         ) : selectedType ? (
           renderChart()
         ) : (
           <p className="text-gray-500 text-center py-12">
-            Seleziona un tipo per visualizzare il grafico
+            {t('ui.measurements.selectType')}
           </p>
         )}
       </div>
 
       {myDoctors.length > 0 && (
         <div id="patient-my-doctors" className="bg-white rounded-lg shadow-sm border">
-          <div className="px-4 py-3 border-b font-medium text-sm">I Miei Dottori</div>
+          <div className="px-4 py-3 border-b font-medium text-sm">{t('ui.profile.myDoctors')}</div>
           <div className="divide-y">
             {myDoctors.map((d: any) => (
               <div key={d._id}>
@@ -365,18 +360,18 @@ export function Dashboard() {
                     {d.status === 'active' && (
                       <button onClick={() => openSharing(d.doctorId)}
                         className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded hover:bg-purple-700">
-                        Sharing
+                        {t('ui.dashboard.sharing')}
                       </button>
                     )}
                     {d.status === 'pending' && (
                       <>
                         <button onClick={() => handleConfirmDoctor(d.doctorId)}
                           className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700">
-                          Confirm
+                          {t('ui.common.confirm')}
                         </button>
                         <button onClick={() => handleRejectDoctor(d.doctorId)}
                           className="text-xs bg-red-600 text-white px-2 py-0.5 rounded hover:bg-red-700">
-                          Reject
+                          {t('ui.common.reject')}
                         </button>
                       </>
                     )}
@@ -386,10 +381,10 @@ export function Dashboard() {
                 {sharingDoctorId === d.doctorId && (
                   <div className="px-4 pb-3 border-t pt-2 space-y-2">
                     <p className="text-xs font-medium text-gray-600">
-                      Measurement types shared with {d.doctorName}:
+                      {t('ui.dashboard.sharedWith', { name: d.doctorName })}
                     </p>
                     {sharingTypes.includes('*') ? (
-                      <p className="text-xs text-green-600">All types currently visible</p>
+                      <p className="text-xs text-green-600">{t('ui.dashboard.allTypesVisible')}</p>
                     ) : (
                       <div className="flex flex-wrap gap-1 mb-2">
                         {sharingTypes.map((t: string) => (
@@ -398,7 +393,7 @@ export function Dashboard() {
                       </div>
                     )}
                     <details className="text-xs">
-                      <summary className="cursor-pointer text-gray-500 hover:text-gray-700">Toggle types</summary>
+                      <summary className="cursor-pointer text-gray-500 hover:text-gray-700">{t('ui.dashboard.toggleTypes')}</summary>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {types.map((t) => (
                           <label key={t.key} className="flex items-center gap-1 cursor-pointer">
@@ -416,11 +411,11 @@ export function Dashboard() {
                     <div className="flex gap-2 items-center">
                       <button onClick={saveSharing}
                         className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs hover:bg-blue-700">
-                        Save
+                        {t('ui.common.save')}
                       </button>
                       <button onClick={() => setSharingDoctorId(null)}
                         className="bg-gray-300 text-gray-700 px-2 py-0.5 rounded text-xs hover:bg-gray-400">
-                        Close
+                        {t('ui.common.close')}
                       </button>
                       {sharingMsg && <span className="text-xs text-green-600">{sharingMsg}</span>}
                     </div>
@@ -434,11 +429,11 @@ export function Dashboard() {
 
       {medications.length > 0 && (
         <div id="patient-medications-section" className="bg-white rounded-lg shadow-sm border">
-          <div className="px-4 py-3 border-b font-medium text-sm">I Miei Farmaci</div>
+          <div className="px-4 py-3 border-b font-medium text-sm">{t('ui.dashboard.myMedications')}</div>
           <div className="p-4">
             {dueMeds.length > 0 && (
               <div className="mb-3 space-y-2">
-                <p className="text-xs font-medium text-orange-600">Da assumere ora:</p>
+                <p className="text-xs font-medium text-orange-600">{t('ui.dashboard.dueNow')}</p>
                 {dueMeds.map((d, i) => (
                   <div key={i} className="bg-orange-50 border border-orange-200 rounded p-3 flex items-center justify-between">
                     <div>
@@ -448,7 +443,7 @@ export function Dashboard() {
                     <button onClick={() => handleTake(d.prescriptionId, d.scheduledTime)}
                       disabled={takingId === d.prescriptionId}
                       className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 disabled:opacity-50">
-                      {takingId === d.prescriptionId ? '...' : 'Preso'}
+                      {takingId === d.prescriptionId ? '...' : t('ui.dashboard.taken')}
                     </button>
                   </div>
                 ))}
@@ -473,7 +468,7 @@ export function Dashboard() {
 
       {anamnesis.length > 0 && (
         <div id="patient-anamnesis-section" className="bg-white rounded-lg shadow-sm border">
-          <div className="px-4 py-3 border-b font-medium text-sm">La Mia Anamnesi</div>
+          <div className="px-4 py-3 border-b font-medium text-sm">{t('ui.dashboard.myAnamnesis')}</div>
           <div className="divide-y">
               {anamnesis.map((a) => {
                 const sections = [
@@ -486,7 +481,7 @@ export function Dashboard() {
                 ];
                 return (
                 <div key={a._id} className="px-4 py-3 border-l-2 border-purple-300 ml-4 mr-4 my-2">
-                  <p className="text-xs text-gray-400">Registrata: {new Date(a.recordedAt).toLocaleString()}</p>
+                  <p className="text-xs text-gray-400">{t('ui.dashboard.registered')} {new Date(a.recordedAt).toLocaleString()}</p>
                     {sections.map((s) => {
                       const section = (a as any)[s.key];
                       if (!section?.entries?.length) return null;
@@ -503,7 +498,7 @@ export function Dashboard() {
                                       ? 'bg-green-100 text-green-700'
                                       : 'bg-gray-100 text-gray-500'
                                   }`}>
-                                    {entry.isCurrent ? 'Attuale' : 'Precedente'}
+                                    {entry.isCurrent ? t('ui.dashboard.current') : t('ui.dashboard.previous')}
                                   </span>
                                 </p>
                               );
@@ -528,7 +523,7 @@ export function Dashboard() {
 
       {notes.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border">
-          <div className="px-4 py-3 border-b font-medium text-sm">Note dal tuo medico</div>
+          <div className="px-4 py-3 border-b font-medium text-sm">{t('ui.dashboard.doctorNotes')}</div>
           <div className="divide-y">
             {notes.map((n) => (
               <div key={n._id} className="px-4 py-3 border-l-2 border-green-300 ml-4 mr-4 my-2">

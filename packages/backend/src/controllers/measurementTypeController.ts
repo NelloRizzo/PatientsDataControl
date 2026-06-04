@@ -2,6 +2,7 @@ import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { MeasurementTypeConfig } from '../models/MeasurementTypeConfig.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { t } from '../services/i18n.js';
 
 export async function list(
   _req: AuthRequest,
@@ -41,7 +42,7 @@ export async function create(
   try {
     const existing = await MeasurementTypeConfig.findOne({ key: req.body.key });
     if (existing) {
-      throw new AppError(409, 'A type with this key already exists');
+      throw new AppError(409, t('error.measurementType.alreadyExists'));
     }
     const type = await MeasurementTypeConfig.create(req.body);
     res.status(201).json(type);
@@ -62,7 +63,7 @@ export async function update(
       { new: true, runValidators: true }
     );
     if (!type) {
-      throw new AppError(404, 'Measurement type not found');
+      throw new AppError(404, t('error.measurementType.notFound'));
     }
     res.json(type);
   } catch (error) {
@@ -78,7 +79,7 @@ export async function remove(
   try {
     const type = await MeasurementTypeConfig.findOneAndDelete({ key: req.params.key });
     if (!type) {
-      throw new AppError(404, 'Measurement type not found');
+      throw new AppError(404, t('error.measurementType.notFound'));
     }
     res.status(204).send();
   } catch (error) {

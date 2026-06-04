@@ -5,6 +5,7 @@ import { User } from '../models/User.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { sendVerificationEmail } from './emailService.js';
 import type { AuthTokens } from '@healthbridge/shared';
+import { t } from './i18n.js';
 
 export function generateTokens(userId: string): AuthTokens {
   const accessToken = jwt.sign({ userId }, env.jwtSecret, {
@@ -26,15 +27,15 @@ export async function registerUser(
 ) {
   const existing = await User.findOne({ email: email.toLowerCase().trim() });
   if (existing) {
-    throw new AppError(409, 'Email already registered');
+    throw new AppError(409, t('error.auth.emailAlreadyRegistered'));
   }
 
   if (role && !['doctor', 'analyst'].includes(role)) {
-    throw new AppError(400, 'Invalid role for self-registration');
+    throw new AppError(400, t('error.auth.invalidRole'));
   }
   const userRole = role || 'patient';
   if (userRole === 'patient') {
-    throw new AppError(400, 'Patient registration is not available. Contact your doctor.');
+    throw new AppError(400, t('error.auth.patientRegistration'));
   }
 
   const user = await User.create({ email, password, name, role: userRole });
@@ -49,12 +50,12 @@ export async function registerUser(
 export async function loginUser(email: string, password: string) {
   const user = await User.findOne({ email: email.toLowerCase().trim() });
   if (!user) {
-    throw new AppError(401, 'Invalid email or password');
+    throw new AppError(401, t('error.auth.invalidCredentials'));
   }
 
   const isMatch = await user.comparePassword(password.trim());
   if (!isMatch) {
-    throw new AppError(401, 'Invalid email or password');
+    throw new AppError(401, t('error.auth.invalidCredentials'));
   }
 
   const tokens = generateTokens(user._id.toString());
@@ -66,13 +67,13 @@ export async function refreshTokens(refreshToken: string) {
     const payload = jwt.verify(refreshToken, env.jwtRefreshSecret) as { userId: string };
     const user = await User.findById(payload.userId);
     if (!user) {
-      throw new AppError(401, 'User not found');
+      throw new AppError(401, t('error.auth.userNotFound'));
     }
 
     const tokens = generateTokens(user._id.toString());
     return { user, tokens };
   } catch {
-    throw new AppError(401, 'Invalid refresh token');
+    throw new AppError(401, t('error.auth.invalidRefreshToken'));
   }
 }
 
@@ -91,7 +92,7 @@ export async function verifyEmailToken(token: string) {
   });
 
   if (!user) {
-    throw new AppError(400, 'Invalid or expired verification token');
+    throw new AppError(400, t('error.auth.invalidVerificationToken'));
   }
 
   user.emailVerified = true;
@@ -105,11 +106,11 @@ export async function verifyEmailToken(token: string) {
 export async function resendVerification(email: string) {
   const user = await User.findOne({ email: email.toLowerCase().trim() });
   if (!user) {
-    throw new AppError(404, 'User not found with that email');
+    throw new AppError(404, t('error.auth.userNotFoundWithEmail'));
   }
 
   if (user.emailVerified) {
-    throw new AppError(400, 'Email is already verified');
+    throw new AppError(400, t('error.auth.emailAlreadyVerified'));
   }
 
   const token = await generateVerificationToken(user._id.toString());
@@ -125,7 +126,7 @@ export async function setPassword(token: string, newPassword: string) {
   });
 
   if (!user) {
-    throw new AppError(400, 'Invalid or expired token');
+    throw new AppError(400, t('error.auth.invalidVerificationToken'));
   }
 
   user.password = newPassword;
@@ -140,12 +141,12 @@ export async function setPassword(token: string, newPassword: string) {
 export async function changePassword(userId: string, oldPassword: string, newPassword: string) {
   const user = await User.findById(userId);
   if (!user) {
-    throw new AppError(404, 'User not found');
+    throw new AppError(404, t('error.auth.userNotFound'));
   }
 
   const isMatch = await user.comparePassword(oldPassword);
   if (!isMatch) {
-    throw new AppError(401, 'Current password is incorrect');
+    throw new AppError(401, t('error.auth.currentPasswordIncorrect'));
   }
 
   user.password = newPassword;

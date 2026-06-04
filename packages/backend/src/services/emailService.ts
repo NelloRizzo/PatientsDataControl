@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
+import { t } from './i18n.js';
 
 let etherealTransporter: any = null;
 
@@ -54,8 +55,8 @@ export async function sendEmail(to: string, subject: string, body: string): Prom
 
 export async function sendVerificationEmail(email: string, token: string): Promise<{ success: boolean; previewUrl?: string }> {
   const verificationUrl = `${env.appUrl}/verify-email?token=${token}`;
-  const subject = 'Verify your email address — HealthBridge';
-  const body = `Welcome to HealthBridge!\n\nPlease verify your email address by clicking the link below:\n\n${verificationUrl}\n\nThis link will expire in 24 hours.\n\nIf you did not create an account, please ignore this email.`;
+  const subject = t('email.verifyEmailSubject');
+  const body = t('email.verifyEmailBody', { url: verificationUrl });
 
   const result = await sendEmail(email, subject, body);
   if (result.success) {

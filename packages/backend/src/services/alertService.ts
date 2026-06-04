@@ -6,6 +6,7 @@ import { PatientDoctor } from '../models/PatientDoctor.js';
 import { emailChannel } from './channels/emailChannel.js';
 import type { FieldEvaluation, NotificationChannelType, FieldSummary } from '@healthbridge/shared';
 import type { NotificationChannel } from './channels/channelInterface.js';
+import { t } from './i18n.js';
 
 const channelRegistry: Record<string, NotificationChannel> = {
   email: emailChannel,
@@ -67,8 +68,8 @@ export async function processAlert(
       await Notification.create({
         userId: doctor._id,
         category: field.status === 'danger' ? 'danger' : 'alert',
-        title: `Alert ${measurementType} — ${field.key}`,
-        body: `${field.key}: ${field.value} ${field.unit || ''} (${field.status === 'danger' ? 'Critico' : 'Fuori range'})`,
+        title: t('notification.alertTitle', { type: measurementType, field: field.key }),
+        body: t('notification.alertBody', { field: field.key, value: field.value, unit: field.unit || '', statusLabel: field.status === 'danger' ? t('notification.critical') : t('notification.outOfRange') }),
         referenceId: measurementId,
         referenceModel: 'Measurement',
       });
@@ -106,8 +107,8 @@ export async function processAlert(
     await Notification.create({
       userId: patientId,
       category,
-      title: `${measurementType}: ${field.status === 'danger' ? 'Critico' : 'Avviso'} — ${field.key}`,
-      body: `${field.key}: ${field.value} ${field.unit || ''}`,
+      title: t('notification.alertTitle', { type: measurementType, field: field.key }),
+      body: t('notification.alertBody', { field: field.key, value: field.value, unit: field.unit || '', statusLabel: field.status === 'danger' ? t('notification.critical') : t('notification.warning') }),
       referenceId: measurementId,
       referenceModel: 'Measurement',
     });
@@ -167,8 +168,8 @@ export async function sendInfoNotification(
     await Notification.create({
       userId: doctor._id,
       category: 'info',
-      title: `Nuova misura: ${typeName}`,
-      body: fieldSummary,
+      title: t('notification.infoTitle', { typeName }),
+      body: t('notification.infoBody', { values: fieldSummary }),
       referenceId: measurementId,
       referenceModel: 'Measurement',
     });
@@ -200,8 +201,8 @@ export async function sendInfoNotification(
   await Notification.create({
     userId: patientId,
     category: 'info',
-    title: `Nuova misura registrata: ${typeName}`,
-    body: fieldSummary,
+    title: t('notification.infoTitle', { typeName }),
+    body: t('notification.infoBody', { values: fieldSummary }),
     referenceId: measurementId,
     referenceModel: 'Measurement',
   });

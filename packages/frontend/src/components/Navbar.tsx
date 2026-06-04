@@ -1,17 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { NotificationBell } from './NotificationBell';
 import { GuideButton } from './GuideButton';
 
-const roleLabel: Record<string, string> = {
-  patient: 'Paziente',
-  doctor: 'Medico',
-  admin: 'Admin',
-  analyst: 'Analista',
-};
-
 export function Navbar() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -81,9 +76,9 @@ export function Navbar() {
 
   const profileDropdown = (
     <>
-      {item('Profilo', '/profile')}
-      {user.role === 'patient' && item('Le Mie Misure', '/measurements')}
-      {item('Privacy', '/privacy')}
+      {item(t('ui.nav.profile'), '/profile')}
+      {user.role === 'patient' && item(t('ui.nav.measurements'), '/measurements')}
+      {item(t('ui.nav.privacy'), '/privacy')}
     </>
   );
 
@@ -99,45 +94,45 @@ export function Navbar() {
             <div className="hidden md:flex items-center gap-1">
               {user.role === 'patient' && (
                 <>
-                  <NavLink to="/" label="Dashboard" />
-                  <div id="nav-profile"><Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown></div>
+                  <NavLink to="/" label={t('ui.nav.dashboard')} />
+                  <div id="nav-profile"><Dropdown name="profile" label={t('ui.nav.profile')}>{profileDropdown}</Dropdown></div>
                 </>
               )}
               {user.role === 'doctor' && (
                 <>
-                  <div id="patients-menu"><Dropdown name="patients" label="Pazienti">
-                    {item('I Miei Pazienti', '/doctor/patients')}
-                    {item('Alert', '/doctor/alerts', 'alerts-link')}
+                  <div id="patients-menu"><Dropdown name="patients" label={t('ui.nav.patients')}>
+                    {item(t('ui.nav.myPatients'), '/doctor/patients')}
+                    {item(t('ui.nav.alerts'), '/doctor/alerts', 'alerts-link')}
                   </Dropdown></div>
-                  <div id="tools-menu"><Dropdown name="tools" label="Strumenti">
-                    {item('Analisi', '/analisi')}
-                    {item('Importa Misurazioni', '/measurements/import', 'import-link')}
-                    {item('Contratto', '/doctor/contract')}
-                    {item('Ticket e Segnalazioni', '/doctor/tickets', 'tickets-link')}
+                  <div id="tools-menu"><Dropdown name="tools" label={t('ui.nav.tools')}>
+                    {item(t('ui.nav.analysis'), '/analisi')}
+                    {item(t('ui.nav.import'), '/measurements/import', 'import-link')}
+                    {item(t('ui.nav.contract'), '/doctor/contract')}
+                    {item(t('ui.nav.tickets'), '/doctor/tickets', 'tickets-link')}
                   </Dropdown></div>
-                  <div id="nav-profile"><Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown></div>
+                  <div id="nav-profile"><Dropdown name="profile" label={t('ui.nav.profile')}>{profileDropdown}</Dropdown></div>
                 </>
               )}
               {user.role === 'admin' && (
                 <>
-                  <Dropdown name="admin" label="Amministrazione">
-                    {item('Utenti', '/admin/users')}
-                    {item('Tipi Misurazione', '/admin/measurement-types')}
-                    {item('Associazioni', '/admin/associations')}
-                    {item('Alert Template', '/admin/alert-templates')}
-                    {item('Contratti', '/admin/contracts')}
-                    {item('Report', '/admin/contracts/report')}
-                    {item('Ticket', '/admin/tickets')}
+                  <Dropdown name="admin" label={t('ui.nav.admin')}>
+                    {item(t('ui.nav.users'), '/admin/users')}
+                    {item(t('ui.nav.measurementTypes'), '/admin/measurement-types')}
+                    {item(t('ui.nav.associations'), '/admin/associations')}
+                    {item(t('ui.nav.alertTemplates'), '/admin/alert-templates')}
+                    {item(t('ui.nav.contracts'), '/admin/contracts')}
+                    {item(t('ui.nav.report'), '/admin/contracts/report')}
+                    {item(t('ui.nav.tickets'), '/admin/tickets')}
                   </Dropdown>
-                  <div id="nav-profile"><Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown></div>
+                  <div id="nav-profile"><Dropdown name="profile" label={t('ui.nav.profile')}>{profileDropdown}</Dropdown></div>
                 </>
               )}
               {user.role === 'analyst' && (
                 <>
-                  <div id="tools-menu"><Dropdown name="tools" label="Strumenti">
-                    {item('Analisi', '/analisi')}
+                  <div id="tools-menu"><Dropdown name="tools" label={t('ui.nav.tools')}>
+                    {item(t('ui.nav.analysis'), '/analisi')}
                   </Dropdown></div>
-                  <div id="nav-profile"><Dropdown name="profile" label="Profilo">{profileDropdown}</Dropdown></div>
+                  <div id="nav-profile"><Dropdown name="profile" label={t('ui.nav.profile')}>{profileDropdown}</Dropdown></div>
                 </>
               )}
             </div>
@@ -145,14 +140,14 @@ export function Navbar() {
           <div className="flex items-center gap-2">
             <div id="nav-notification-bell"><NotificationBell /></div>
             <GuideButton />
-            <span className="hidden md:inline text-sm text-gray-500">{user.name} ({roleLabel[user.role] || user.role})</span>
+            <span className="hidden md:inline text-sm text-gray-500">{user.name} ({t(`ui.nav.role${user.role.charAt(0).toUpperCase()}${user.role.slice(1)}`)})</span>
             <button onClick={() => { close(); handleLogout(); }}
               className="hidden md:inline-flex items-center gap-1 px-2 py-1.5 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
-              title="Esci">
+              title={t('ui.nav.logout')}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              <span>Esci</span>
+              <span>{t('ui.nav.logout')}</span>
             </button>
             <button onClick={() => { setMobileOpen(!mobileOpen); setOpenDropdown(null); }}
               className="md:hidden p-2 rounded text-gray-600 hover:text-gray-900 hover:bg-gray-100">
@@ -175,6 +170,7 @@ export function Navbar() {
 }
 
 function MobileNav({ user, close, handleLogout }: { user: any; close: () => void; handleLogout: () => void }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState<string | null>(null);
   const toggleExp = (name: string) => setExpanded((prev) => (prev === name ? null : name));
 
@@ -201,57 +197,57 @@ function MobileNav({ user, close, handleLogout }: { user: any; close: () => void
     <div className="md:hidden border-t py-2 space-y-1">
       {user.role === 'patient' && (
         <>
-          {item('Dashboard', '/')}
-          <Section name="profile" label="Profilo">
-            {item('Profilo', '/profile')}
-            {item('Le Mie Misure', '/measurements/mobile')}
-            {item('Privacy', '/privacy')}
+          {item(t('ui.nav.dashboard'), '/')}
+          <Section name="profile" label={t('ui.nav.profile')}>
+            {item(t('ui.nav.profile'), '/profile')}
+            {item(t('ui.nav.measurements'), '/measurements/mobile')}
+            {item(t('ui.nav.privacy'), '/privacy')}
           </Section>
         </>
       )}
       {user.role === 'doctor' && (
         <>
-          <Section name="patients" label="Pazienti">
-            {item('I Miei Pazienti', '/doctor/patients')}
-            {item('Alert', '/doctor/alerts', 'alerts-link')}
+          <Section name="patients" label={t('ui.nav.patients')}>
+            {item(t('ui.nav.myPatients'), '/doctor/patients')}
+            {item(t('ui.nav.alerts'), '/doctor/alerts', 'alerts-link')}
           </Section>
-          <Section name="tools" label="Strumenti">
-            {item('Analisi', '/analisi')}
-            {item('Importa Misurazioni', '/measurements/import', 'import-link')}
-            {item('Contratto', '/doctor/contract')}
-            {item('Ticket e Segnalazioni', '/doctor/tickets', 'tickets-link')}
+          <Section name="tools" label={t('ui.nav.tools')}>
+            {item(t('ui.nav.analysis'), '/analisi')}
+            {item(t('ui.nav.import'), '/measurements/import', 'import-link')}
+            {item(t('ui.nav.contract'), '/doctor/contract')}
+            {item(t('ui.nav.tickets'), '/doctor/tickets', 'tickets-link')}
           </Section>
-          <Section name="profile" label="Profilo">
-            {item('Profilo', '/profile')}
-            {item('Privacy', '/privacy')}
+          <Section name="profile" label={t('ui.nav.profile')}>
+            {item(t('ui.nav.profile'), '/profile')}
+            {item(t('ui.nav.privacy'), '/privacy')}
           </Section>
         </>
       )}
       {user.role === 'admin' && (
         <>
-          <Section name="admin" label="Amministrazione">
-            {item('Utenti', '/admin/users')}
-            {item('Tipi Misurazione', '/admin/measurement-types')}
-            {item('Associazioni', '/admin/associations')}
-            {item('Alert Template', '/admin/alert-templates')}
-            {item('Contratti', '/admin/contracts')}
-            {item('Report', '/admin/contracts/report')}
-            {item('Ticket', '/admin/tickets')}
+          <Section name="admin" label={t('ui.nav.admin')}>
+            {item(t('ui.nav.users'), '/admin/users')}
+            {item(t('ui.nav.measurementTypes'), '/admin/measurement-types')}
+            {item(t('ui.nav.associations'), '/admin/associations')}
+            {item(t('ui.nav.alertTemplates'), '/admin/alert-templates')}
+            {item(t('ui.nav.contracts'), '/admin/contracts')}
+            {item(t('ui.nav.report'), '/admin/contracts/report')}
+            {item(t('ui.nav.tickets'), '/admin/tickets')}
           </Section>
-          <Section name="profile" label="Profilo">
-            {item('Profilo', '/profile')}
-            {item('Privacy', '/privacy')}
+          <Section name="profile" label={t('ui.nav.profile')}>
+            {item(t('ui.nav.profile'), '/profile')}
+            {item(t('ui.nav.privacy'), '/privacy')}
           </Section>
         </>
       )}
       {user.role === 'analyst' && (
         <>
-          <Section name="tools" label="Strumenti">
-            {item('Analisi', '/analisi')}
+          <Section name="tools" label={t('ui.nav.tools')}>
+            {item(t('ui.nav.analysis'), '/analisi')}
           </Section>
-          <Section name="profile" label="Profilo">
-            {item('Profilo', '/profile')}
-            {item('Privacy', '/privacy')}
+          <Section name="profile" label={t('ui.nav.profile')}>
+            {item(t('ui.nav.profile'), '/profile')}
+            {item(t('ui.nav.privacy'), '/privacy')}
           </Section>
         </>
       )}
@@ -259,13 +255,13 @@ function MobileNav({ user, close, handleLogout }: { user: any; close: () => void
         <GuideButton />
       </div>
       <hr className="my-2 border-gray-200" />
-      <div className="px-4 pb-1 text-xs text-gray-400">{user.name} ({roleLabel[user.role] || user.role})</div>
+      <div className="px-4 pb-1 text-xs text-gray-400">{user.name} ({t(`ui.nav.role${user.role.charAt(0).toUpperCase()}${user.role.slice(1)}`)})</div>
       <button onClick={() => { close(); handleLogout(); }}
         className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded font-medium">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
         </svg>
-        Esci
+        {t('ui.nav.logout')}
       </button>
     </div>
   );

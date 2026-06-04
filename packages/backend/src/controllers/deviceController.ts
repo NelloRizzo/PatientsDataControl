@@ -5,6 +5,7 @@ import type { OAuthType } from '../models/DeviceConnection.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { deviceRegistry } from '../services/device/index.js';
 import { env } from '../config/env.js';
+import { t } from '../services/i18n.js';
 
 export async function listConnections(
   req: AuthRequest,
@@ -51,7 +52,7 @@ export async function disconnect(
       userId: req.userId,
     });
     if (!connection) {
-      throw new AppError(404, 'Connection not found');
+      throw new AppError(404, t('error.device.notFound'));
     }
     res.status(204).send();
   } catch (error) {
@@ -66,7 +67,7 @@ export async function getOAuthUrl(
 ): Promise<void> {
   try {
     const { provider } = req.query as { provider?: string };
-    if (!provider) throw new AppError(400, 'provider query param required');
+    if (!provider) throw new AppError(400, t('error.device.providerRequired'));
 
     const devProv = deviceRegistry.get(provider);
     const redirectUri = `${env.appUrl}/api/devices/callback?provider=${provider}`;
@@ -87,7 +88,7 @@ export async function handleCallback(
 ): Promise<void> {
   try {
     const { code, state, error: oauthError } = req.query as Record<string, string>;
-    if (oauthError) throw new AppError(400, `OAuth error: ${oauthError}`);
+    if (oauthError) throw new AppError(400, t('error.device.oauthError', { error: oauthError }));
 
     const parsed = JSON.parse(Buffer.from(state, 'base64').toString());
     const { userId, provider, upgradeFromConnectionId } = parsed;
@@ -129,7 +130,7 @@ export async function syncProvider(
     const devProv = deviceRegistry.get(provider);
 
     const connection = await DeviceConnection.findOne({ userId: req.userId, provider, active: true });
-    if (!connection) throw new AppError(404, `No active ${provider} connection`);
+    if (!connection) throw new AppError(404, t('error.device.noActiveConnection', { provider }));
 
     let token = connection.accessToken;
     if (connection.expiresAt && connection.expiresAt < new Date() && connection.refreshToken) {
@@ -165,7 +166,7 @@ export async function upgradeToGoogle(
       provider: 'fitbit',
       active: true,
     });
-    if (!connection) throw new AppError(404, 'No active Fitbit connection to upgrade');
+    if (!connection) throw new AppError(404, t('error.device.noFitbitToUpgrade'));
 
     const devProv = deviceRegistry.get('google_health');
     const redirectUri = `${env.appUrl}/api/devices/callback?provider=google_health`;

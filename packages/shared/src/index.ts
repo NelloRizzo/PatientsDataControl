@@ -1,3 +1,4 @@
+export { it, en } from './messages/index.js';
 export * from './types/common.js';
 export * from './types/user.js';
 export * from './types/measurement.js';

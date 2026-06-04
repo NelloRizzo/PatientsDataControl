@@ -2,6 +2,7 @@ import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { ChartConfig } from '../models/ChartConfig.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { t } from '../services/i18n.js';
 
 export async function list(
   req: AuthRequest,
@@ -46,7 +47,7 @@ export async function update(
       { new: true, runValidators: true }
     );
     if (!config) {
-      throw new AppError(404, 'Chart config not found');
+      throw new AppError(404, t('error.chartConfig.notFound'));
     }
     res.json(config);
   } catch (error) {
@@ -65,7 +66,7 @@ export async function remove(
       userId: req.userId,
     });
     if (!config) {
-      throw new AppError(404, 'Chart config not found');
+      throw new AppError(404, t('error.chartConfig.notFound'));
     }
     res.status(204).send();
   } catch (error) {

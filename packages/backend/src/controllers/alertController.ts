@@ -4,6 +4,7 @@ import { AlertTemplate } from '../models/AlertTemplate.js';
 import { AlertLog } from '../models/AlertLog.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { createAlertTemplateSchema, updateAlertTemplateSchema } from '@healthbridge/shared';
+import { t } from '../services/i18n.js';
 
 export async function listTemplates(
   req: AuthRequest,
@@ -25,7 +26,7 @@ export async function createTemplate(
   try {
     const parsed = createAlertTemplateSchema.parse(req.body);
     const existing = await AlertTemplate.findOne({ measurementType: parsed.measurementType, status: parsed.status });
-    if (existing) throw new AppError(409, 'Template already exists for this type and status');
+    if (existing) throw new AppError(409, t('error.template.alreadyExists'));
 
     const doc = await AlertTemplate.create(parsed);
     res.status(201).json({ data: { ...doc.toObject(), _id: doc._id.toString() } });
@@ -40,7 +41,7 @@ export async function updateTemplate(
   try {
     const parsed = updateAlertTemplateSchema.parse(req.body);
     const doc = await AlertTemplate.findByIdAndUpdate(req.params.id, parsed, { new: true, runValidators: true });
-    if (!doc) throw new AppError(404, 'Template not found');
+    if (!doc) throw new AppError(404, t('error.template.notFound'));
     res.json({ data: { ...doc.toObject(), _id: doc._id.toString() } });
   } catch (error) { next(error); }
 }
@@ -52,7 +53,7 @@ export async function deleteTemplate(
 ): Promise<void> {
   try {
     const doc = await AlertTemplate.findByIdAndDelete(req.params.id);
-    if (!doc) throw new AppError(404, 'Template not found');
+    if (!doc) throw new AppError(404, t('error.template.notFound'));
     res.status(204).end();
   } catch (error) { next(error); }
 }

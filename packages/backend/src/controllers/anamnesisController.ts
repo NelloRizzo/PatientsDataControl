@@ -4,6 +4,7 @@ import { Anamnesis } from '../models/Anamnesis.js';
 import { PatientDoctor } from '../models/PatientDoctor.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { createAnamnesisSchema } from '@healthbridge/shared';
+import { t } from '../services/i18n.js';
 
 async function verifyAssociation(doctorId: string, patientId: string) {
   const assoc = await PatientDoctor.findOne({
@@ -11,7 +12,7 @@ async function verifyAssociation(doctorId: string, patientId: string) {
     patientId,
     status: 'active',
   });
-  if (!assoc) throw new AppError(403, 'No active association with this patient');
+  if (!assoc) throw new AppError(403, t('error.association.noActive'));
 }
 
 export async function listAnamnesis(

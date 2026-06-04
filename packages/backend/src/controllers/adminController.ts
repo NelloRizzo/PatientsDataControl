@@ -6,6 +6,7 @@ import { AppError } from '../middleware/errorHandler.js';
 import { registerSchema, createUserSchema, updateUserSchema, resetPasswordSchema } from '@healthbridge/shared';
 import { generateVerificationToken } from '../services/authService.js';
 import { sendVerificationEmail, sendEmail } from '../services/emailService.js';
+import { t } from '../services/i18n.js';
 
 export async function listUsers(
   req: AuthRequest,
@@ -36,15 +37,15 @@ export async function assignDoctor(
       User.findById(doctorId),
     ]);
 
-    if (!patient) throw new AppError(404, 'Patient not found');
-    if (!doctor) throw new AppError(404, 'Doctor not found');
-    if (patient.role !== 'patient') throw new AppError(400, 'User is not a patient');
-    if (doctor.role !== 'doctor') throw new AppError(400, 'User is not a doctor');
+    if (!patient) throw new AppError(404, t('error.patient.notFound'));
+    if (!doctor) throw new AppError(404, t('error.doctor.notFound'));
+    if (patient.role !== 'patient') throw new AppError(400, t('error.patient.notPatient'));
+    if (doctor.role !== 'doctor') throw new AppError(400, t('error.doctor.notDoctor'));
 
     const existing = await PatientDoctor.findOne({ patientId, doctorId });
     if (existing) {
       if (existing.status === 'active') {
-        throw new AppError(409, 'Association already exists');
+        throw new AppError(409, t('error.association.alreadyExists'));
       }
       existing.status = 'active';
       existing.assignedBy = req.userId as any;
@@ -76,7 +77,7 @@ export async function removeAssociation(
       { status: 'inactive' },
       { new: true }
     );
-    if (!association) throw new AppError(404, 'Association not found');
+    if (!association) throw new AppError(404, t('error.association.notFound'));
     res.json(association);
   } catch (error) {
     next(error);
@@ -91,7 +92,7 @@ export async function createUser(
   try {
     const parsed = createUserSchema.parse(req.body);
     const existing = await User.findOne({ email: parsed.email.toLowerCase().trim() });
-    if (existing) throw new AppError(409, 'Email already registered');
+    if (existing) throw new AppError(409, t('error.auth.emailAlreadyRegistered'));
 
     const user = await User.create(parsed);
     const token = await generateVerificationToken(user._id.toString());
@@ -113,12 +114,12 @@ export async function updateUser(
 
     if (parsed.email) {
       const existing = await User.findOne({ email: parsed.email.toLowerCase().trim(), _id: { $ne: id } });
-      if (existing) throw new AppError(409, 'Email already in use');
+      if (existing) throw new AppError(409, t('error.user.emailAlreadyInUse'));
     }
 
     if (parsed.password) {
       const user = await User.findById(id);
-      if (!user) throw new AppError(404, 'User not found');
+      if (!user) throw new AppError(404, t('error.user.notFound'));
       user.password = parsed.password;
       user.set(parsed);
       await user.save();
@@ -127,7 +128,7 @@ export async function updateUser(
     }
 
     const user = await User.findByIdAndUpdate(id, parsed, { new: true }).select('-password');
-    if (!user) throw new AppError(404, 'User not found');
+    if (!user) throw new AppError(404, t('error.user.notFound'));
     res.json({ data: user });
   } catch (error) {
     next(error);
@@ -144,15 +145,15 @@ export async function resetUserPassword(
     const { id } = req.params;
 
     const user = await User.findById(id);
-    if (!user) throw new AppError(404, 'User not found');
-    if (user.email === SYSTEM_ADMIN_EMAIL) throw new AppError(403, 'Cannot reset system admin password');
+    if (!user) throw new AppError(404, t('error.user.notFound'));
+    if (user.email === SYSTEM_ADMIN_EMAIL) throw new AppError(403, t('error.user.cannotResetSystemAdmin'));
 
     user.password = password;
     user.mustChangePassword = true;
     await user.save();
 
-    sendEmail(user.email, 'Password reimpostata — HealthBridge',
-      `Ciao ${user.name},\n\nLa tua password è stata reimpostata dall'amministratore.\n\nAl prossimo accesso ti verrà richiesto di cambiarla.\n\nAccedi qui: ${process.env.APP_URL || 'https://patientshealthbridge-app.onrender.com'}/login`
+    sendEmail(user.email, t('email.resetPasswordByAdminSubject'),
+      t('email.resetPasswordByAdminBody', { name: user.name, url: `${process.env.APP_URL || 'https://patientshealthbridge-app.onrender.com'}/login` })
     );
 
     res.json({ message: 'Password reimpostata con successo' });
@@ -170,13 +171,13 @@ export async function deleteUser(
 ): Promise<void> {
   try {
     const { id } = req.params;
-    if (id === req.userId?.toString()) throw new AppError(400, 'Cannot delete yourself');
+    if (id === req.userId?.toString()) throw new AppError(400, t('error.user.cannotDeleteSelf'));
 
     const target = await User.findById(id).select('email');
-    if (target?.email === SYSTEM_ADMIN_EMAIL) throw new AppError(403, 'Cannot delete system admin');
+    if (target?.email === SYSTEM_ADMIN_EMAIL) throw new AppError(403, t('error.user.cannotDeleteSystemAdmin'));
 
     const user = await User.findByIdAndDelete(id);
-    if (!user) throw new AppError(404, 'User not found');
+    if (!user) throw new AppError(404, t('error.user.notFound'));
 
     await PatientDoctor.deleteMany({
       $or: [{ patientId: id }, { doctorId: id }],

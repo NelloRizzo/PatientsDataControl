@@ -4,7 +4,7 @@ import { requireRole } from '../middleware/roles.js';
 import { validate } from '../middleware/validate.js';
 import * as patientController from '../controllers/patientController.js';
 import * as medicationController from '../controllers/medicationController.js';
-import { updateSharingSchema, privacyConsentSchema, logMedicationSchema } from '@healthbridge/shared';
+import { privacyConsentSchema, logMedicationSchema } from '@healthbridge/shared';
 
 const router = Router();
 
@@ -18,10 +18,6 @@ router.get('/doctors', patientController.myDoctors);
 router.post('/doctors/:doctorId/confirm', patientController.confirmDoctor);
 router.delete('/doctors/:doctorId/reject', patientController.rejectDoctor);
 router.delete('/doctors/:doctorId/disconnect', patientController.disconnectDoctor);
-
-// Sharing
-router.get('/doctors/:doctorId/sharing', patientController.getDoctorSharing);
-router.put('/doctors/:doctorId/sharing', validate(updateSharingSchema), patientController.updateDoctorSharing);
 
 // BMI
 router.get('/bmi', patientController.getBmi);

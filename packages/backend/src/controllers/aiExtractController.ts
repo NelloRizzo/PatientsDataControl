@@ -2,6 +2,7 @@ import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { extractFromImage, extractFromPdfText } from '../services/aiExtractService.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { t } from '../services/i18n.js';
 
 const IMAGE_MIMES = ['image/png', 'image/jpeg', 'image/jpg'];
 const PDF_MIME = 'application/pdf';
@@ -13,7 +14,7 @@ export async function extractMeasurements(
 ): Promise<void> {
   try {
     const file = req.file;
-    if (!file) throw new AppError(400, 'File is required');
+    if (!file) throw new AppError(400, t('error.file.required'));
 
     const mime = file.mimetype.toLowerCase();
 
@@ -29,11 +30,11 @@ export async function extractMeasurements(
       parser.destroy();
       const text = textResult?.text || '';
       if (!text || text.trim().length < 10) {
-        throw new AppError(400, 'Il PDF non contiene testo estraibile. Prova a caricare uno screenshot delle pagine.');
+        throw new AppError(400, t('error.file.noText'));
       }
       result = await extractFromPdfText(text.trim());
     } else {
-      throw new AppError(400, `Formato file non supportato: ${mime}. Usa PNG, JPG o PDF.`);
+      throw new AppError(400, t('error.file.unsupportedFormat', { format: mime }));
     }
 
     res.json({ data: result });

@@ -9,6 +9,7 @@ import { Measurement } from '../models/Measurement.js';
 import { GdprConsent } from '../models/GdprConsent.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { updateSharingSchema, privacyConsentSchema } from '@healthbridge/shared';
+import { t } from '../services/i18n.js';
 
 const BMI_LEVELS = [
   { min: 0, max: 18.5, label: 'Underweight', color: 'text-blue-500' },
@@ -221,7 +222,7 @@ export async function confirmDoctor(
     }).sort({ grantedAt: -1 }).lean();
 
     if (!consent) {
-      throw new AppError(400, 'You must accept the privacy policy before confirming');
+      throw new AppError(400, t('error.association.mustAcceptPrivacy'));
     }
 
     const association = await PatientDoctor.findOneAndUpdate(
@@ -231,7 +232,7 @@ export async function confirmDoctor(
     );
 
     if (!association) {
-      throw new AppError(404, 'No pending association found with this doctor');
+      throw new AppError(404, t('error.association.noPending'));
     }
 
     // Notify the doctor
@@ -239,8 +240,8 @@ export async function confirmDoctor(
     await Notification.create({
       userId: doctorId,
       category: 'info',
-      title: 'Conferma paziente',
-      body: 'Un paziente ha accettato la tua richiesta di assistenza',
+      title: t('notification.patientConfirmed'),
+      body: t('notification.patientConfirmedBody'),
       referenceId: req.userId,
       referenceModel: 'PatientDoctor',
     });
@@ -260,69 +261,13 @@ export async function rejectDoctor(
     const { doctorId } = req.params;
 
     const association = await PatientDoctor.findOneAndUpdate(
-      { patientId: req.userId, doctorId, status: 'pending' },
-      { status: 'rejected' },
-      { new: true }
-    );
-
-    if (!association) {
-      throw new AppError(404, 'No pending association found with this doctor');
-    }
-
-    res.json({ message: 'Association rejected', status: 'rejected' });
-  } catch (error) {
-    next(error);
-  }
-}
-
-// --- Sharing ---
-
-export async function getDoctorSharing(
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const { doctorId } = req.params;
-
-    const association = await PatientDoctor.findOne({
-      patientId: req.userId,
-      doctorId,
-      status: { $in: ['active', 'pending'] },
-    }).select('sharedMeasurementTypes status').lean();
-
-    if (!association) {
-      throw new AppError(404, 'No association found with this doctor');
-    }
-
-    res.json({
-      data: {
-        status: association.status,
-        sharedMeasurementTypes: association.sharedMeasurementTypes || ['*'],
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function updateDoctorSharing(
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const { doctorId } = req.params;
-    const { types } = updateSharingSchema.parse(req.body);
-
-    const association = await PatientDoctor.findOneAndUpdate(
       { patientId: req.userId, doctorId, status: 'active' },
-      { sharedMeasurementTypes: types.length === 0 ? [] : types },
+      { status: 'inactive' },
       { new: true }
     );
 
     if (!association) {
-      throw new AppError(404, 'No active association found with this doctor');
+      throw new AppError(404, t('error.association.noActive'));
     }
 
     res.json({
@@ -349,16 +294,16 @@ export async function disconnectDoctor(
     );
 
     if (!association) {
-      throw new AppError(404, 'No active association found with this doctor');
-    }
+    throw new AppError(404, t('error.association.noActive'));
+  }
 
     // Notify the doctor
     const { Notification } = await import('../models/Notification.js');
     await Notification.create({
       userId: doctorId,
       category: 'info',
-      title: 'Paziente disconnesso',
-      body: 'Un paziente ha rimosso la sua associazione',
+      title: t('notification.disconnected'),
+      body: t('notification.disconnectedBody'),
       referenceId: req.userId,
       referenceModel: 'PatientDoctor',
     });

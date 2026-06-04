@@ -313,6 +313,10 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - **Dashboard.tsx**: stesso componente BMI aggiunto per il paziente (prima di `#patient-chart-section`), visibile solo per ruolo `patient`
 - **Seed**: aggiunte misure di altezza una tantum per ogni paziente (prima del loop dei 30 giorni), con valori realistici (160-182 cm)
 
+## Annotazioni su main (da fixare dopo merge feat/i18n)
+- **Analisi chart alert lines**: le linee di alert nei grafici avanzati (ReferenceLine) devono essere dello stesso colore del grafico corrispondente, altrimenti si confondono essendo attualmente tutte rosse (la colorazione di sfondo ReferenceArea va bene)
+- **Salvataggio config Analisi**: la configurazione salvata non fa renderizzare il grafico al rientro — bug di deserializzazione
+
 ## Future Phases
 - **Phase 3**: BigQuery sync, device OAuth integrations (Fitbit, Google Fit, Samsung Health), webhook endpoint
 - **Notifiche push**: per richieste di condivisione e conferma presa in carico

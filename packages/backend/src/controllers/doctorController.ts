@@ -13,6 +13,7 @@ import { DoctorContract } from '../models/DoctorContract.js';
 import { calculateConsumedSince } from '../services/contractHelper.js';
 import { sendEmail } from '../services/emailService.js';
 import { env } from '../config/env.js';
+import { t } from '../services/i18n.js';
 
 async function verifyAssociation(doctorId: string, patientId: string) {
   const association = await PatientDoctor.findOne({
@@ -21,7 +22,7 @@ async function verifyAssociation(doctorId: string, patientId: string) {
     status: 'active',
   });
   if (!association) {
-    throw new AppError(403, 'You are not authorized to view this patient\'s data');
+    throw new AppError(403, t('error.forbidden'));
   }
 }
 
@@ -157,7 +158,7 @@ export async function addPatient(
     if (req.body.email && !req.body.name) {
       const existingUser = await User.findOne({ email: req.body.email.toLowerCase().trim(), role: 'patient' });
       if (!existingUser) {
-        throw new AppError(404, 'Patient not found with this email. Use "Create Account" to register a new patient.');
+        throw new AppError(404, t('error.patient.notFoundEmail'));
       }
 
       const existingAssoc = await PatientDoctor.findOne({
@@ -166,9 +167,9 @@ export async function addPatient(
       });
       if (existingAssoc) {
         if (existingAssoc.status === 'rejected') {
-          throw new AppError(400, 'Patient rejected your association request previously');
+          throw new AppError(400, t('error.association.patientRejected'));
         }
-        throw new AppError(409, `Association already exists (status: ${existingAssoc.status})`);
+        throw new AppError(409, t('error.association.alreadyExistsStatus', { status: existingAssoc.status }));
       }
 
       // Check max patients
@@ -179,7 +180,7 @@ export async function addPatient(
           status: { $in: ['active', 'pending'] },
         });
         if (activeCount >= doctor.maxPatients) {
-          throw new AppError(403, `Maximum of ${doctor.maxPatients} patients reached. Contact admin.`);
+throw new AppError(403, t('error.association.maxPatients', { max: doctor.maxPatients }));
         }
       }
 
@@ -205,7 +206,7 @@ export async function addPatient(
       const parsed = doctorCreatePatientSchema.parse(req.body);
 
     const existingUser = await User.findOne({ email: parsed.email.toLowerCase().trim() });
-    if (existingUser) throw new AppError(409, 'Email already in use');
+    if (existingUser) throw new AppError(409, t('error.user.emailAlreadyInUse'));
 
     // Check max patients limit
     const doctor = await User.findById(doctorId).select('maxPatients');
@@ -215,7 +216,7 @@ export async function addPatient(
         status: { $in: ['active', 'pending'] },
       });
       if (activeCount >= doctor.maxPatients) {
-        throw new AppError(403, `Maximum of ${doctor.maxPatients} patients reached. Contact admin.`);
+        throw new AppError(403, t('error.association.maxPatients', { max: doctor.maxPatients }));
       }
     }
 
@@ -256,8 +257,8 @@ export async function addPatient(
     }
 
     // Send notification email
-    sendEmail(parsed.email, 'Benvenuto su HealthBridge',
-      `Ciao ${parsed.name},\n\nIl tuo account è stato creato dal dottore. La password temporanea ti è stata comunicata dal tuo medico.\n\nAl primo accesso ti verrà richiesto di cambiare la password.\n\nAccedi qui: ${env.appUrl}/login`
+    sendEmail(parsed.email, t('email.welcomeSubject'),
+      t('email.welcomeBody', { name: parsed.name, url: `${env.appUrl}/login` })
     ).catch(() => {});
 
     // Create association (pending)
@@ -291,7 +292,7 @@ export async function updatePatientAssociation(
     const { status } = req.body;
 
     if (!['active', 'inactive'].includes(status)) {
-      throw new AppError(400, 'Status must be active or inactive');
+      throw new AppError(400, t('error.badRequest'));
     }
 
     const association = await PatientDoctor.findOneAndUpdate(
@@ -318,7 +319,7 @@ export async function removePatientAssociation(
       patientId,
       doctorId: req.userId,
     });
-    if (!association) throw new AppError(404, 'Association not found');
+    if (!association) throw new AppError(404, t('error.association.notFound'));
     res.status(204).end();
   } catch (error) {
     next(error);
@@ -334,14 +335,14 @@ export async function toggleNotify(
     const { patientId } = req.params;
     const { notifyOnNewMeasurement } = req.body;
     if (typeof notifyOnNewMeasurement !== 'boolean') {
-      throw new AppError(400, 'notifyOnNewMeasurement must be a boolean');
+      throw new AppError(400, t('error.badRequest'));
     }
     const association = await PatientDoctor.findOneAndUpdate(
       { patientId, doctorId: req.userId },
       { notifyOnNewMeasurement },
       { new: true }
     );
-    if (!association) throw new AppError(404, 'Association not found');
+    if (!association) throw new AppError(404, t('error.association.notFound'));
     res.json({ notifyOnNewMeasurement: association.notifyOnNewMeasurement });
   } catch (error) {
     next(error);
@@ -405,12 +406,12 @@ export async function updatePatientProfile(
 
     if (parsed.email) {
       const existing = await User.findOne({ email: parsed.email.toLowerCase().trim(), _id: { $ne: patientId } });
-      if (existing) throw new AppError(409, 'Email already in use');
+      if (existing) throw new AppError(409, t('error.user.emailAlreadyInUse'));
     }
 
     if (parsed.password) {
       const user = await User.findById(patientId);
-      if (!user) throw new AppError(404, 'User not found');
+if (!user) throw new AppError(404, t('error.user.notFound'));
       user.password = parsed.password;
       const { password, ...rest } = parsed;
       Object.assign(user, rest);
@@ -439,17 +440,17 @@ export async function resetPatientPassword(
     const { password } = resetPasswordSchema.parse(req.body);
 
     const user = await User.findById(patientId);
-    if (!user) throw new AppError(404, 'Patient not found');
+    if (!user) throw new AppError(404, t('error.patient.notFound'));
 
     user.password = password;
     user.mustChangePassword = true;
     await user.save();
 
-    sendEmail(user.email, 'Password reimpostata — HealthBridge',
-      `Ciao ${user.name},\n\nLa tua password è stata reimpostata dal tuo medico.\n\nAl prossimo accesso ti verrà richiesto di cambiarla.\n\nAccedi qui: ${env.appUrl}/login`
+    sendEmail(user.email, t('email.resetPasswordSubject'),
+      t('email.resetPasswordBody', { name: user.name, url: `${env.appUrl}/login` })
     );
 
-    res.json({ message: 'Password reimpostata con successo' });
+    res.json({ message: t('notification.passwordResetSuccess') });
   } catch (error) {
     next(error);
   }
@@ -516,7 +517,7 @@ export async function addPatientNote(
       await Notification.create({
         userId: patientId,
         category: 'medicalnote',
-        title: 'Nuova nota clinica dal tuo dottore',
+        title: t('notification.newNote'),
         body: content,
         referenceId: note._id,
         referenceModel: 'PatientNote',
@@ -529,10 +530,11 @@ export async function addPatientNote(
         const doctor = await User.findById(req.userId).select('name').lean();
         if (patient?.email) {
           const { sendEmail } = await import('../services/emailService.js');
+          const docName = (doctor as any)?.name || 'doctor';
           await sendEmail(
             patient.email,
-            `Nuova nota clinica dal Dr. ${(doctor as any)?.name || 'tuo dottore'}`,
-            `Il Dr. ${(doctor as any)?.name || 'Il tuo dottore'} ha condiviso una nota clinica con te:\n\n${content}`
+            t('email.newNoteSubject', { doctorName: docName }),
+            t('email.newNoteBody', { doctorName: docName, content })
           );
           await PatientNote.updateOne({ _id: note._id }, { patientNotified: true });
         }
@@ -597,13 +599,13 @@ export async function requestSharing(
     await Notification.create({
       userId: patientId,
       category: 'info',
-      title: 'Richiesta di condivisione dal tuo dottore',
-      body: `Il Dr. ${(doctor as any)?.name || 'Il tuo dottore'} richiede l'accesso a: ${types.join(', ')}`,
+      title: t('notification.sharingRequest'),
+      body: t('notification.sharingRequestBody', { doctorName: (doctor as any)?.name || 'Doctor', types: types.join(', ') }),
       referenceId: patientId,
       referenceModel: 'SharingRequest',
     });
 
-    res.json({ message: 'Sharing request sent to patient' });
+    res.json({ message: t('notification.sharingSent') });
   } catch (error) {
     next(error);
   }
@@ -621,7 +623,7 @@ export async function getPatientSharing(
       patientId,
     }).select('sharedMeasurementTypes status').lean();
 
-    if (!association) throw new AppError(404, 'Association not found');
+    if (!association) throw new AppError(404, t('error.association.notFound'));
 
     res.json({
       data: {

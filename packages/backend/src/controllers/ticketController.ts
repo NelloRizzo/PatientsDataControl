@@ -2,6 +2,7 @@ import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { Ticket } from '../models/Ticket.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { t } from '../services/i18n.js';
 
 // ── User-facing ──
 
@@ -63,10 +64,10 @@ export async function getTicket(
 ): Promise<void> {
   try {
     const ticket = await Ticket.findById(req.params.id).lean();
-    if (!ticket) throw new AppError(404, 'Ticket not found');
+    if (!ticket) throw new AppError(404, t('error.ticket.notFound'));
     // Only owner or admin can view
     if (ticket.userId.toString() !== req.userId! && req.userRole !== 'admin') {
-      throw new AppError(403, 'Not authorized');
+      throw new AppError(403, t('error.ticket.notAuthorized'));
     }
     res.json({ data: ticket });
   } catch (err) {
@@ -122,7 +123,7 @@ export async function updateTicket(
       { $set: req.body },
       { new: true, runValidators: true }
     );
-    if (!ticket) throw new AppError(404, 'Ticket not found');
+    if (!ticket) throw new AppError(404, t('error.ticket.notFound'));
     res.json({ data: ticket });
   } catch (err) {
     next(err);

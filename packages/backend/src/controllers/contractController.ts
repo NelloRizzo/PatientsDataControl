@@ -5,6 +5,7 @@ import { DoctorContract } from '../models/DoctorContract.js';
 import { PatientDoctor } from '../models/PatientDoctor.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { monthsBetween, calculateContractFee } from '../services/contractHelper.js';
+import { t } from '../services/i18n.js';
 
 export async function listContracts(
   req: AuthRequest,
@@ -65,11 +66,11 @@ export async function createContract(
 
     const doctor = await User.findById(doctorId);
     if (!doctor || doctor.role !== 'doctor') {
-      throw new AppError(400, 'Invalid doctor');
+      throw new AppError(400, t('error.contract.invalidDoctor'));
     }
 
     if (new Date(startDate) >= new Date(endDate)) {
-      throw new AppError(400, 'startDate must be before endDate');
+      throw new AppError(400, t('error.contract.invalidDates'));
     }
 
     const contract = await DoctorContract.create({
@@ -109,7 +110,7 @@ export async function updateContract(
     }
 
     const contract = await DoctorContract.findByIdAndUpdate(id, { $set: updates }, { new: true });
-    if (!contract) throw new AppError(404, 'Contract not found');
+    if (!contract) throw new AppError(404, t('error.contract.notFound'));
 
     // Sync User.maxPatients if status changed or maxPatients changed
     if (updates.status === 'active' || (contract.status === 'active' && updates.maxPatients != null)) {
@@ -132,7 +133,7 @@ export async function deleteContract(
 ): Promise<void> {
   try {
     const contract = await DoctorContract.findByIdAndDelete(req.params.id);
-    if (!contract) throw new AppError(404, 'Contract not found');
+    if (!contract) throw new AppError(404, t('error.contract.notFound'));
     res.status(204).end();
   } catch (error) {
     next(error);
@@ -151,7 +152,7 @@ export async function invoiceContract(
       { $set: { lastInvoiceDate: new Date() } },
       { new: true }
     );
-    if (!contract) throw new AppError(404, 'Contract not found');
+    if (!contract) throw new AppError(404, t('error.contract.notFound'));
     res.json({ data: contract.toJSON() });
   } catch (error) {
     next(error);
@@ -165,7 +166,7 @@ export async function getContractReport(
 ): Promise<void> {
   try {
     const { from, to } = req.query as Record<string, string>;
-    if (!from || !to) throw new AppError(400, 'from and to query parameters are required');
+    if (!from || !to) throw new AppError(400, t('error.contract.paramsRequired'));
 
     const fromDate = new Date(from);
     const toDate = new Date(to);
