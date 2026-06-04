@@ -265,23 +265,31 @@ export function Analisi() {
           }
         }
       }
-      const allThresholds = new Map<string, { value: number; color: string }>();
-      const addThreshold = (value: number, label: string, color: string) => {
-        const key = `${value}`;
-        if (!allThresholds.has(key)) allThresholds.set(key, { value, color });
-      };
-      for (const t of activeTypes) {
-        for (const f of t.fields) {
-          if (f.dangerMin != null) addThreshold(f.dangerMin, `${f.dangerMin}${f.unit ? ' ' + f.unit : ''}`, '#ef4444');
-          if (f.alertMin != null) addThreshold(f.alertMin, `${f.alertMin}${f.unit ? ' ' + f.unit : ''}`, '#ca8a04');
-          if (f.alertMax != null) addThreshold(f.alertMax, `${f.alertMax}${f.unit ? ' ' + f.unit : ''}`, '#ca8a04');
-          if (f.dangerMax != null) addThreshold(f.dangerMax, `${f.dangerMax}${f.unit ? ' ' + f.unit : ''}`, '#ef4444');
+      // Build field→color lookup from series
+      const fieldColorMap = new Map<string, string>();
+      newSeries.forEach((s) => fieldColorMap.set(s.key, s.color));
+
+      const newThresholdLines: KpiThresholdLine[] = [];
+      if (scopeMode === 'single') {
+        for (const t of activeTypes) {
+          const agg = typeAggregations[t.key] || 'avg';
+          for (const f of t.fields) {
+            const seriesKey = `${t.key}__${f.key}`;
+            const color = fieldColorMap.get(seriesKey) || '#6b7280';
+            const addLine = (value: number) => {
+              newThresholdLines.push({
+                value,
+                label: `${value}${f.unit ? ' ' + f.unit : ''}`,
+                color,
+              });
+            };
+            if (f.dangerMin != null) addLine(f.dangerMin);
+            if (f.alertMin != null) addLine(f.alertMin);
+            if (f.alertMax != null) addLine(f.alertMax);
+            if (f.dangerMax != null) addLine(f.dangerMax);
+          }
         }
       }
-      const newThresholdLines: KpiThresholdLine[] = Array.from(allThresholds.entries())
-        .filter(([_, v]) => v.value > 0)
-        .sort((a, b) => a[1].value - b[1].value)
-        .map(([key, v]) => ({ value: v.value, label: key, color: v.color }));
       setSeries(newSeries);
       setKpiBands(newKpiBands);
       setKpiThresholdLines(newThresholdLines);
@@ -348,7 +356,7 @@ export function Analisi() {
 
   const handleLoadConfig = (id: string) => {
     const cfg = savedConfigs.find((c) => c._id === id);
-    if (cfg) { applyConfig(cfg); setSelectedConfigId(id); }
+    if (cfg) { applyConfig(cfg); setSelectedConfigId(id); setTimeout(() => loadData(), 0); }
   };
 
   // Get active types as array
