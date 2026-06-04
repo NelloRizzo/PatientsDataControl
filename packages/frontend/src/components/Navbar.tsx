@@ -204,7 +204,7 @@ function MobileNav({ user, close, handleLogout }: { user: any; close: () => void
           {item('Dashboard', '/')}
           <Section name="profile" label="Profilo">
             {item('Profilo', '/profile')}
-            {item('Le Mie Misure', '/measurements')}
+            {item('Le Mie Misure', '/measurements/mobile')}
             {item('Privacy', '/privacy')}
           </Section>
         </>

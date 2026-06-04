@@ -28,14 +28,19 @@ import { Help } from './pages/Help';
 import { Notifications } from './pages/Notifications';
 import { VerifyEmail } from './pages/VerifyEmail';
 import { Privacy } from './pages/Privacy';
+import { useMediaQuery } from './hooks/useMediaQuery';
 
 const queryClient = new QueryClient();
 
 function RootRedirect() {
   const { user } = useAuth();
+  const isMobile = useMediaQuery('(max-width: 767px)');
   if (user?.role === 'doctor') return <Navigate to="/doctor/patients" replace />;
   if (user?.role === 'admin') return <Navigate to="/admin/users" replace />;
-  if (user?.role === 'patient') return <Navigate to="/measurements" replace />;
+  if (user?.role === 'patient') {
+    if (isMobile) return <Navigate to="/measurements/mobile" replace />;
+    return <Navigate to="/measurements" replace />;
+  }
   return null;
 }
 
