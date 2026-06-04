@@ -245,7 +245,7 @@ export function MobileMeasurement() {
       {/* Footer */}
       <div className="px-4 pb-6">
         <Link
-          to="/?full=1"
+          to="/measurements"
           className="block w-full text-center text-sm text-gray-500 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
         >
           Vai alla Dashboard
