@@ -4,6 +4,7 @@ import {
   ReferenceArea, ReferenceLine,
 } from 'recharts';
 import type { ChartType, TrendMethod } from '@healthbridge/shared';
+import { type ReactNode, useRef } from 'react';
 
 export interface SeriesDefinition {
   key: string;
@@ -36,6 +37,7 @@ export interface MultiTypeChartProps {
   trendMethod: TrendMethod;
   trendWindow: number;
   loading?: boolean;
+  onSeriesColorChange?: (seriesKey: string, color: string) => void;
 }
 
 function formatDate(value: string) {
@@ -79,7 +81,28 @@ function calculateLinearRegression(data: Record<string, any>[], key: string): (n
   return data.map((_, i) => Math.round((slope * i + intercept) * 100) / 100);
 }
 
-export function MultiTypeChart({ data, series, chartType, showKpi, kpiBands, kpiThresholdLines, showTrend, trendMethod, trendWindow, loading }: MultiTypeChartProps) {
+function LegendContent({ series, onColorChange }: { series: SeriesDefinition[]; onColorChange?: (key: string, color: string) => void }) {
+  const colorRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  return (
+    <ul className="flex flex-wrap gap-x-4 gap-y-1 justify-center text-xs mt-2">
+      {series.map((s) => (
+        <li key={s.key} className="flex items-center gap-1 cursor-pointer hover:opacity-80"
+          onClick={() => colorRefs.current[s.key]?.click()}>
+          <span className="relative inline-flex items-center">
+            <input type="color" defaultValue={s.color}
+              ref={(el) => { colorRefs.current[s.key] = el; }}
+              onChange={(e) => onColorChange?.(s.key, e.target.value)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+            <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: s.color }} />
+          </span>
+          <span className="text-gray-700">{s.label}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function MultiTypeChart({ data, series, chartType, showKpi, kpiBands, kpiThresholdLines, showTrend, trendMethod, trendWindow, loading, onSeriesColorChange }: MultiTypeChartProps) {
   if (loading) {
     return <p className="text-gray-500 text-center py-12">Caricamento grafico...</p>;
   }
@@ -113,7 +136,7 @@ export function MultiTypeChart({ data, series, chartType, showKpi, kpiBands, kpi
   chartChildren.push(<XAxis key="x" dataKey="timestamp" tickFormatter={formatDate} />);
   chartChildren.push(<YAxis key="y" />);
   chartChildren.push(<Tooltip key="tooltip" labelFormatter={formatDate} />);
-  chartChildren.push(<Legend key="legend" />);
+  chartChildren.push(<Legend key="legend" content={<LegendContent series={series} onColorChange={onSeriesColorChange} />} />);
 
   if (showKpi) {
     for (let i = 0; i < kpiBands.length; i++) {

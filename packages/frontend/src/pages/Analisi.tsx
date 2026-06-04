@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getMeasurementTypes } from '../api/measurementTypes';
 import { getChartConfigs, createChartConfig, deleteChartConfig } from '../api/chartConfigs';
 import { useAuth } from '../context/AuthContext';
@@ -55,6 +55,15 @@ export function Analisi() {
   const [selectedTypes, setSelectedTypes] = useState<Record<string, boolean>>({});
   const [typeAggregations, setTypeAggregations] = useState<Record<string, AggregationFunction>>({});
   const [typeColors, setTypeColors] = useState<Record<string, string>>({});
+  const typeColorsRef = useRef<Record<string, string>>({});
+  const updateTypeColors = useCallback((update: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => {
+    if (typeof update === 'function') {
+      setTypeColors((prev) => { const next = update(prev); typeColorsRef.current = next; return next; });
+    } else {
+      typeColorsRef.current = update;
+      setTypeColors(update);
+    }
+  }, []);
 
   // Controls
   const [groupBy, setGroupBy] = useState<TimeGroupBy>('day');
@@ -123,7 +132,7 @@ export function Analisi() {
       setSelectedTypes(sel);
     }
     if (cfg.typeAggregations) setTypeAggregations(cfg.typeAggregations);
-    if (cfg.typeColors) setTypeColors(cfg.typeColors);
+    if (cfg.typeColors) updateTypeColors(cfg.typeColors);
     if (cfg.groupBy) setGroupBy(cfg.groupBy);
     if (cfg.chartType) setChartType(cfg.chartType);
     if (cfg.showKpi != null) setShowKpi(cfg.showKpi);
@@ -211,17 +220,19 @@ export function Analisi() {
       const merged = Object.values(byTs).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
       setChartData(merged);
 
-      // Build series definitions
+      // Build series definitions using saved colors from ref where available
       const newSeries: SeriesDefinition[] = [];
       const newKpiBands: KpiBand[] = [];
       let colorIdx = 0;
+      const savedColors = typeColorsRef.current;
 
       if (scopeMode === 'single') {
         for (const t of activeTypes) {
           const agg = typeAggregations[t.key] || 'avg';
           for (const f of t.fields) {
             const key = `${t.key}__${f.key}`;
-            const color = typeColors[t.key] || TYPE_COLORS[colorIdx % TYPE_COLORS.length];
+            const baseColor = TYPE_COLORS[colorIdx % TYPE_COLORS.length];
+            const color = savedColors[key] || baseColor;
             newSeries.push({ key, label: `${t.name} — ${f.name} (${agg})`, color, unit: f.unit });
             // KPI bands
             const dMin = f.dangerMin ?? null;
@@ -247,7 +258,8 @@ export function Analisi() {
           const agg = typeAggregations[r.type] || 'avg';
           for (const f of typeCfg.fields) {
             const key = `${r.prefix}__${f.key}`;
-            const color = PATIENT_COLORS[colorIdx % PATIENT_COLORS.length];
+            const baseColor = PATIENT_COLORS[colorIdx % PATIENT_COLORS.length];
+            const color = savedColors[key] || baseColor;
             newSeries.push({ key, label: `${r.prefix} — ${f.name} (${agg})`, color, unit: f.unit });
             // KPI bands (same thresholds per type, regardless of patient)
             const dMin = f.dangerMin ?? null;
@@ -300,7 +312,7 @@ export function Analisi() {
     } finally {
       setLoading(false);
     }
-  }, [types, selectedTypes, typeAggregations, typeColors, scopeMode, selectedPatient, selectedPatients, groupBy, chartType, dateFrom, dateTo, patients, isDoctor]);
+  }, [types, selectedTypes, typeAggregations, scopeMode, selectedPatient, selectedPatients, groupBy, chartType, dateFrom, dateTo, patients, isDoctor]);
 
   // Auto-load data when a saved config is selected
   useEffect(() => {
@@ -351,6 +363,11 @@ export function Analisi() {
       setConfigErr(err.response?.data?.error || 'Errore salvataggio');
     }
   };
+
+  const handleSeriesColorChange = useCallback((seriesKey: string, color: string) => {
+    setSeries((prev) => prev.map((s) => s.key === seriesKey ? { ...s, color } : s));
+    updateTypeColors((prev) => ({ ...prev, [seriesKey]: color }));
+  }, []);
 
   const handleDeleteConfig = async () => {
     if (!selectedConfigId) return;
@@ -462,20 +479,15 @@ export function Analisi() {
               </summary>
               <div className="flex flex-wrap gap-x-4 gap-y-2 pl-2">
                 {groupTypes.map((t, i) => {
-                  const color = typeColors[t.key] || TYPE_COLORS[i % TYPE_COLORS.length];
+                  const color = TYPE_COLORS[i % TYPE_COLORS.length];
                   return (
                     <div key={t.key} className="flex items-center gap-2">
                       <label className="flex items-center gap-1 cursor-pointer">
                         <input type="checkbox" checked={!!selectedTypes[t.key]}
                           onChange={() => toggleType(t.key)} className="accent-blue-600" />
+                        <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: color }} />
                         <span>{t.name}</span>
                       </label>
-                      <span className="relative inline-flex items-center" onMouseDown={(e) => e.stopPropagation()}>
-                        <input type="color" value={color}
-                          onChange={(e) => setTypeColors((prev) => ({ ...prev, [t.key]: e.target.value }))}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                        <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: color }} />
-                      </span>
                       <select value={typeAggregations[t.key] || 'avg'}
                         onChange={(e) => setTypeAggregations((prev) => ({ ...prev, [t.key]: e.target.value as AggregationFunction }))}
                         className="text-xs border rounded px-1 py-0.5"
@@ -581,6 +593,7 @@ export function Analisi() {
             trendMethod={trendMethod}
             trendWindow={trendWindow}
             loading={loading}
+            onSeriesColorChange={handleSeriesColorChange}
           />
         </div>
       )}
@@ -609,6 +622,7 @@ export function Analisi() {
                   trendMethod={trendMethod}
                   trendWindow={trendWindow}
                   loading={false}
+                  onSeriesColorChange={handleSeriesColorChange}
                 />
               </div>
             );
