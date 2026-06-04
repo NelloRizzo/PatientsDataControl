@@ -275,11 +275,11 @@ async function seed() {
   const patients = users.filter((u) => u.role === 'patient');
 
   const associations = await PatientDoctor.insertMany([
-    { patientId: patients[0]._id, doctorId: drSmith._id, status: 'active', assignedBy: admin._id, assignedAt: new Date() },
-    { patientId: patients[1]._id, doctorId: drSmith._id, status: 'active', assignedBy: admin._id, assignedAt: new Date() },
-    { patientId: patients[2]._id, doctorId: drSmith._id, status: 'active', assignedBy: admin._id, assignedAt: new Date() },
-    { patientId: patients[3]._id, doctorId: drJones._id, status: 'active', assignedBy: admin._id, assignedAt: new Date() },
-    { patientId: patients[4]._id, doctorId: drJones._id, status: 'active', assignedBy: admin._id, assignedAt: new Date() },
+    { patientId: patients[0]._id, doctorId: drSmith._id, status: 'active', notifyOnNewMeasurement: true, assignedBy: admin._id, assignedAt: new Date() },
+    { patientId: patients[1]._id, doctorId: drSmith._id, status: 'active', notifyOnNewMeasurement: true, assignedBy: admin._id, assignedAt: new Date() },
+    { patientId: patients[2]._id, doctorId: drSmith._id, status: 'active', notifyOnNewMeasurement: true, assignedBy: admin._id, assignedAt: new Date() },
+    { patientId: patients[3]._id, doctorId: drJones._id, status: 'active', notifyOnNewMeasurement: true, assignedBy: admin._id, assignedAt: new Date() },
+    { patientId: patients[4]._id, doctorId: drJones._id, status: 'active', notifyOnNewMeasurement: true, assignedBy: admin._id, assignedAt: new Date() },
   ]);
   console.log(`  Created ${associations.length} associations.`);
 

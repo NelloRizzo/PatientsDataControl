@@ -516,7 +516,7 @@ export async function addPatientNote(
       await Notification.create({
         userId: patientId,
         category: 'medicalnote',
-        title: 'New clinical note from your doctor',
+        title: 'Nuova nota clinica dal tuo dottore',
         body: content,
         referenceId: note._id,
         referenceModel: 'PatientNote',
@@ -531,8 +531,8 @@ export async function addPatientNote(
           const { sendEmail } = await import('../services/emailService.js');
           await sendEmail(
             patient.email,
-            `New clinical note from Dr. ${(doctor as any)?.name || 'your doctor'}`,
-            `Dr. ${(doctor as any)?.name || 'Your doctor'} has shared a clinical note with you:\n\n${content}`
+            `Nuova nota clinica dal Dr. ${(doctor as any)?.name || 'tuo dottore'}`,
+            `Il Dr. ${(doctor as any)?.name || 'Il tuo dottore'} ha condiviso una nota clinica con te:\n\n${content}`
           );
           await PatientNote.updateOne({ _id: note._id }, { patientNotified: true });
         }
@@ -597,8 +597,8 @@ export async function requestSharing(
     await Notification.create({
       userId: patientId,
       category: 'info',
-      title: 'Sharing request from your doctor',
-      body: `Dr. ${(doctor as any)?.name || 'Your doctor'} requests access to: ${types.join(', ')}`,
+      title: 'Richiesta di condivisione dal tuo dottore',
+      body: `Il Dr. ${(doctor as any)?.name || 'Il tuo dottore'} richiede l'accesso a: ${types.join(', ')}`,
       referenceId: patientId,
       referenceModel: 'SharingRequest',
     });

@@ -31,6 +31,10 @@ export function Profile() {
   const [gdprHistory, setGdprHistory] = useState<any[]>([]);
   const [gdprMsg, setGdprMsg] = useState('');
 
+  // My doctors
+  const [myDoctors, setMyDoctors] = useState<any[]>([]);
+  const [doctorMsg, setDoctorMsg] = useState('');
+
   // Device connections
   const [connections, setConnections] = useState<IDeviceConnection[]>([]);
   const [connLoading, setConnLoading] = useState(false);
@@ -53,7 +57,10 @@ export function Profile() {
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
-    if (user?.role === 'patient') fetchConnections();
+    if (user?.role === 'patient') {
+      fetchConnections();
+      apiClient.get('/patient/doctors').then((res) => setMyDoctors(res.data.data)).catch(() => {});
+    }
   }, [user]);
 
   const fetchConnections = async () => {
@@ -132,6 +139,42 @@ export function Profile() {
       setGdprMsg('Consent revoked');
       apiClient.get('/patient/privacy-consent').then((res) => setGdprHistory(res.data.data)).catch(() => {});
     } catch { setGdprMsg('Failed to revoke consent'); }
+  };
+
+  const handleDisconnectDoctor = async (doctorId: string) => {
+    if (!confirm('Rimuovere questo dottore dalla tua lista?')) return;
+    setDoctorMsg('');
+    try {
+      await apiClient.delete(`/patient/doctors/${doctorId}/disconnect`);
+      setMyDoctors((prev) => prev.filter((d) => d.doctorId !== doctorId));
+      setDoctorMsg('Dottore rimosso con successo');
+    } catch (err: any) {
+      setDoctorMsg(err.response?.data?.error || 'Errore rimozione dottore');
+    }
+  };
+
+  const handleConfirmDoctor = async (doctorId: string) => {
+    setDoctorMsg('');
+    try {
+      await apiClient.post(`/patient/doctors/${doctorId}/confirm`);
+      setMyDoctors((prev) =>
+        prev.map((d) => (d.doctorId === doctorId ? { ...d, status: 'active' } : d))
+      );
+      setDoctorMsg('Dottore confermato con successo');
+    } catch (err: any) {
+      setDoctorMsg(err.response?.data?.error || 'Errore conferma dottore');
+    }
+  };
+
+  const handleRejectDoctor = async (doctorId: string) => {
+    setDoctorMsg('');
+    try {
+      await apiClient.delete(`/patient/doctors/${doctorId}/reject`);
+      setMyDoctors((prev) => prev.filter((d) => d.doctorId !== doctorId));
+      setDoctorMsg('Dottore rifiutato');
+    } catch (err: any) {
+      setDoctorMsg(err.response?.data?.error || 'Errore rifiuto dottore');
+    }
   };
 
   if (!user) return null;
@@ -403,6 +446,58 @@ export function Profile() {
           </div>
 
           {connMsg && <p className="text-xs text-green-600">{connMsg}</p>}
+        </div>
+      )}
+
+      {/* My Doctors — visible only for patients */}
+      {user.role === 'patient' && (
+        <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border space-y-4">
+          <h2 className="text-lg font-semibold">I Miei Dottori</h2>
+          {myDoctors.length === 0 ? (
+            <p className="text-sm text-gray-500 italic">Nessun dottore collegato.</p>
+          ) : (
+            <div className="space-y-2">
+              {myDoctors.map((d: any) => (
+                <div key={d._id} className="border rounded p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{d.doctorName}</p>
+                    <p className="text-xs text-gray-500">{d.doctorEmail}</p>
+                    {d.doctorSpecialty && (
+                      <p className="text-xs text-gray-400">{d.doctorSpecialty}</p>
+                    )}
+                    <span className={`text-xs px-1.5 py-0.5 rounded inline-block mt-1 ${
+                      d.status === 'active' ? 'bg-green-100 text-green-700' :
+                      d.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {d.status === 'active' ? 'Collegato' : d.status === 'pending' ? 'In attesa' : 'Inattivo'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {d.status === 'pending' && (
+                      <>
+                        <button onClick={() => handleConfirmDoctor(d.doctorId)}
+                          className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">
+                          Accetta
+                        </button>
+                        <button onClick={() => handleRejectDoctor(d.doctorId)}
+                          className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">
+                          Rifiuta
+                        </button>
+                      </>
+                    )}
+                    {d.status === 'active' && (
+                      <button onClick={() => handleDisconnectDoctor(d.doctorId)}
+                        className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200">
+                        Disconnetti
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {doctorMsg && <p className="text-xs text-green-600">{doctorMsg}</p>}
         </div>
       )}
 

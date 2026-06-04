@@ -239,8 +239,8 @@ export async function confirmDoctor(
     await Notification.create({
       userId: doctorId,
       category: 'info',
-      title: 'Patient confirmed',
-      body: 'A patient has confirmed your care request',
+      title: 'Conferma paziente',
+      body: 'Un paziente ha accettato la tua richiesta di assistenza',
       referenceId: req.userId,
       referenceModel: 'PatientDoctor',
     });
@@ -329,6 +329,41 @@ export async function updateDoctorSharing(
       message: 'Sharing settings updated',
       sharedMeasurementTypes: association.sharedMeasurementTypes,
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function disconnectDoctor(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { doctorId } = req.params;
+
+    const association = await PatientDoctor.findOneAndUpdate(
+      { patientId: req.userId, doctorId, status: 'active' },
+      { status: 'inactive' },
+      { new: true }
+    );
+
+    if (!association) {
+      throw new AppError(404, 'No active association found with this doctor');
+    }
+
+    // Notify the doctor
+    const { Notification } = await import('../models/Notification.js');
+    await Notification.create({
+      userId: doctorId,
+      category: 'info',
+      title: 'Paziente disconnesso',
+      body: 'Un paziente ha rimosso la sua associazione',
+      referenceId: req.userId,
+      referenceModel: 'PatientDoctor',
+    });
+
+    res.json({ message: 'Association deactivated', status: 'inactive' });
   } catch (error) {
     next(error);
   }

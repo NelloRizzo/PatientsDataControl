@@ -17,6 +17,7 @@ router.get('/anamnesis', patientController.myAnamnesis);
 router.get('/doctors', patientController.myDoctors);
 router.post('/doctors/:doctorId/confirm', patientController.confirmDoctor);
 router.delete('/doctors/:doctorId/reject', patientController.rejectDoctor);
+router.delete('/doctors/:doctorId/disconnect', patientController.disconnectDoctor);
 
 // Sharing
 router.get('/doctors/:doctorId/sharing', patientController.getDoctorSharing);

@@ -63,6 +63,16 @@ export async function processAlert(
       const doctor = doctorAssoc.doctorId as any;
       if (!doctor?.email) continue;
 
+      // In-app notification for the doctor
+      await Notification.create({
+        userId: doctor._id,
+        category: field.status === 'danger' ? 'danger' : 'alert',
+        title: `Alert ${measurementType} — ${field.key}`,
+        body: `${field.key}: ${field.value} ${field.unit || ''} (${field.status === 'danger' ? 'Critico' : 'Fuori range'})`,
+        referenceId: measurementId,
+        referenceModel: 'Measurement',
+      });
+
       for (const channelCfg of template.channels) {
         if (!channelCfg.enabled) continue;
 
@@ -96,7 +106,7 @@ export async function processAlert(
     await Notification.create({
       userId: patientId,
       category,
-      title: `${measurementType}: ${field.status === 'danger' ? 'Critical' : 'Warning'} - ${field.key}`,
+      title: `${measurementType}: ${field.status === 'danger' ? 'Critico' : 'Avviso'} — ${field.key}`,
       body: `${field.key}: ${field.value} ${field.unit || ''}`,
       referenceId: measurementId,
       referenceModel: 'Measurement',
@@ -153,6 +163,16 @@ export async function sendInfoNotification(
     const doctor = doctorAssoc.doctorId as any;
     if (!doctor?.email) continue;
 
+    // In-app notification for the doctor
+    await Notification.create({
+      userId: doctor._id,
+      category: 'info',
+      title: `Nuova misura: ${typeName}`,
+      body: fieldSummary,
+      referenceId: measurementId,
+      referenceModel: 'Measurement',
+    });
+
     for (const channelCfg of template.channels) {
       if (!channelCfg.enabled) continue;
 
@@ -180,7 +200,7 @@ export async function sendInfoNotification(
   await Notification.create({
     userId: patientId,
     category: 'info',
-    title: `New measurement recorded: ${typeName}`,
+    title: `Nuova misura registrata: ${typeName}`,
     body: fieldSummary,
     referenceId: measurementId,
     referenceModel: 'Measurement',

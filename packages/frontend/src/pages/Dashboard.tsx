@@ -89,7 +89,7 @@ export function Dashboard() {
     try {
       await apiClient.post(`/patient/doctors/${doctorId}/confirm`);
       setMyDoctors((prev) =>
-        prev.map((d) => (d._id === doctorId ? { ...d, status: 'active' } : d))
+        prev.map((d) => (d.doctorId === doctorId ? { ...d, status: 'active' } : d))
       );
     } catch {}
   };
@@ -97,7 +97,7 @@ export function Dashboard() {
   const handleRejectDoctor = async (doctorId: string) => {
     try {
       await apiClient.delete(`/patient/doctors/${doctorId}/reject`);
-      setMyDoctors((prev) => prev.filter((d) => d._id !== doctorId));
+      setMyDoctors((prev) => prev.filter((d) => d.doctorId !== doctorId));
     } catch {}
   };
 
@@ -353,8 +353,8 @@ export function Dashboard() {
               <div key={d._id}>
                 <div className="px-4 py-3 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">{d.name}</p>
-                    <p className="text-xs text-gray-500">{d.email}</p>
+                    <p className="text-sm font-medium">{d.doctorName}</p>
+                    <p className="text-xs text-gray-500">{d.doctorEmail}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs px-2 py-0.5 rounded ${
@@ -363,18 +363,18 @@ export function Dashboard() {
                       'bg-red-100 text-red-700'
                     }`}>{d.status}</span>
                     {d.status === 'active' && (
-                      <button onClick={() => openSharing(d._id)}
+                      <button onClick={() => openSharing(d.doctorId)}
                         className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded hover:bg-purple-700">
                         Sharing
                       </button>
                     )}
                     {d.status === 'pending' && (
                       <>
-                        <button onClick={() => handleConfirmDoctor(d._id)}
+                        <button onClick={() => handleConfirmDoctor(d.doctorId)}
                           className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700">
                           Confirm
                         </button>
-                        <button onClick={() => handleRejectDoctor(d._id)}
+                        <button onClick={() => handleRejectDoctor(d.doctorId)}
                           className="text-xs bg-red-600 text-white px-2 py-0.5 rounded hover:bg-red-700">
                           Reject
                         </button>
@@ -383,10 +383,10 @@ export function Dashboard() {
                   </div>
                 </div>
                 {/* Sharing modal inline */}
-                {sharingDoctorId === d._id && (
+                {sharingDoctorId === d.doctorId && (
                   <div className="px-4 pb-3 border-t pt-2 space-y-2">
                     <p className="text-xs font-medium text-gray-600">
-                      Measurement types shared with {d.name}:
+                      Measurement types shared with {d.doctorName}:
                     </p>
                     {sharingTypes.includes('*') ? (
                       <p className="text-xs text-green-600">All types currently visible</p>
