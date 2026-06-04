@@ -314,6 +314,7 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - **Seed**: aggiunte misure di altezza una tantum per ogni paziente (prima del loop dei 30 giorni), con valori realistici (160-182 cm)
 Le annotazioni/issues sono in `todo/` (locale, non versionato).
 L'agente non implementa nulla senza esplicita richiesta "procediamo con l'implementazione del todo N." oppure con data/ora del todo.
+Tutta la discussione/ragionamento va solo nei todo. Niente modifiche a codice finché non arriva richiesta esplicita di implementazione.
 
 ## Future Phases
 - **Phase 3**: BigQuery sync, device OAuth integrations (Fitbit, Google Fit, Samsung Health), webhook endpoint
