@@ -19,8 +19,9 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
-    const isAuthRoute = original?.url?.startsWith('/auth/');
-    if (error.response?.status === 401 && !original._retry && !isAuthRoute) {
+    const noRefreshRoutes = ['/auth/login', '/auth/register', '/auth/refresh'];
+    const isNoRefresh = noRefreshRoutes.some(p => original?.url?.startsWith(p));
+    if (error.response?.status === 401 && !original._retry && !isNoRefresh) {
       original._retry = true;
       try {
         const refreshToken = localStorage.getItem('refreshToken');
@@ -33,9 +34,7 @@ apiClient.interceptors.response.use(
       } catch {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        if (!isAuthRoute) {
-          window.location.href = '/login';
-        }
+        window.location.href = '/login';
         return Promise.reject(error);
       }
     }
