@@ -62,6 +62,13 @@ export function createDoctorGuide(navigate: NavigateFunction, _cleanup: () => vo
         description: 'Clicca su uno dei nomi nella lista per visualizzare i dettagli. Poi premi "Avanti" per continuare.',
         side: 'right',
         align: 'start',
+        onNextClick: () => {
+          if (!document.getElementById('latest-measurements')) {
+            alert('Per favore seleziona prima un paziente dalla lista.');
+            return false;
+          }
+          return true;
+        },
       },
     },
     {
