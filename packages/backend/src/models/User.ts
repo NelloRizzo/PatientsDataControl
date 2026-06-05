@@ -14,7 +14,7 @@ export interface IUserDocument extends mongoose.Document {
   email: string;
   password: string;
   name: string;
-  role: 'patient' | 'doctor' | 'analyst' | 'admin';
+  role: 'patient' | 'doctor' | 'analyst' | 'admin' | 'nurse';
   unitSystem: 'metric' | 'imperial';
   specialty?: string;
   birthDate?: Date;
@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     email:             { type: String, required: true, unique: true, lowercase: true, trim: true },
     password:          { type: String, minlength: 8 },
     name:              { type: String, required: true, trim: true },
-    role:              { type: String, enum: ['patient','doctor','analyst','admin'], default: 'patient' },
+    role:              { type: String, enum: ['patient','doctor','analyst','admin','nurse'], default: 'patient' },
     unitSystem:        { type: String, enum: ['metric','imperial'], default: 'metric' },
     specialty:         { type: String, trim: true },
     birthDate:         Date,

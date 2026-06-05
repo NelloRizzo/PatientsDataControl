@@ -4,6 +4,7 @@ import { User } from './models/User.js';
 import { Measurement } from './models/Measurement.js';
 import { MeasurementTypeConfig } from './models/MeasurementTypeConfig.js';
 import { PatientDoctor } from './models/PatientDoctor.js';
+import { NursePatient } from './models/NursePatient.js';
 import { ChartConfig } from './models/ChartConfig.js';
 import { AlertTemplate } from './models/AlertTemplate.js';
 import { DoctorContract } from './models/DoctorContract.js';
@@ -30,6 +31,7 @@ async function seed() {
       Measurement.deleteMany({}),
       MeasurementTypeConfig.deleteMany({}),
       PatientDoctor.deleteMany({}),
+      NursePatient.deleteMany({}),
       ChartConfig.deleteMany({}),
       AlertTemplate.deleteMany({}),
       DoctorContract.deleteMany({}),
@@ -257,6 +259,7 @@ async function seed() {
     { email: 'dr.smith@healthbridge.com', password: 'doctor1234', name: 'Dr. Alice Smith', role: 'doctor' as const, specialty: 'Cardiology', maxPatients: 2 },
     { email: 'dr.jones@healthbridge.com', password: 'doctor1234', name: 'Dr. Bob Jones', role: 'doctor' as const, specialty: 'Endocrinology', maxPatients: 2 },
     { email: 'analyst@healthbridge.com', password: 'analyst1234', name: 'Charlie Data', role: 'analyst' as const },
+    { email: 'nurse.rossi@healthbridge.com', password: 'nurse1234', name: 'Laura Rossi', role: 'nurse' as const },
     { email: 'patient1@example.com', password: 'patient1234', name: 'John Doe', role: 'patient' as const, birthDate: new Date('1985-06-15'), sex: 'male' as const, birthCity: 'Milan', homeAddress: { full: '123 Main St, Milan, MI 20100, Italy', city: 'Milan', province: 'MI', region: 'Lombardy', country: 'Italy' }, legalAddress: { full: '123 Main St, Milan, MI 20100, Italy', city: 'Milan', province: 'MI', region: 'Lombardy', country: 'Italy' } },
     { email: 'patient2@example.com', password: 'patient1234', name: 'Jane Roe', role: 'patient' as const, birthDate: new Date('1990-11-22'), sex: 'female' as const, birthCity: 'Rome', homeAddress: { full: '456 Oak Ave, Rome, RM 00100, Italy', city: 'Rome', province: 'RM', region: 'Lazio', country: 'Italy' }, legalAddress: { full: '789 Pine Rd, Florence, FI 50100, Italy', city: 'Florence', province: 'FI', region: 'Tuscany', country: 'Italy' } },
     { email: 'patient3@example.com', password: 'patient1234', name: 'Mike Brown', role: 'patient' as const, birthDate: new Date('1978-03-08'), sex: 'male' as const, birthCity: 'Turin', homeAddress: { full: '321 Elm St, Turin, TO 10100, Italy', city: 'Turin', province: 'TO', region: 'Piedmont', country: 'Italy' }, legalAddress: { full: '321 Elm St, Turin, TO 10100, Italy', city: 'Turin', province: 'TO', region: 'Piedmont', country: 'Italy' } },
@@ -282,6 +285,14 @@ async function seed() {
     { patientId: patients[4]._id, doctorId: drJones._id, status: 'active', notifyOnNewMeasurement: true, assignedBy: admin._id, assignedAt: new Date() },
   ]);
   console.log(`  Created ${associations.length} associations.`);
+
+  // ── Nurse-Patient Associations (pending by default, active set for seed) ──
+  const nurseRossi = users.find((u) => u.email === 'nurse.rossi@healthbridge.com')!;
+  const nurseAssociations = await NursePatient.insertMany([
+    { patientId: patients[0]._id, nurseId: nurseRossi._id, status: 'active', assignedBy: admin._id, assignedAt: new Date() },
+    { patientId: patients[1]._id, nurseId: nurseRossi._id, status: 'active', assignedBy: admin._id, assignedAt: new Date() },
+  ]);
+  console.log(`  Created ${nurseAssociations.length} nurse associations.`);
 
   // ── GDPR Consent for seed patients ──
   console.log('Creating GDPR consents...');
@@ -464,6 +475,7 @@ async function seed() {
   console.log('  Admin:   admin@healthbridge.com / admin1234');
   console.log('  Doctor:  dr.smith@healthbridge.com / doctor1234');
   console.log('  Doctor:  dr.jones@healthbridge.com / doctor1234');
+  console.log('  Nurse:   nurse.rossi@healthbridge.com / nurse1234');
   console.log('  Analyst: analyst@healthbridge.com / analyst1234');
   console.log('  Patient: patient1@example.com / patient1234 (etc.)');
 

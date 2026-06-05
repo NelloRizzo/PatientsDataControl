@@ -329,7 +329,7 @@ function determineTargetUserId(
   patientId?: string
 ): string {
   if (userRole === 'patient') return userId;
-  if (userRole === 'doctor' || userRole === 'admin') {
+  if (userRole === 'doctor' || userRole === 'admin' || userRole === 'nurse') {
     if (!patientId) throw new AppError(400, t('error.patient.idRequired'));
     return patientId;
   }

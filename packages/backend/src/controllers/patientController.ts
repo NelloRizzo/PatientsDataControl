@@ -3,6 +3,7 @@ import type { AuthRequest } from '../middleware/auth.js';
 import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { PatientDoctor } from '../models/PatientDoctor.js';
+import { NursePatient } from '../models/NursePatient.js';
 import { PatientNote } from '../models/PatientNote.js';
 import { Anamnesis } from '../models/Anamnesis.js';
 import { Measurement } from '../models/Measurement.js';
@@ -306,6 +307,138 @@ export async function disconnectDoctor(
       body: t('notification.disconnectedBody'),
       referenceId: req.userId,
       referenceModel: 'PatientDoctor',
+    });
+
+    res.json({ message: 'Association deactivated', status: 'inactive' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// --- Nurse Management ---
+
+export async function myNurses(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const associations = await NursePatient.find({ patientId: req.userId })
+      .populate('nurseId', 'name email')
+      .sort({ status: 1, assignedAt: -1 })
+      .lean();
+
+    const data = associations
+      .filter((a: any) => a.nurseId)
+      .map((a: any) => ({
+        _id: a._id.toString(),
+        nurseId: a.nurseId._id.toString(),
+        nurseName: a.nurseId.name,
+        nurseEmail: a.nurseId.email,
+        status: a.status,
+        assignedAt: a.assignedAt?.toISOString?.() || '',
+      }));
+
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function confirmNurse(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { nurseId } = req.params;
+
+    const consent = await GdprConsent.findOne({
+      userId: req.userId,
+      type: 'privacy_policy',
+      granted: true,
+    }).sort({ grantedAt: -1 }).lean();
+
+    if (!consent) {
+      throw new AppError(400, t('error.association.mustAcceptPrivacy'));
+    }
+
+    const association = await NursePatient.findOneAndUpdate(
+      { patientId: req.userId, nurseId, status: 'pending' },
+      { status: 'active' },
+      { new: true }
+    );
+
+    if (!association) {
+      throw new AppError(404, t('error.association.noPending'));
+    }
+
+    const { Notification } = await import('../models/Notification.js');
+    await Notification.create({
+      userId: nurseId,
+      category: 'info',
+      title: t('notification.patientConfirmed'),
+      body: t('notification.patientConfirmedBody'),
+      referenceId: req.userId,
+      referenceModel: 'NursePatient',
+    });
+
+    res.json({ message: 'Association confirmed', status: 'active' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function rejectNurse(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { nurseId } = req.params;
+
+    const association = await NursePatient.findOneAndUpdate(
+      { patientId: req.userId, nurseId, status: 'active' },
+      { status: 'inactive' },
+      { new: true }
+    );
+
+    if (!association) {
+      throw new AppError(404, t('error.association.noActive'));
+    }
+
+    res.json({ message: 'Association deactivated', status: 'inactive' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function disconnectNurse(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { nurseId } = req.params;
+
+    const association = await NursePatient.findOneAndUpdate(
+      { patientId: req.userId, nurseId, status: 'active' },
+      { status: 'inactive' },
+      { new: true }
+    );
+
+    if (!association) {
+      throw new AppError(404, t('error.association.noActive'));
+    }
+
+    const { Notification } = await import('../models/Notification.js');
+    await Notification.create({
+      userId: nurseId,
+      category: 'info',
+      title: t('notification.disconnected'),
+      body: t('notification.disconnectedBody'),
+      referenceId: req.userId,
+      referenceModel: 'NursePatient',
     });
 
     res.json({ message: 'Association deactivated', status: 'inactive' });

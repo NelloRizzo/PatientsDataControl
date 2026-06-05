@@ -178,7 +178,8 @@
       "rolePatient": "Patient",
       "roleDoctor": "Doctor",
       "roleAnalyst": "Analyst",
-      "roleAdmin": "Admin"
+      "roleAdmin": "Admin",
+      "roleNurse": "Nurse"
     },
     "profile": {
       "title": "Profile",
@@ -231,6 +232,9 @@
       "doctorRemoved": "Doctor successfully removed",
       "doctorConfirmed": "Doctor successfully confirmed",
       "doctorRejected": "Doctor rejected",
+      "myNurses": "My Nurses",
+      "noNurses": "No nurses connected.",
+      "roleNurse": "Nurse",
       "address": {
         "full": "Full address",
         "city": "City",

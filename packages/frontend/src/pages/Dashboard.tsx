@@ -51,6 +51,9 @@ export function Dashboard() {
   const [sharingTypes, setSharingTypes] = useState<string[]>([]);
   const [sharingMsg, setSharingMsg] = useState('');
 
+  // My nurses
+  const [myNurses, setMyNurses] = useState<any[]>([]);
+
   useEffect(() => {
     getMeasurementTypes().then(setTypes).catch(() => {});
   }, []);
@@ -60,6 +63,7 @@ export function Dashboard() {
       import('../api/note').then((mod) => mod.getMyNotes().then(setNotes).catch(() => {}));
       import('../api/anamnesis').then((mod) => mod.getMyAnamnesis().then(setAnamnesis).catch(() => {}));
       apiClient.get('/patient/doctors').then((res) => setMyDoctors(res.data.data)).catch(() => {});
+      apiClient.get('/patient/nurses').then((res) => setMyNurses(res.data.data)).catch(() => {});
       apiClient.get('/patient/medications').then((res) => setMedications(res.data.data)).catch(() => {});
       apiClient.get('/patient/medications/due').then((res) => setDueMeds(res.data.data)).catch(() => {});
       setBmiLoading(true);
@@ -100,6 +104,30 @@ export function Dashboard() {
     try {
       await apiClient.delete(`/patient/doctors/${doctorId}/reject`);
       setMyDoctors((prev) => prev.filter((d) => d.doctorId !== doctorId));
+    } catch {}
+  };
+
+  const handleConfirmNurse = async (nurseId: string) => {
+    try {
+      await apiClient.post(`/patient/nurses/${nurseId}/confirm`);
+      setMyNurses((prev) =>
+        prev.map((n) => (n.nurseId === nurseId ? { ...n, status: 'active' } : n))
+      );
+    } catch {}
+  };
+
+  const handleRejectNurse = async (nurseId: string) => {
+    try {
+      await apiClient.delete(`/patient/nurses/${nurseId}/reject`);
+      setMyNurses((prev) => prev.filter((n) => n.nurseId !== nurseId));
+    } catch {}
+  };
+
+  const handleDisconnectNurse = async (nurseId: string) => {
+    if (!confirm(t('ui.profile.confirmRemoveDoctor'))) return;
+    try {
+      await apiClient.delete(`/patient/nurses/${nurseId}/disconnect`);
+      setMyNurses((prev) => prev.filter((n) => n.nurseId !== nurseId));
     } catch {}
   };
 
@@ -421,6 +449,47 @@ export function Dashboard() {
                     </div>
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {myNurses.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border">
+          <div className="px-4 py-3 border-b font-medium text-sm">{t('ui.profile.myNurses')}</div>
+          <div className="divide-y">
+            {myNurses.map((n: any) => (
+              <div key={n._id} className="px-4 py-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{n.nurseName}</p>
+                  <p className="text-xs text-gray-500">{n.nurseEmail}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-0.5 rounded ${
+                    n.status === 'active' ? 'bg-green-100 text-green-700' :
+                    n.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>{n.status}</span>
+                  {n.status === 'pending' && (
+                    <>
+                      <button onClick={() => handleConfirmNurse(n.nurseId)}
+                        className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700">
+                        {t('ui.common.confirm')}
+                      </button>
+                      <button onClick={() => handleRejectNurse(n.nurseId)}
+                        className="text-xs bg-red-600 text-white px-2 py-0.5 rounded hover:bg-red-700">
+                        {t('ui.common.reject')}
+                      </button>
+                    </>
+                  )}
+                  {n.status === 'active' && (
+                    <button onClick={() => handleDisconnectNurse(n.nurseId)}
+                      className="text-xs bg-gray-500 text-white px-2 py-0.5 rounded hover:bg-gray-600">
+                      {t('ui.profile.disconnect')}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

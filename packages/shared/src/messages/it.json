@@ -178,7 +178,8 @@
       "rolePatient": "Paziente",
       "roleDoctor": "Medico",
       "roleAnalyst": "Analista",
-      "roleAdmin": "Admin"
+      "roleAdmin": "Admin",
+      "roleNurse": "Infermiere"
     },
     "profile": {
       "title": "Profilo",
@@ -231,6 +232,9 @@
       "doctorRemoved": "Dottore rimosso con successo",
       "doctorConfirmed": "Dottore confermato con successo",
       "doctorRejected": "Dottore rifiutato",
+      "myNurses": "I Miei Infermieri",
+      "noNurses": "Nessun infermiere collegato.",
+      "roleNurse": "Infermiere",
       "address": {
         "full": "Indirizzo completo",
         "city": "Città",

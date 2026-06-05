@@ -19,6 +19,12 @@ router.post('/doctors/:doctorId/confirm', patientController.confirmDoctor);
 router.delete('/doctors/:doctorId/reject', patientController.rejectDoctor);
 router.delete('/doctors/:doctorId/disconnect', patientController.disconnectDoctor);
 
+// Nurse management
+router.get('/nurses', patientController.myNurses);
+router.post('/nurses/:nurseId/confirm', patientController.confirmNurse);
+router.delete('/nurses/:nurseId/reject', patientController.rejectNurse);
+router.delete('/nurses/:nurseId/disconnect', patientController.disconnectNurse);
+
 // BMI
 router.get('/bmi', patientController.getBmi);
 router.get('/bmi/timeseries', patientController.getBmiTimeSeries);

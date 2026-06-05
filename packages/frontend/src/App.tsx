@@ -18,6 +18,7 @@ import { AdminAssociations } from './pages/AdminAssociations';
 import { AdminContracts } from './pages/AdminContracts';
 import { AdminContractReport } from './pages/AdminContractReport';
 import { DoctorPatients } from './pages/DoctorPatients';
+import { NursePatients } from './pages/NursePatients';
 import { DoctorAlerts } from './pages/DoctorAlerts';
 import { DoctorContractStatus } from './pages/DoctorContractStatus';
 import { DoctorPatientMedications } from './pages/DoctorPatientMedications';
@@ -36,6 +37,7 @@ function RootRedirect() {
   const { user } = useAuth();
   const isMobile = useMediaQuery('(max-width: 767px)');
   if (user?.role === 'doctor') return <Navigate to="/doctor/patients" replace />;
+  if (user?.role === 'nurse') return <Navigate to="/nurse/patients" replace />;
   if (user?.role === 'admin') return <Navigate to="/admin/users" replace />;
   if (user?.role === 'patient') {
     if (isMobile) return <Navigate to="/measurements/mobile" replace />;
@@ -74,6 +76,7 @@ export function App() {
                 <Route path="/doctor/contract" element={<ProtectedRoute roles={['doctor']}><DoctorContractStatus /></ProtectedRoute>} />
                 <Route path="/doctor/patients/:patientId/medications" element={<ProtectedRoute roles={['doctor']}><DoctorPatientMedications /></ProtectedRoute>} />
                 <Route path="/doctor/tickets" element={<ProtectedRoute roles={['doctor']}><DoctorTickets /></ProtectedRoute>} />
+                <Route path="/nurse/patients" element={<ProtectedRoute roles={['nurse']}><NursePatients /></ProtectedRoute>} />
                 <Route path="/admin/tickets" element={<ProtectedRoute roles={['admin']}><AdminTickets /></ProtectedRoute>} />
                 <Route path="/analisi" element={<ProtectedRoute roles={['doctor', 'analyst']}><Analisi /></ProtectedRoute>} />
                 <Route path="/help" element={<Help />} />

@@ -135,6 +135,14 @@ export function Navbar() {
                   <div id="nav-profile"><Dropdown name="profile" label={t('ui.nav.profile')}>{profileDropdown}</Dropdown></div>
                 </>
               )}
+              {user.role === 'nurse' && (
+                <>
+                  <div id="patients-menu"><Dropdown name="patients" label={t('ui.nav.patients')}>
+                    {item(t('ui.nav.myPatients'), '/nurse/patients')}
+                  </Dropdown></div>
+                  <div id="nav-profile"><Dropdown name="profile" label={t('ui.nav.profile')}>{profileDropdown}</Dropdown></div>
+                </>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -244,6 +252,17 @@ function MobileNav({ user, close, handleLogout }: { user: any; close: () => void
         <>
           <Section name="tools" label={t('ui.nav.tools')}>
             {item(t('ui.nav.analysis'), '/analisi')}
+          </Section>
+          <Section name="profile" label={t('ui.nav.profile')}>
+            {item(t('ui.nav.profile'), '/profile')}
+            {item(t('ui.nav.privacy'), '/privacy')}
+          </Section>
+        </>
+      )}
+      {user.role === 'nurse' && (
+        <>
+          <Section name="patients" label={t('ui.nav.patients')}>
+            {item(t('ui.nav.myPatients'), '/nurse/patients')}
           </Section>
           <Section name="profile" label={t('ui.nav.profile')}>
             {item(t('ui.nav.profile'), '/profile')}

@@ -1,4 +1,4 @@
-export type UserRole = 'patient' | 'doctor' | 'analyst' | 'admin';
+export type UserRole = 'patient' | 'doctor' | 'analyst' | 'admin' | 'nurse';
 
 export interface Address {
   full: string;
