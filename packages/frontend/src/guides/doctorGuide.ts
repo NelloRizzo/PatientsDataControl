@@ -1,11 +1,10 @@
 import type { DriveStep } from 'driver.js';
 import type { NavigateFunction } from 'react-router-dom';
 
-export function createDoctorGuide(navigate: NavigateFunction, cleanup: () => void): DriveStep[] {
+export function createDoctorGuide(navigate: NavigateFunction, _cleanup: () => void): DriveStep[] {
   const navTo = (path: string, nextStep: number) => {
     sessionStorage.setItem('guideStep', String(nextStep));
     sessionStorage.setItem('guideRole', 'doctor');
-    cleanup();
     navigate(path);
   };
 
