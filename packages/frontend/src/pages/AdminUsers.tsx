@@ -7,6 +7,7 @@ const ROLE_LABELS: Record<string, string> = {
   doctor: 'Medico',
   analyst: 'Analista',
   admin: 'Admin',
+  nurse: 'Infermiere',
 };
 
 const emptyAddress = { full: '', city: '', province: '', region: '', country: '', zip: '' };
@@ -222,6 +223,7 @@ export function AdminUsers() {
                 <option value="doctor">Medico</option>
                 <option value="analyst">Analista</option>
                 <option value="admin">Admin</option>
+                <option value="nurse">Infermiere</option>
               </select>
             </div>
             <div>
@@ -269,6 +271,7 @@ export function AdminUsers() {
           <option value="doctor">Medico</option>
           <option value="analyst">Analista</option>
           <option value="admin">Admin</option>
+          <option value="nurse">Infermiere</option>
         </select>
       </div>
 
@@ -339,6 +342,7 @@ export function AdminUsers() {
                     <option value="doctor">Medico</option>
                     <option value="analyst">Analista</option>
                     <option value="admin">Admin</option>
+                    <option value="nurse">Infermiere</option>
                   </select>
                 </div>
                 <div>
