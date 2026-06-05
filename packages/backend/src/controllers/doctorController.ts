@@ -385,6 +385,7 @@ export async function recentActivity(
       values: d.values,
       timestamp: d.timestamp?.toISOString?.() || '',
       source: d.source,
+      evaluation: d.evaluation,
     }));
 
     res.json({ data });

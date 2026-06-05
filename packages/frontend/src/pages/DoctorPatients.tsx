@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -90,6 +90,19 @@ export function DoctorPatients() {
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [activitySince] = useState(() => new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
   const [activityLoading, setActivityLoading] = useState(false);
+
+  const alertCounts = useMemo(() => {
+    let alerts = 0, dangers = 0;
+    for (const a of recentActivity) {
+      if (a.evaluation) {
+        for (const f of a.evaluation) {
+          if (f.status === 'alert') alerts++;
+          else if (f.status === 'danger') dangers++;
+        }
+      }
+    }
+    return { alerts, dangers };
+  }, [recentActivity]);
 
   // Edit patient
   const [showEditPatient, setShowEditPatient] = useState(false);
@@ -611,10 +624,17 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
 
         <div className="flex-1 space-y-4">
           {/* Recent Activity */}
-          <details className="bg-white p-4 rounded-lg shadow-sm border">
-              <summary className="cursor-pointer text-sm font-medium text-gray-700 flex items-center gap-2">
+          <details className="bg-white p-4 rounded-lg shadow-sm border group">
+              <summary className="cursor-pointer text-sm font-medium text-gray-700 flex items-center gap-2 [&::-webkit-details-marker]:hidden">
+              <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform group-open:rotate-90`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               <span>Attività Recente (ultime 24h)</span>
-              <button onClick={(e) => { e.preventDefault(); loadRecentActivity(); }} className="text-xs text-blue-600 hover:underline">
+              {alertCounts.dangers > 0 && (
+                <span className="bg-red-100 text-red-700 text-xs px-1.5 py-0.5 rounded-full font-semibold">{alertCounts.dangers} critici</span>
+              )}
+              {alertCounts.alerts > 0 && (
+                <span className="bg-yellow-100 text-yellow-700 text-xs px-1.5 py-0.5 rounded-full font-semibold">{alertCounts.alerts} avvisi</span>
+              )}
+              <button onClick={(e) => { e.preventDefault(); loadRecentActivity(); }} className="text-xs text-blue-600 hover:underline ml-auto">
                 {activityLoading ? '...' : 'Aggiorna'}
               </button>
             </summary>
@@ -622,18 +642,22 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
               <p className="text-xs text-gray-400 mt-2">Nessuna attività recente</p>
             ) : (
               <div className="mt-2 space-y-1 max-h-64 overflow-y-auto">
-                {recentActivity.map((a: any) => (
-                  <div key={a._id} className="flex items-center justify-between text-xs py-1 border-b last:border-0">
+                {recentActivity.map((a: any) => {
+                  const worstStatus = a.evaluation?.reduce((w: string, f: any) => f.status === 'danger' ? 'danger' : w === 'danger' ? w : f.status === 'alert' ? 'alert' : w, 'normal');
+                  const rowBg = worstStatus === 'danger' ? 'bg-red-50' : worstStatus === 'alert' ? 'bg-yellow-50' : '';
+                  return (
+                  <div key={a._id} className={`flex items-center justify-between text-xs py-1.5 px-2 border-b last:border-0 rounded ${rowBg}`}>
                     <div>
                       <span className="font-medium">{a.patientName}</span>
-                      <span className="text-gray-500 ml-1">{a.type}</span>
+                      <span className="text-gray-500 ml-1">{types.find(t => t.key === a.type)?.name || a.type}</span>
                     </div>
                     <div className="text-gray-400">
                       <span className="mr-2">{Object.entries(a.values).map(([k, v]) => `${k}: ${v}`).join(', ')}</span>
                       {new Date(a.timestamp).toLocaleTimeString()}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             </details>
