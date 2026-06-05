@@ -63,7 +63,7 @@ export function createDoctorGuide(navigate: NavigateFunction, _cleanup: () => vo
         side: 'right',
         align: 'start',
         onNextClick: () => {
-          if (!document.getElementById('latest-measurements')) {
+          if (!document.getElementById('chart-section')) {
             alert('Per favore seleziona prima un paziente dalla lista.');
             return false;
           }

@@ -184,12 +184,6 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
     } catch {}
   }, []);
 
-  useEffect(() => {
-    loadPatients();
-    getMeasurementTypes().then(setTypes).catch(() => {});
-    getMyContractStatus().then(setContractStatus).catch(() => setContractStatus(null));
-  }, [loadPatients]);
-
   const loadRecentActivity = useCallback(async () => {
     setActivityLoading(true);
     try {
@@ -198,6 +192,13 @@ const [savedConfigsLoaded, setSavedConfigsLoaded] = useState(false);
     } catch {}
     setActivityLoading(false);
   }, [activitySince]);
+
+  useEffect(() => {
+    loadPatients();
+    getMeasurementTypes().then(setTypes).catch(() => {});
+    getMyContractStatus().then(setContractStatus).catch(() => setContractStatus(null));
+    loadRecentActivity();
+  }, [loadPatients, loadRecentActivity]);
 
   const handleToggleNotify = async (patientId: string, current: boolean) => {
     try {

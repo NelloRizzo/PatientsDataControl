@@ -312,6 +312,15 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - **DoctorPatients.tsx**: BMI card spostata da `#patient-actions` a `#patient-bmi-section` (prima di `#latest-measurements`), con sparkline Recharts (120px, linea blu, tooltip data+BMI)
 - **Dashboard.tsx**: stesso componente BMI aggiunto per il paziente (prima di `#patient-chart-section`), visibile solo per ruolo `patient`
 - **Seed**: aggiunte misure di altezza una tantum per ogni paziente (prima del loop dei 30 giorni), con valori realistici (160-182 cm)
+
+### Color Picker su Legenda Grafico
+- Rimosso color picker dalla sezione Tipi Misurazione in Analisi.tsx
+- Aggiunta legenda personalizzata in MultiTypeChart.tsx con pallino colore cliccabile (input type=color nativo)
+- Callback `onSeriesColorChange` aggiorna serie + colori istantaneamente
+- Pattern ref (`typeColorsRef`) per lettura sincrona in loadData dopo applyConfig
+- Colori salvati in `typeColors` (mappa seriesKey→color) su ChartConfig
+- KPI threshold lines (ReferenceLine) aggiornate automaticamente tramite campo `seriesKey`
+
 Le annotazioni/issues sono in `todo/` (locale, non versionato).
 L'agente non implementa nulla senza esplicita richiesta "procediamo con l'implementazione del todo N." oppure con data/ora del todo.
 Tutta la discussione/ragionamento va solo nei todo. Niente modifiche a codice finché non arriva richiesta esplicita di implementazione.
