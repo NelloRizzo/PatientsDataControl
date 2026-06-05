@@ -3,6 +3,7 @@ import { createDoctorGuide } from '../guides/doctorGuide';
 import { createPatientGuide } from '../guides/patientGuide';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useCallback, useRef } from 'react';
+import { driver } from 'driver.js';
 import type { Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 
@@ -33,10 +34,10 @@ export function GuideButton({ className = '' }: GuideButtonProps) {
     const steps = createSteps();
     if (!steps) return;
     cleanup();
-    import('driver.js').then(({ driver }) => {
+    try {
       driverRef.current = driver({ steps, animate: true, showProgress: true });
       driverRef.current.drive(fromStep);
-    });
+    } catch {}
   }, [createSteps, cleanup]);
 
   useEffect(() => {
@@ -46,7 +47,9 @@ export function GuideButton({ className = '' }: GuideButtonProps) {
       sessionStorage.removeItem('guideStep');
       sessionStorage.removeItem('guideRole');
       const step = parseInt(pendingStep, 10);
-      if (!isNaN(step)) startGuide(step);
+      if (!isNaN(step)) {
+        requestAnimationFrame(() => startGuide(step));
+      }
     }
   }, [user?.role, location.pathname, startGuide]);
 
