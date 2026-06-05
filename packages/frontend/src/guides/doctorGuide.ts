@@ -5,7 +5,7 @@ export function createDoctorGuide(navigate: NavigateFunction, _cleanup: () => vo
   const navTo = (path: string, nextStep: number) => {
     sessionStorage.setItem('guideStep', String(nextStep));
     sessionStorage.setItem('guideRole', 'doctor');
-    navigate(path);
+    setTimeout(() => navigate(path), 50);
   };
 
   return [
