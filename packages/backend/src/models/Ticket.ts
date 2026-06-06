@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 
 export interface ITicketDocument extends mongoose.Document {
   ticketNumber: string;
-  userId: mongoose.Types.ObjectId;
-  type: 'suggestion' | 'bug_report';
+  userId: mongoose.Types.ObjectId | null;
+  type: 'suggestion' | 'bug_report' | 'registration_request';
   title: string;
   description: string;
   page: string;
@@ -11,6 +11,9 @@ export interface ITicketDocument extends mongoose.Document {
   status: 'open' | 'in_review' | 'in_progress' | 'resolved' | 'closed';
   assigneeId: mongoose.Types.ObjectId | null;
   adminNotes: string;
+  requesterEmail?: string;
+  requestedRole?: 'doctor' | 'nurse' | 'patient';
+  annotation?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,12 +24,13 @@ const ticketSchema = new mongoose.Schema<ITicketDocument>(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: false,
+      default: null,
       index: true,
     },
     type: {
       type: String,
-      enum: ['suggestion', 'bug_report'],
+      enum: ['suggestion', 'bug_report', 'registration_request'],
       required: true,
     },
     title: { type: String, required: true, maxlength: 200 },
@@ -48,6 +52,12 @@ const ticketSchema = new mongoose.Schema<ITicketDocument>(
       default: null,
     },
     adminNotes: { type: String, default: '', maxlength: 2000 },
+    requesterEmail: { type: String, trim: true, lowercase: true },
+    requestedRole: {
+      type: String,
+      enum: ['doctor', 'nurse', 'patient'],
+    },
+    annotation: { type: String, trim: true, maxlength: 2000 },
   },
   { timestamps: true }
 );

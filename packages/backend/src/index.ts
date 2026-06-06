@@ -18,6 +18,7 @@ import notificationRoutes from './routes/notifications.js';
 import patientRoutes from './routes/patient.js';
 import contractRoutes from './routes/contracts.js';
 import ticketRoutes from './routes/tickets.js';
+import publicRoutes from './routes/public.js';
 import { FitbitProvider, GoogleHealthProvider, deviceRegistry } from './services/device/index.js';
 
 const app = express();
@@ -53,6 +54,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/patient', patientRoutes);
 app.use('/api/admin/contracts', contractRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/api/public', publicRoutes);
 
 app.use(errorHandler);
 

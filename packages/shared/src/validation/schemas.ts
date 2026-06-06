@@ -326,6 +326,14 @@ export const createTicketSchema = z.object({
   severity: z.enum(['low', 'medium', 'high']).optional(),
 });
 
+export const createRegistrationRequestSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100),
+  email: z.string().email('Invalid email address'),
+  requestedRole: z.enum(['doctor', 'nurse', 'patient']),
+  message: z.string().max(2000).optional(),
+  annotation: z.string().max(2000).optional(),
+});
+
 export const updateTicketSchema = z.object({
   status: z.enum(['open', 'in_review', 'in_progress', 'resolved', 'closed']).optional(),
   assigneeId: z.string().optional().nullable(),
