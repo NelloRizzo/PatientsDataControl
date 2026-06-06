@@ -1,8 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import {
+  LineChart, Line, AreaChart, Area, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
 import apiClient from '../api/client';
 import { getMeasurementTypes } from '../api/measurementTypes';
-import type { IMeasurementTypeConfig, IMeasurement } from '@healthbridge/shared';
+import type { IMeasurementTypeConfig, IMeasurement, TimeGroupBy, ChartType, AggregationFunction, TimeSeriesPoint } from '@healthbridge/shared';
+
+function formatDate(value: string) {
+  try {
+    if (/^\d{4}-W\d{2}$/.test(value)) {
+      const week = value.slice(6);
+      return `${value.slice(0, 4)} — Sett. ${week}`;
+    }
+    if (/^\d{4}-\d{2}$/.test(value)) {
+      return new Date(value + '-01T12:00:00Z').toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    }
+    if (/^\d{4}$/.test(value)) {
+      return value;
+    }
+    const hasTime = value.includes('T');
+    if (!hasTime) {
+      return new Date(value + 'T12:00:00Z').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    return new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  } catch { return value; }
+}
 
 export function NursePatients() {
   const [patients, setPatients] = useState<any[]>([]);
@@ -26,6 +50,21 @@ export function NursePatients() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
 
+  // Chart
+  const [selectedType, setSelectedType] = useState('');
+  const [groupBy, setGroupBy] = useState<TimeGroupBy>('day');
+  const [chartType, setChartType] = useState<ChartType>('line');
+  const [aggregation, setAggregation] = useState<AggregationFunction>('avg');
+  const [selectedFields, setSelectedFields] = useState<string[]>([]);
+  const [chartData, setChartData] = useState<TimeSeriesPoint[]>([]);
+  const [chartLoading, setChartLoading] = useState(false);
+
+  // BMI
+  const [bmi, setBmi] = useState<any>(null);
+  const [bmiLoading, setBmiLoading] = useState(false);
+  const [bmiHistory, setBmiHistory] = useState<any[]>([]);
+  const [bmiHistoryLoading, setBmiHistoryLoading] = useState(false);
+
   // History
   const [historyType, setHistoryType] = useState<string | null>(null);
   const [historyData, setHistoryData] = useState<any[]>([]);
@@ -36,6 +75,12 @@ export function NursePatients() {
 
   // Medications (read-only)
   const [medications, setMedications] = useState<any[]>([]);
+
+  // Notes (read-only)
+  const [notes, setNotes] = useState<any[]>([]);
+
+  // Anamnesis (current therapy only)
+  const [anamnesis, setAnamnesis] = useState<any[]>([]);
 
   useEffect(() => {
     getMeasurementTypes().then((t) => { setTypes(t); setTypesMap(Object.fromEntries(t.map((x: IMeasurementTypeConfig) => [x.key, x]))); }).catch(() => {});
@@ -64,6 +109,22 @@ export function NursePatients() {
     }
   };
 
+  const currentType = types.find((t) => t.key === selectedType);
+
+  const loadChart = useCallback(async () => {
+    if (!selectedPatient || !selectedType) return;
+    setChartLoading(true);
+    try {
+      const res = await apiClient.get(`/nurse/patients/${selectedPatient}/timeseries`, {
+        params: { type: selectedType, groupBy, aggregation, fields: selectedFields.join(',') },
+      });
+      setChartData(res.data.data || []);
+    } catch { setChartData([]); }
+    setChartLoading(false);
+  }, [selectedPatient, selectedType, groupBy, aggregation, selectedFields]);
+
+  useEffect(() => { loadChart(); }, [loadChart]);
+
   useEffect(() => {
     if (!selectedPatient) return;
     apiClient.get(`/nurse/patients/${selectedPatient}/latest-measurements`)
@@ -72,6 +133,22 @@ export function NursePatients() {
     apiClient.get(`/nurse/patients/${selectedPatient}/medications`)
       .then((res) => setMedications(res.data.data || []))
       .catch(() => setMedications([]));
+    setBmiLoading(true);
+    apiClient.get('/patient/bmi', { params: { userId: selectedPatient } })
+      .then((res) => setBmi(res.data.data))
+      .catch(() => setBmi(null))
+      .finally(() => setBmiLoading(false));
+    setBmiHistoryLoading(true);
+    apiClient.get('/patient/bmi/timeseries', { params: { userId: selectedPatient } })
+      .then((res) => setBmiHistory(res.data.data || []))
+      .catch(() => setBmiHistory([]))
+      .finally(() => setBmiHistoryLoading(false));
+    apiClient.get(`/nurse/patients/${selectedPatient}/notes`)
+      .then((res) => setNotes(res.data.data || []))
+      .catch(() => setNotes([]));
+    apiClient.get(`/nurse/patients/${selectedPatient}/anamnesis`)
+      .then((res) => setAnamnesis(res.data.data || []))
+      .catch(() => setAnamnesis([]));
   }, [selectedPatient]);
 
   const selectedPatientData = patients.find((p) => p._id === selectedPatient || p.patientId === selectedPatient);
@@ -105,7 +182,6 @@ export function NursePatients() {
       });
       setSaveMsg('Misurazione salvata!');
       setNewValues({}); setNewNotes('');
-      // Refresh latest
       const res = await apiClient.get(`/nurse/patients/${selectedPatient}/latest-measurements`);
       setLatestByType(res.data.data || {});
     } catch (err: any) {
@@ -136,6 +212,54 @@ export function NursePatients() {
     const field = t?.fields?.find((f: any) => f.key === key);
     const unit = m.units?.[key] || field?.unit || '';
     return `${m.values?.[key] ?? '-'} ${unit}`;
+  };
+
+  const toggleField = (key: string) => {
+    setSelectedFields((prev) =>
+      prev.includes(key) ? prev.filter((f) => f !== key) : [...prev, key]
+    );
+  };
+
+  const renderChart = () => {
+    if (chartLoading) return <p className="text-gray-500 text-center py-12">Caricamento grafico...</p>;
+    if (!chartData.length) return <p className="text-gray-500 text-center py-12">Nessun dato disponibile</p>;
+
+    const commonProps = { data: chartData, margin: { top: 5, right: 30, left: 20, bottom: 5 } };
+    const colors = ['#2563eb', '#dc2626', '#16a34a', '#ca8a04', '#9333ea', '#0891b2'];
+
+    const chartProps = {
+      ...commonProps,
+      children: (
+        <>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="timestamp" tickFormatter={formatDate} />
+          <YAxis />
+          <Tooltip labelFormatter={formatDate} />
+          <Legend />
+          {selectedFields.map((field, i) => {
+            const lp = {
+              key: field,
+              type: 'monotone' as const,
+              dataKey: `values.${field}`,
+              name: currentType?.fields.find((f) => f.key === field)?.name || field,
+              stroke: colors[i % colors.length],
+              fill: colors[i % colors.length],
+            };
+            if (chartType === 'area') return <Area {...lp} />;
+            if (chartType === 'bar') return <Bar {...lp} />;
+            return <Line {...lp} />;
+          })}
+        </>
+      ),
+    };
+
+    return (
+      <ResponsiveContainer width="100%" height={400}>
+        {chartType === 'line' ? <LineChart {...chartProps} /> :
+         chartType === 'area' ? <AreaChart {...chartProps} /> :
+         <BarChart {...chartProps} />}
+      </ResponsiveContainer>
+    );
   };
 
   return (
@@ -185,6 +309,47 @@ export function NursePatients() {
               </div>
             </div>
 
+            {/* BMI Card */}
+            <div id="patient-bmi-section" className="bg-white rounded-lg shadow-sm border p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">BMI</h3>
+                {bmi && (
+                  <div className="flex items-center gap-4 text-xs text-gray-400">
+                    <span>{bmi.heightCm} cm</span>
+                    <span>{bmi.weightKg} kg</span>
+                    <span>{bmi.measuredAt ? new Date(bmi.measuredAt).toLocaleDateString() : ''}</span>
+                  </div>
+                )}
+              </div>
+              {bmiLoading ? (
+                <p className="text-xs text-gray-400">Caricamento...</p>
+              ) : bmi ? (
+                <div className="flex items-center gap-6">
+                  <div className="flex-shrink-0">
+                    <p className={`text-3xl font-bold ${bmi.color || 'text-gray-900'}`}>{bmi.bmi}</p>
+                    <p className={`text-sm font-medium ${bmi.color || 'text-gray-500'}`}>{bmi.level}</p>
+                  </div>
+                  {bmiHistory.length > 1 && (
+                    <div className="flex-1 min-w-0">
+                      <ResponsiveContainer width="100%" height={120}>
+                        <LineChart data={bmiHistory}>
+                          <XAxis dataKey="timestamp" tick={false} axisLine={false} />
+                          <YAxis domain={['dataMin - 1', 'dataMax + 1']} tick={false} axisLine={false} />
+                          <Tooltip
+                            labelFormatter={(v) => new Date(v).toLocaleDateString()}
+                            formatter={(val: any) => [Number(val).toFixed(1), 'BMI']}
+                          />
+                          <Line type="monotone" dataKey="bmi" stroke="#2563eb" dot={false} strokeWidth={2} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500">Servono misurazioni di peso e altezza</p>
+              )}
+            </div>
+
             {/* Latest measurements grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {Object.entries(latestByType).map(([typeKey, data]: [string, any]) => {
@@ -203,6 +368,84 @@ export function NursePatients() {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Chart controls */}
+            <div className="bg-white p-4 rounded-lg shadow-sm border space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500">Tipo Misurazione</label>
+                  <select value={selectedType} onChange={(e) => { setSelectedType(e.target.value); setSelectedFields([]); }}
+                    className="w-full border rounded px-2 py-1.5 text-sm">
+                    <option value="">Seleziona...</option>
+                    {(() => {
+                      const groups: Record<string, typeof types> = {};
+                      for (const t of types) {
+                        const g = t.macrogroup || 'other';
+                        if (!groups[g]) groups[g] = [];
+                        groups[g].push(t);
+                      }
+                      return Object.entries(groups).map(([group, ts]) => (
+                        <optgroup key={group} label={group}>
+                          {ts.map((t) => (
+                            <option key={t.key} value={t.key}>{t.name}</option>
+                          ))}
+                        </optgroup>
+                      ));
+                    })()}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500">Raggruppamento Temporale</label>
+                  <select value={groupBy} onChange={(e) => setGroupBy(e.target.value as TimeGroupBy)}
+                    className="w-full border rounded px-2 py-1.5 text-sm">
+                    <option value="hour">Ora</option>
+                    <option value="day">Giorno</option>
+                    <option value="week">Settimana</option>
+                    <option value="month">Mese</option>
+                    <option value="year">Anno</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500">Aggregazione</label>
+                  <select value={aggregation} onChange={(e) => setAggregation(e.target.value as AggregationFunction)}
+                    className="w-full border rounded px-2 py-1.5 text-sm">
+                    <option value="avg">Media</option>
+                    <option value="min">Minimo</option>
+                    <option value="max">Massimo</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500">Tipo Grafico</label>
+                  <select value={chartType} onChange={(e) => setChartType(e.target.value as ChartType)}
+                    className="w-full border rounded px-2 py-1.5 text-sm">
+                    <option value="line">Linea</option>
+                    <option value="area">Area</option>
+                    <option value="bar">Barre</option>
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <button onClick={loadChart} className="w-full bg-blue-600 text-white py-1.5 rounded text-sm hover:bg-blue-700">
+                    Aggiorna Grafico
+                  </button>
+                </div>
+              </div>
+              {currentType && (
+                <div className="flex flex-wrap gap-3">
+                  {currentType.fields.map((f) => (
+                    <label key={f.key} className="flex items-center gap-1 text-xs">
+                      <input type="checkbox" checked={selectedFields.includes(f.key)}
+                        onChange={() => toggleField(f.key)} />
+                      {f.name} ({f.unit})
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Chart */}
+            <div id="chart-section" className="bg-white p-4 rounded-lg shadow-sm border">
+              {renderChart()}
             </div>
 
             {/* New measurement form */}
@@ -279,6 +522,62 @@ export function NursePatients() {
                 </div>
               </div>
             )}
+
+            {/* Notes (read-only) */}
+            <div className="bg-white rounded-lg shadow-sm border">
+              <div className="px-4 py-3 border-b font-medium text-sm">Note Cliniche</div>
+              <div className="p-4 space-y-3">
+                {notes.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">Nessuna nota ancora</p>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {notes.map((n: any) => (
+                      <div key={n._id} className="border-l-2 border-blue-300 pl-3 py-1">
+                        <p className="text-sm">{n.content}</p>
+                        <p className="text-xs text-gray-400 mt-1">{n.doctorName || 'Medico'} · {new Date(n.createdAt).toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Anamnesis (current therapy only) */}
+            <div className="bg-white rounded-lg shadow-sm border">
+              <div className="px-4 py-3 border-b font-medium text-sm">Anamnesi — Terapia in Corso</div>
+              <div className="p-4 space-y-3">
+                {anamnesis.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">Nessuna terapia in corso</p>
+                ) : (
+                  <div className="space-y-3 max-h-80 overflow-y-auto">
+                    {anamnesis.map((a: any) => (
+                      <div key={a._id} className="border-l-2 border-purple-300 pl-3 py-1">
+                        <p className="text-xs text-gray-400">
+                          Registrata: {new Date(a.recordedAt).toLocaleString()}
+                        </p>
+                        <div className="mt-1 border-l-2 border-green-300 pl-2">
+                          <p className="text-xs font-semibold text-gray-600">Farmacologica</p>
+                          {a.farmacologica?.entries?.map((entry: any, i: number) => (
+                            <p key={i} className="text-sm whitespace-pre-wrap flex items-center gap-1">
+                              <span>• {entry.text}</span>
+                              <span className="text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded font-medium">
+                                Attuale
+                              </span>
+                            </p>
+                          ))}
+                        </div>
+                        {a.notes && (
+                          <div className="mt-1">
+                            <p className="text-xs font-medium text-gray-600">Note</p>
+                            <p className="text-sm whitespace-pre-wrap">{a.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Measurement history */}
             {historyType && (

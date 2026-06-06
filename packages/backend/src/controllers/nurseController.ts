@@ -9,6 +9,7 @@ import { doctorCreatePatientSchema, createMeasurementSchema, resetPasswordSchema
 import { sendEmail } from '../services/emailService.js';
 import { env } from '../config/env.js';
 import { t } from '../services/i18n.js';
+import * as measurementService from '../services/measurementService.js';
 
 async function verifyAssociation(nurseId: string, patientId: string) {
   const association = await NursePatient.findOne({ nurseId, patientId, status: 'active' });
@@ -289,6 +290,95 @@ export async function resetPatientPassword(
     await user.save();
 
     res.json({ message: 'Password reimpostata con successo' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function patientTimeseries(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { patientId } = req.params;
+    await verifyAssociation(req.userId!, patientId);
+
+    const { type, groupBy = 'day', fields, from, to, aggregation } = req.query as Record<string, string>;
+    if (!type) { res.status(400).json({ error: 'Type query parameter is required' }); return; }
+
+    const fieldList = fields ? fields.split(',').map((f) => f.trim()).filter(Boolean) : [];
+    const result = await measurementService.getTimeSeries(
+      patientId, type, groupBy as any, fieldList, { from, to }, aggregation as any
+    );
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getPatientNotes(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { patientId } = req.params;
+    await verifyAssociation(req.userId!, patientId);
+
+    const { PatientNote } = await import('../models/PatientNote.js');
+    const notes = await PatientNote.find({ patientId })
+      .populate('doctorId', 'name')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const data = notes.map((n: any) => ({
+      _id: n._id.toString(),
+      content: n.content,
+      doctorId: n.doctorId?._id?.toString(),
+      doctorName: n.doctorId?.name,
+      showToPatient: n.showToPatient ?? false,
+      patientNotified: n.patientNotified ?? false,
+      anamnesisId: n.anamnesisId?.toString(),
+      createdAt: n.createdAt?.toISOString?.(),
+      updatedAt: n.updatedAt?.toISOString?.(),
+    }));
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getPatientAnamnesis(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { patientId } = req.params;
+    await verifyAssociation(req.userId!, patientId);
+
+    const { Anamnesis } = await import('../models/Anamnesis.js');
+    const anamneses = await Anamnesis.find({ patientId })
+      .sort({ recordedAt: -1 })
+      .lean();
+
+    const data = anamneses.map((a: any) => {
+      const farmacologica = a.farmacologica || { entries: [] };
+      return {
+        _id: a._id.toString(),
+        patientId: a.patientId.toString(),
+        recordedAt: a.recordedAt?.toISOString?.(),
+        farmacologica: {
+          entries: farmacologica.entries?.filter((e: any) => e.isCurrent === true) || [],
+        },
+        notes: a.notes,
+        createdAt: a.createdAt?.toISOString?.(),
+        updatedAt: a.updatedAt?.toISOString?.(),
+      };
+    }).filter((a: any) => a.farmacologica.entries.length > 0);
+
+    res.json({ data });
   } catch (error) {
     next(error);
   }
