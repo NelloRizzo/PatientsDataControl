@@ -44,7 +44,8 @@ The `Measurement` model stores data as:
 - NOT a single `value`/`unit` — fully dynamic per type config
 
 ### Roles & Permissions
-- `patient` — owns their data, CRUD on own measurements
+- `patient` — owns their data, CRUD on own measurements; can confirm/reject/disconnect doctor and nurse associations
+- `nurse` — can be assigned patients (via `NursePatient` association, managed by admin); can view patients' measurements and medications, create measurements, reset password. Cannot create prescriptions or view notes/charts/analytics
 - `doctor` — can view own patients' data (via `PatientDoctor` association)
 - `analyst` — can view aggregate stats across all patients (no individual data)
 - `admin` — full access, manages roles, associations, and measurement type configs
@@ -138,6 +139,25 @@ Chart configurations are saveable per user via `ChartConfig` model:
 | POST | /api/doctor/patients/:patientId/reset-password | Reset patient password |
 | GET | /api/doctor/export/csv | Export patients' measurements as CSV (type, from, to, demographic filters) |
 
+### Nurse
+| Method | Path | Description |
+|---|---|---|
+| GET | /api/nurse/patients | List my patients (via NursePatient association) |
+| POST | /api/nurse/patients | Add patient (by email or create new) |
+| GET | /api/nurse/patients/:patientId/latest-measurements | Latest measurement per type |
+| GET | /api/nurse/patients/:patientId/measurements | Patient measurements (paginated) |
+| GET | /api/nurse/patients/:patientId/medications | Patient medications (read-only) |
+| POST | /api/nurse/patients/:patientId/measurements | Create measurement for patient |
+| POST | /api/nurse/patients/:patientId/reset-password | Reset patient password |
+
+### Patient (Nurse management)
+| Method | Path | Description |
+|---|---|---|
+| GET | /api/patient/nurses | List my nurses |
+| POST | /api/patient/nurses/:nurseId/confirm | Confirm nurse association |
+| DELETE | /api/patient/nurses/:nurseId/reject | Reject nurse association |
+| DELETE | /api/patient/nurses/:nurseId/disconnect | Disconnect nurse |
+
 ### Analyst
 | Method | Path | Description |
 |---|---|---|
@@ -202,7 +222,7 @@ List endpoints accept `type`, `from`, `to` for type + date range filtering.
 - Delete: 204 No Content
 
 ## MongoDB Models
-- User, Measurement, MeasurementTypeConfig, DeviceConnection, ApiKey, PatientDoctor, ChartConfig, PatientNote, AlertTemplate, AlertLog, Prescription, MedicationLog, Ticket
+- User, Measurement, MeasurementTypeConfig, DeviceConnection, ApiKey, PatientDoctor, NursePatient, ChartConfig, PatientNote, AlertTemplate, AlertLog, Prescription, MedicationLog, Ticket
 - All models use `timestamps: true` (createdAt/updatedAt)
 - User's password is auto-hashed via pre-save hook, stripped on toJSON
 - User has email verification fields: `emailVerified`, `verificationToken`, `verificationExpires` (token also stripped on toJSON)
@@ -224,6 +244,7 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 | Admin | admin@healthbridge.com | admin1234 |
 | Doctor | dr.smith@healthbridge.com | doctor1234 |
 | Doctor | dr.jones@healthbridge.com | doctor1234 |
+| Nurse | nurse.rossi@healthbridge.com | nurse1234 |
 | Analyst | analyst@healthbridge.com | analyst1234 |
 | Patient | patient1@example.com | patient1234 |
 
@@ -245,7 +266,7 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - Analyst cross-patient stats/timeseries with filters
 - Doctor endpoints: per-patient and aggregated timeseries/stats/notes/trends
 - Frontend: Login, Register, Dashboard (configurable chart), Measurements list (+ import), NewMeasurement (gallery), Profile (all fields), AdminMeasurementTypes, AdminUsers (inline edit), DoctorPatients (trends, cronologia misure), AdminAssociations, AdminAlertTemplates, DoctorAlerts, AdminContracts, AdminContractReport, DoctorPatientMedications, DoctorTickets, AdminTickets, MobileMeasurement, Help
-- Seed script: 8 measurement types, 9 users, 5 associations, 700 measurements, 22 alert templates, GdprConsent, metric-only height/weight
+- Seed script: 8 measurement types, 10 users (admin, 2 doctors, 1 analyst, 1 nurse, 5 patients), 5 patient-doctor + 2 nurse-patient associations, ~750 measurements, 22 alert templates, GdprConsent, metric-only height/weight
 - Navbar: sottomenu dropdown per ruolo, logout a sinistra, link Guida in Profilo, id per guide
 - System admin (admin@healthbridge.com) protected from deletion
 - Email verification: User model fields, emailService.ts, verify/resend endpoints, VerifyEmail page, banner in Layout/Profile
@@ -259,6 +280,9 @@ Creates 8 measurement types, 9 users (admin, 2 doctors, analyst, 5 patients), pa
 - **Fix interceptor 401**: skip refresh/redirect per route `/auth/*`
 - **Trend backend**: `patientLatestMeasurements` con `$push` + `$arrayElemAt[1]` per previousValues e trends
 - **Cronologia misure**: pannello inline dopo chart, navigazione mesi, tabella dinamica
+- **Ruolo Infermiere**: UserRole `'nurse'`, `NursePatient` model (pending/active/inactive), nurseController con CRUD pazienti (aggiungi per email o crea nuovo), visualizzazione misure ultime/paginate, farmaci (read-only), reset password, creazione misure
+- **Frontend infermiere**: `NursePatients.tsx` — sidebar pazienti, griglia ultime misure, form nuova misurazione, storico mensile, farmaci in corso, reset password
+- **Paziente — gestione infermieri**: `GET /api/patient/nurses`, confirm/reject/disconnect, sezione "I Miei Infermieri" in Dashboard.tsx
 - **Reset password admin**: POST `/api/admin/users/:id/reset-password` + modale frontend
 - **Reset password dottore**: POST `/api/doctor/patients/:patientId/reset-password` + pulsante header
 - **Sistema Farmaci/Prescrizioni full stack**: IPrescription/PrescriptionTime/IMedicationLog types, Zod schemas, Prescription/MedicationLog models, medicationController CRUD + dueMedications + takeMedication, DoctorPatientMedications.tsx CRUD, Dashboard "I Miei Farmaci" con "Preso" + polling 60s, Notification categoria `'medication'`

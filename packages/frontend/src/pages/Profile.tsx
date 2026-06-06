@@ -37,6 +37,10 @@ export function Profile() {
   const [myDoctors, setMyDoctors] = useState<any[]>([]);
   const [doctorMsg, setDoctorMsg] = useState('');
 
+  // My nurses
+  const [myNurses, setMyNurses] = useState<any[]>([]);
+  const [nurseMsg, setNurseMsg] = useState('');
+
   // Device connections
   const [connections, setConnections] = useState<IDeviceConnection[]>([]);
   const [connLoading, setConnLoading] = useState(false);
@@ -62,6 +66,7 @@ export function Profile() {
     if (user?.role === 'patient') {
       fetchConnections();
       apiClient.get('/patient/doctors').then((res) => setMyDoctors(res.data.data)).catch(() => {});
+      apiClient.get('/patient/nurses').then((res) => setMyNurses(res.data.data)).catch(() => {});
     }
   }, [user]);
 
@@ -128,7 +133,7 @@ export function Profile() {
     setGdprMsg('');
     try {
       await apiClient.post('/patient/privacy-consent', { action: 'accept' });
-      setGdprMsg(t('ui.profile.gdprAccept') + ' registrato');
+      setGdprMsg(t('ui.profile.gdprAccept') + ' ' + t('ui.profile.gdprRecorded'));
       apiClient.get('/patient/privacy-consent').then((res) => setGdprHistory(res.data.data)).catch(() => {});
     } catch { setGdprMsg(t('ui.common.error')); }
   };
@@ -138,7 +143,7 @@ export function Profile() {
     setGdprMsg('');
     try {
       await apiClient.post('/patient/privacy-consent', { action: 'revoke' });
-      setGdprMsg(t('ui.profile.gdprRevoke') + ' registrato');
+      setGdprMsg(t('ui.profile.gdprRevoke') + ' ' + t('ui.profile.gdprRecorded'));
       apiClient.get('/patient/privacy-consent').then((res) => setGdprHistory(res.data.data)).catch(() => {});
     } catch { setGdprMsg(t('ui.common.error')); }
   };
@@ -179,6 +184,40 @@ export function Profile() {
     }
   };
 
+  const handleConfirmNurse = async (nurseId: string) => {
+    setNurseMsg('');
+    try {
+      await apiClient.post(`/patient/nurses/${nurseId}/confirm`);
+      setMyNurses((prev) =>
+        prev.map((n) => (n.nurseId === nurseId ? { ...n, status: 'active' } : n))
+      );
+      setNurseMsg(t('ui.common.confirm'));
+    } catch (err: any) {
+      setNurseMsg(err.response?.data?.error || t('ui.common.error'));
+    }
+  };
+
+  const handleRejectNurse = async (nurseId: string) => {
+    setNurseMsg('');
+    try {
+      await apiClient.delete(`/patient/nurses/${nurseId}/reject`);
+      setMyNurses((prev) => prev.filter((n) => n.nurseId !== nurseId));
+    } catch (err: any) {
+      setNurseMsg(err.response?.data?.error || t('ui.common.error'));
+    }
+  };
+
+  const handleDisconnectNurse = async (nurseId: string) => {
+    if (!confirm(t('ui.profile.confirmRemoveDoctor'))) return;
+    setNurseMsg('');
+    try {
+      await apiClient.delete(`/patient/nurses/${nurseId}/disconnect`);
+      setMyNurses((prev) => prev.filter((n) => n.nurseId !== nurseId));
+    } catch (err: any) {
+      setNurseMsg(err.response?.data?.error || t('ui.common.error'));
+    }
+  };
+
   if (!user) return null;
 
   const handleResend = async () => {
@@ -186,9 +225,9 @@ export function Profile() {
     setResendMsg('');
     try {
       await apiClient.post('/auth/resend-verification', { email: user.email });
-      setResendMsg('Verification email sent!');
+      setResendMsg(t('ui.profile.verificationSent'));
     } catch {
-      setResendMsg('Failed to resend.');
+      setResendMsg(t('ui.profile.verificationFailed'));
     }
     setResending(false);
   };
@@ -198,7 +237,7 @@ export function Profile() {
     setCpMsg(''); setCpErr('');
     try {
       await apiClient.post('/auth/change-password', { oldPassword: cpOld, newPassword: cpNew });
-      setCpMsg(t('ui.profile.changePassword') + ' effettuato');
+      setCpMsg(t('ui.profile.passwordChanged'));
       setCpOld('');
       setCpNew('');
       setSearchParams({});
@@ -258,7 +297,7 @@ export function Profile() {
       if (Object.keys(body).length === 0) { setEditing(false); return; }
 
       await apiClient.put('/auth/profile', body);
-      setMsg(t('ui.profile.title') + ' aggiornato');
+      setMsg(t('ui.profile.profileUpdated'));
       setEditing(false);
       window.location.reload();
     } catch (err: any) {
@@ -283,7 +322,7 @@ export function Profile() {
       {deviceToast && (
         <div className="mb-4 p-3 rounded-lg border text-sm bg-green-50 border-green-200 text-green-700">
           {deviceToast}
-          <button onClick={() => setDeviceToast('')} className="ml-2 underline text-xs">Chiudi</button>
+          <button onClick={() => setDeviceToast('')} className="ml-2 underline text-xs">{t('ui.common.close')}</button>
         </div>
       )}
 
@@ -405,7 +444,7 @@ export function Profile() {
                     <div>
                       <p className="text-sm font-medium">{conn.name}</p>
                       <p className="text-xs text-gray-400">
-                        {conn.oauthType === 'google' ? 'Google OAuth' : 'Fitbit OAuth'}
+                        {conn.oauthType === 'google' ? t('ui.profile.oauthGoogle') : t('ui.profile.oauthFitbit')}
                         {conn.lastSync && ` — Ultimo sync: ${new Date(conn.lastSync).toLocaleString()}`}
                       </p>
                     </div>
@@ -416,7 +455,7 @@ export function Profile() {
                       disabled={syncingId === conn.provider}
                       className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
                     >
-                      {syncingId === conn.provider ? 'Sync...' : t('ui.profile.sync')}
+                       {syncingId === conn.provider ? t('ui.profile.syncing') : t('ui.profile.sync')}
                     </button>
                     <button
                       onClick={() => handleDisconnect(conn._id)}
@@ -500,6 +539,55 @@ export function Profile() {
             </div>
           )}
           {doctorMsg && <p className="text-xs text-green-600">{doctorMsg}</p>}
+        </div>
+      )}
+
+      {/* My Nurses — visible only for patients */}
+      {user.role === 'patient' && (
+        <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border space-y-4">
+          <h2 className="text-lg font-semibold">{t('ui.profile.myNurses')}</h2>
+          {myNurses.length === 0 ? (
+            <p className="text-sm text-gray-500 italic">{t('ui.profile.noNurses')}</p>
+          ) : (
+            <div className="space-y-2">
+              {myNurses.map((n: any) => (
+                <div key={n._id} className="border rounded p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{n.nurseName}</p>
+                    <p className="text-xs text-gray-500">{n.nurseEmail}</p>
+                    <span className={`text-xs px-1.5 py-0.5 rounded inline-block mt-1 ${
+                      n.status === 'active' ? 'bg-green-100 text-green-700' :
+                      n.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {n.status === 'active' ? t('ui.profile.connected') : n.status === 'pending' ? t('ui.profile.pending') : t('ui.profile.inactive')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {n.status === 'pending' && (
+                      <>
+                        <button onClick={() => handleConfirmNurse(n.nurseId)}
+                          className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">
+                          {t('ui.profile.accept')}
+                        </button>
+                        <button onClick={() => handleRejectNurse(n.nurseId)}
+                          className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">
+                          {t('ui.profile.reject')}
+                        </button>
+                      </>
+                    )}
+                    {n.status === 'active' && (
+                      <button onClick={() => handleDisconnectNurse(n.nurseId)}
+                        className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200">
+                        {t('ui.profile.disconnect')}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {nurseMsg && <p className="text-xs text-green-600">{nurseMsg}</p>}
         </div>
       )}
 

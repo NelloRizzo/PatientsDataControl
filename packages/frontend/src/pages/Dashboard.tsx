@@ -153,9 +153,9 @@ export function Dashboard() {
     setSharingMsg('');
     try {
       await apiClient.put(`/patient/doctors/${sharingDoctorId}/sharing`, { types: sharingTypes });
-      setSharingMsg('Sharing updated');
+      setSharingMsg(t('ui.dashboard.sharingUpdated'));
     } catch (err: any) {
-      setSharingMsg(err.response?.data?.error || 'Failed to update');
+      setSharingMsg(err.response?.data?.error || t('ui.dashboard.sharingFailed'));
     }
   };
 
@@ -384,7 +384,7 @@ export function Dashboard() {
                       d.status === 'active' ? 'bg-green-100 text-green-700' :
                       d.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                       'bg-red-100 text-red-700'
-                    }`}>{d.status}</span>
+                    }`}>{d.status === 'active' ? t('ui.profile.connected') : d.status === 'pending' ? t('ui.profile.pending') : t('ui.profile.inactive')}</span>
                     {d.status === 'active' && (
                       <button onClick={() => openSharing(d.doctorId)}
                         className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded hover:bg-purple-700">
@@ -455,9 +455,11 @@ export function Dashboard() {
         </div>
       )}
 
-      {myNurses.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="px-4 py-3 border-b font-medium text-sm">{t('ui.profile.myNurses')}</div>
+      <div className="bg-white rounded-lg shadow-sm border">
+        <div className="px-4 py-3 border-b font-medium text-sm">{t('ui.profile.myNurses')}</div>
+        {myNurses.length === 0 ? (
+          <div className="px-4 py-3 text-sm text-gray-500 italic">{t('ui.profile.noNurses')}</div>
+        ) : (
           <div className="divide-y">
             {myNurses.map((n: any) => (
               <div key={n._id} className="px-4 py-3 flex items-center justify-between">
@@ -470,7 +472,7 @@ export function Dashboard() {
                     n.status === 'active' ? 'bg-green-100 text-green-700' :
                     n.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                     'bg-red-100 text-red-700'
-                  }`}>{n.status}</span>
+                  }`}>{n.status === 'active' ? t('ui.profile.connected') : n.status === 'pending' ? t('ui.profile.pending') : t('ui.profile.inactive')}</span>
                   {n.status === 'pending' && (
                     <>
                       <button onClick={() => handleConfirmNurse(n.nurseId)}
@@ -493,8 +495,8 @@ export function Dashboard() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {medications.length > 0 && (
         <div id="patient-medications-section" className="bg-white rounded-lg shadow-sm border">
